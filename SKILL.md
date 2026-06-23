@@ -89,7 +89,7 @@ license-note: For educational and personal research use only; not financial advi
    - 先确认最近一期年报、最近一期季报/中报、公告日期、报告期、货币单位。
    - 再提取三张表、股本、SBC、回购、分红、债务、现金、分部收入/利润。
    - 最后补行情、市值、成交额、估值倍数、竞品估值。
-   - **A 股可先运行辅助脚本**：`scripts/a_share_prefetch.py <code> --peers <peer codes...>`。它会预抓交易所公告链接（沪市）、腾讯行情、东方财富三表、分红、TTM/FCF、EV/FCF、中国 10Y 国债收益率缓存与 10 年回本计算。脚本输出只能作为 Evidence Ledger 草稿，仍需在报告中标明 Tier 1/Tier 2 来源。
+   - **A 股可先运行辅助脚本**：`scripts/a_share_prefetch.py <code> --peers <peer codes...>`。它会预抓交易所公告链接（沪市）、腾讯行情、东方财富三表、分红、TTM/FCF、EV/FCF、同业比较、中国 10Y 国债收益率缓存与 10 年回本计算。优先读取 `summary` 的扁平字段，再读取 `peer_comparison`，最后按需钻取 raw `financials`。脚本输出只能作为 Evidence Ledger 草稿，仍需在报告中标明 Tier 1/Tier 2 来源。
 3. **关键数字交叉验证**
    - 净利润、EPS、FCF、股本、SBC、债务、现金、股息、回购、分部利润必须尽量用 Tier 1 + Tier 2 双来源核对。
    - 如果来源冲突,必须列出冲突,解释可能原因,并用更保守口径进入估值。
@@ -130,6 +130,13 @@ First-Page Verdict 后必须给 Evidence Ledger,至少覆盖:
 - 缺少债务/现金数据:最高只能给 Watchlist。
 - 缺少流动性数据:不得给超过 5% 组合仓位建议。
 - 数据冲突且无法判断来源质量:必须列出冲突,用更保守口径计算。
+
+如果脚本输出 `summary.business_model_flags.equity_method_holding_company=true`:
+
+- 明确说明该公司利润主要来自投资收益 / 权益法资产,合并 FCF 需要降权。
+- 不要忽略 FCF,但应把它作为现金穿透风险提示,不能简单等同经营质量崩坏。
+- 估值重心改看 EPS、分红、投资收益持续性、主要参股资产质量、持股比例和现金分配机制。
+- 未核验年报中的主要参股资产与现金分配机制前,最高评级为 Watchlist。
 
 对**强周期行业**(航运、地产、煤炭、化工、面板),必须额外估算"中周期利润 / 中周期估值",**不得只看景气峰值 PE**。
 

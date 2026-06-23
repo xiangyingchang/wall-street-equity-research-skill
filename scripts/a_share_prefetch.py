@@ -396,6 +396,50 @@ def first_number(rows: list[dict], key: str) -> float | None:
     return None
 
 
+def ratio(numerator: float | None, denominator: float | None) -> float | None:
+    if numerator is None or denominator in (None, 0):
+        return None
+    return numerator / denominator
+
+
+def parse_dividend_per_share(dividend_row: dict | None) -> float | None:
+    if not dividend_row:
+        return None
+    profile = dividend_row.get("IMPL_PLAN_PROFILE") or ""
+    match = re.search(r"10派([0-9.]+)", profile)
+    if match:
+        return float(match.group(1)) / 10
+    pretax_bonus = to_float(dividend_row.get("PRETAX_BONUS_RMB"))
+    if pretax_bonus is not None:
+        return pretax_bonus / 10
+    return None
+
+
+def build_peer_comparison(quotes: dict[str, dict], main_code: str, peer_codes: list[str]) -> list[dict]:
+    ordered_codes = [numeric_code(main_code)] + [numeric_code(code) for code in peer_codes]
+    rows = []
+    for code in ordered_codes:
+        quote = quotes.get(code)
+        if not quote:
+            rows.append({"code": code, "missing": True})
+            continue
+        rows.append(
+            {
+                "code": code,
+                "name": quote.get("name"),
+                "price": quote.get("price"),
+                "change_pct": quote.get("change_pct"),
+                "pe_ttm": quote.get("pe_ttm"),
+                "pb": quote.get("pb"),
+                "market_cap_yi": quote.get("market_cap_yi"),
+                "turnover_rate": quote.get("turnover_rate"),
+                "datetime": quote.get("datetime"),
+                "missing": False,
+            }
+        )
+    return rows
+
+
 def build_summary(code: str, peer_codes: list[str], *, china_10y_cache_days: int = 30, refresh_china_10y: bool = False) -> dict:
     today = dt.date.today()
     begin = (today.replace(year=today.year - 1)).isoformat()
@@ -424,6 +468,8 @@ def build_summary(code: str, peer_codes: list[str], *, china_10y_cache_days: int
     eps_ttm = ttm_metric(zyzb_quarter, "EPSJB")
     revenue_ttm = ttm(zyzb_quarter, income, "TOTAL_OPERATE_INCOME")
     net_profit_ttm = ttm(zyzb_quarter, income, "PARENT_NETPROFIT")
+    invest_income_ttm = ttm(zyzb_quarter, income, "INVEST_INCOME")
+    joint_invest_income_ttm = ttm(zyzb_quarter, income, "INVEST_JOINT_INCOME")
     ocf_ttm = ttm(zyzb_quarter, cashflow, "NETCASH_OPERATE")
     capex_ttm = ttm(zyzb_quarter, cashflow, "CONSTRUCT_LONG_ASSET")
     fcf_ttm = ocf_ttm - capex_ttm if ocf_ttm is not None and capex_ttm is not None else None
@@ -440,6 +486,42 @@ def build_summary(code: str, peer_codes: list[str], *, china_10y_cache_days: int
     cash = to_float(latest_bal.get("MONETARYFUNDS")) or 0
     ev = market_cap + interest_bearing_debt - cash if market_cap else None
     ev_fcf = ev / fcf_ttm if ev and fcf_ttm else None
+    net_debt = interest_bearing_debt - cash if interest_bearing_debt is not None else None
+
+    latest_dividend = dividends[0] if dividends else None
+    dps = parse_dividend_per_share(latest_dividend)
+    dividend_yield = dps / price if dps is not None and price else None
+
+    invest_income_to_revenue = ratio(invest_income_ttm, revenue_ttm)
+    invest_income_to_net_profit = ratio(invest_income_ttm, net_profit_ttm)
+    is_equity_method_holding = bool(
+        invest_income_to_revenue is not None
+        and invest_income_to_net_profit is not None
+        and invest_income_to_revenue >= 1.0
+        and invest_income_to_net_profit >= 0.5
+    )
+    business_model_flags = {
+        "equity_method_holding_company": is_equity_method_holding,
+        "invest_income_to_revenue": invest_income_to_revenue,
+        "invest_income_to_net_profit": invest_income_to_net_profit,
+        "fcf_requires_deweighting": bool(is_equity_method_holding and fcf_ttm is not None),
+        "notes": [],
+    }
+    if is_equity_method_holding:
+        business_model_flags["notes"].append(
+            "Investment income dominates revenue/profit; plain consolidated FCF should be deweighted and EPS/dividends/underlying investee quality should be emphasized."
+        )
+
+    manual_verification_notes = [
+        "Spot-check latest annual and quarterly filings before final rating.",
+        "Verify current quote timestamp and valuation multiples if market is open or delayed data matters.",
+    ]
+    if is_equity_method_holding:
+        manual_verification_notes.append(
+            "Manually verify major equity-method investees, ownership percentages, dividend pass-through, and investment-income sustainability from the annual report."
+        )
+    if not tencent_key(code).startswith("sh"):
+        manual_verification_notes.append("Fetch CNINFO filing links manually for Shenzhen-listed companies.")
 
     payback = {}
     for name, multiple in [("pe_ttm", pe_ttm), ("p_fcf_ttm", p_fcf), ("ev_fcf_ttm", ev_fcf)]:
@@ -453,7 +535,9 @@ def build_summary(code: str, peer_codes: list[str], *, china_10y_cache_days: int
                 "r_10pct": solve_payback(multiple, 0.10),
             }
 
-    return {
+    peer_comparison = build_peer_comparison(quotes, code, peer_codes)
+
+    payload = {
         "meta": {
             "code": n,
             "symbol": sh_symbol(code),
@@ -464,11 +548,71 @@ def build_summary(code: str, peer_codes: list[str], *, china_10y_cache_days: int
                 "For Shenzhen-listed companies, this script currently returns financial/quote/dividend data but not CNINFO filing links.",
             ],
         },
+        "summary": {
+            "company": {
+                "code": n,
+                "symbol": sh_symbol(code),
+                "name": quote.get("name"),
+            },
+            "quote": {
+                "price": price,
+                "datetime": quote.get("datetime"),
+                "change_pct": quote.get("change_pct"),
+                "market_cap": market_cap,
+                "market_cap_yi": quote.get("market_cap_yi"),
+                "pe_ttm": pe_ttm,
+                "pb": quote.get("pb"),
+                "turnover_rate": quote.get("turnover_rate"),
+                "high_52w": quote.get("high_52w"),
+                "low_52w": quote.get("low_52w"),
+                "source": "Tencent quote",
+                "source_tier": "Tier 2",
+            },
+            "rates": {
+                "china_10y_value_pct": china_10y.get("value_pct"),
+                "china_10y_value_decimal": china_10y.get("value_decimal"),
+                "china_10y_worktime": china_10y.get("worktime"),
+                "china_10y_from_cache": china_10y.get("from_cache"),
+                "china_10y_stale": china_10y.get("stale"),
+                "opportunity_cost_china_10y_x2": china_10y_r * 2,
+            },
+            "ttm": {
+                "revenue": revenue_ttm,
+                "net_profit": net_profit_ttm,
+                "eps": eps_ttm,
+                "ocf": ocf_ttm,
+                "capex": capex_ttm,
+                "fcf": fcf_ttm,
+                "fcf_per_share": fcf_per_share,
+                "investment_income": invest_income_ttm,
+                "joint_investment_income": joint_invest_income_ttm,
+            },
+            "balance": {
+                "cash": cash,
+                "interest_bearing_debt_approx": interest_bearing_debt,
+                "net_debt_approx": net_debt,
+                "ev_approx": ev,
+            },
+            "dividend": {
+                "latest_plan": latest_dividend,
+                "dps_pretax": dps,
+                "dividend_yield": dividend_yield,
+            },
+            "valuation": {
+                "pe_ttm": pe_ttm,
+                "p_fcf_ttm": p_fcf,
+                "ev_fcf_ttm": ev_fcf,
+                "payback": payback,
+            },
+            "business_model_flags": business_model_flags,
+            "manual_verification_notes": manual_verification_notes,
+        },
         "rates": {
             "china_10y": china_10y,
         },
         "announcements": sse_announcements(code, begin, end),
         "quotes": quotes,
+        "peer_comparison": peer_comparison,
         "financials": {
             "zyzb_annual": zyzb_annual[:8],
             "zyzb_quarter": zyzb_quarter[:8],
@@ -484,6 +628,8 @@ def build_summary(code: str, peer_codes: list[str], *, china_10y_cache_days: int
             "eps_ttm": eps_ttm,
             "revenue_ttm": revenue_ttm,
             "net_profit_ttm": net_profit_ttm,
+            "invest_income_ttm": invest_income_ttm,
+            "joint_invest_income_ttm": joint_invest_income_ttm,
             "ocf_ttm": ocf_ttm,
             "capex_ttm": capex_ttm,
             "fcf_ttm": fcf_ttm,
@@ -497,6 +643,7 @@ def build_summary(code: str, peer_codes: list[str], *, china_10y_cache_days: int
             "payback": payback,
         },
     }
+    return payload
 
 
 def main(argv: list[str]) -> int:

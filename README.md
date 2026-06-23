@@ -8,7 +8,7 @@
 - Data Acquisition Workflow：先找财报原文，再取表格，再补行情和估值
 - Evidence Ledger：关键数字必须标注日期、来源、口径、可信度
 - 10 年回本测试：名义与贴现双口径，EPS 与 FCF/share 双口径
-- A 股预抓取脚本：公告链接、行情、三表、分红、FCF、EV/FCF、中国 10Y 缓存
+- A 股预抓取脚本：公告链接、行情、三表、分红、FCF、EV/FCF、同业比较、权益法平台识别、中国 10Y 缓存
 - 三条投资纪律：持有=买入、机会成本、10 年回本
 - 最终四档判决：Buy / Hold-Index / Watchlist / Avoid
 
@@ -57,6 +57,9 @@ python3 scripts/a_share_prefetch.py 600900 --peers 600905 600025 600886 600674 6
 - 东方财富三表：资产负债表、利润表、现金流量表，自动处理 gzip
 - 东方财富分红：分红方案、股本、EPS
 - 自动派生：TTM EPS、TTM FCF、FCF/share、P/FCF、EV/FCF
+- 顶层摘要：`summary` 汇总 quote、rates、TTM、分红、估值和人工复核提示
+- 同业比较：`peer_comparison` 输出同业价格、PE、PB、市值、换手率
+- 业务模型提示：`business_model_flags` 识别投资收益主导 / 权益法平台，并提示 FCF 降权
 - 中国 10Y 国债收益率：来自中债/财政部收益率曲线，本地缓存 30 天
 - 10 年回本：名义、10Y×1、10Y×2、8%、10% 压力测试
 
@@ -76,7 +79,8 @@ python3 scripts/a_share_prefetch.py 600900 --china-10y-cache-days 7
 
 - 深市股票目前仍需单独补巨潮公告链接；脚本可抓行情、财务、分红。
 - PDF 正文/表格抽取不在脚本内完成；脚本只确认公告链接和结构化数据。
-- JSON 不能直接当报告粘贴，必须转换成 Evidence Ledger 并标注 Tier 1 / Tier 2。
+- JSON 不能直接当报告粘贴。应先读 `summary`，再读 `peer_comparison`，最后按需钻取 raw `financials`，并转换成 Evidence Ledger、标注 Tier 1 / Tier 2。
+- 如果 `summary.business_model_flags.equity_method_holding_company=true`，合并 FCF 必须降权，重点改看 EPS、分红、投资收益持续性、主要参股资产质量和现金分配机制。
 
 ## 核心原则
 
@@ -124,4 +128,5 @@ python3 scripts/a_share_prefetch.py 600900 --china-10y-cache-days 7
 - 强制 Evidence Ledger
 - 用 10 年期国债收益率 × 2 替代固定现金收益假设
 - 新增 A 股预抓取脚本
+- A 股脚本新增 `summary`、`peer_comparison`、权益法平台识别和人工复核提示
 - 贴现回本测试升级为四档：10Y×1 / 10Y×2 / 8% / 10%
