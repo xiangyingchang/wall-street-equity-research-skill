@@ -8,6 +8,7 @@
 - Data Acquisition Workflow：先找财报原文，再取表格，再补行情和估值
 - Evidence Ledger：关键数字必须标注日期、来源、口径、可信度
 - 10 年回本测试：名义与贴现双口径，EPS 与 FCF/share 双口径
+- A 股预抓取脚本：公告链接、行情、三表、分红、FCF、EV/FCF、中国 10Y 缓存
 - 三条投资纪律：持有=买入、机会成本、10 年回本
 - 最终四档判决：Buy / Hold-Index / Watchlist / Avoid
 
@@ -16,6 +17,7 @@
 ## 文件
 
 - [`SKILL.md`](SKILL.md)：完整 Prompt / Agent Skill 文档
+- [`scripts/a_share_prefetch.py`](scripts/a_share_prefetch.py)：A 股预抓取脚本
 - [`examples/input-template.md`](examples/input-template.md)：使用时的输入模板
 - [`LICENSE`](LICENSE)：MIT License
 
@@ -39,6 +41,42 @@
 2. Evidence Ledger
 3. 11 个固定分析模块
 4. 最终 Buy / Hold-Index / Watchlist / Avoid 判决
+
+## A 股预抓取脚本
+
+对 A 股，建议先运行脚本生成 Evidence Ledger 草稿：
+
+```bash
+python3 scripts/a_share_prefetch.py 600900 --peers 600905 600025 600886 600674 600795 601985
+```
+
+脚本会抓取并输出 JSON：
+
+- 上交所公告链接：年报、季报、分红、分红回报规划等（沪市）
+- 腾讯行情：GBK 解码后的价格、PE、PB、市值、成交额、同业估值
+- 东方财富三表：资产负债表、利润表、现金流量表，自动处理 gzip
+- 东方财富分红：分红方案、股本、EPS
+- 自动派生：TTM EPS、TTM FCF、FCF/share、P/FCF、EV/FCF
+- 中国 10Y 国债收益率：来自中债/财政部收益率曲线，本地缓存 30 天
+- 10 年回本：名义、10Y×1、10Y×2、8%、10% 压力测试
+
+强制刷新中国 10Y：
+
+```bash
+python3 scripts/a_share_prefetch.py 600900 --refresh-china-10y
+```
+
+调整缓存天数：
+
+```bash
+python3 scripts/a_share_prefetch.py 600900 --china-10y-cache-days 7
+```
+
+限制：
+
+- 深市股票目前仍需单独补巨潮公告链接；脚本可抓行情、财务、分红。
+- PDF 正文/表格抽取不在脚本内完成；脚本只确认公告链接和结构化数据。
+- JSON 不能直接当报告粘贴，必须转换成 Evidence Ledger 并标注 Tier 1 / Tier 2。
 
 ## 核心原则
 
@@ -75,7 +113,7 @@
 
 ## 版本
 
-当前公开版基于 `optimized-v3`。
+当前公开版基于 `optimized-v4`。
 
 主要特性：
 
@@ -85,3 +123,5 @@
 - 新增关键数字交叉验证
 - 强制 Evidence Ledger
 - 用 10 年期国债收益率 × 2 替代固定现金收益假设
+- 新增 A 股预抓取脚本
+- 贴现回本测试升级为四档：10Y×1 / 10Y×2 / 8% / 10%
