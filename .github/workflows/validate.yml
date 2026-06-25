@@ -1,0 +1,23 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check Python syntax
+        run: |
+          python -m py_compile scripts/a_share_prefetch.py scripts/pdf_text_extract.py scripts/report_lint.py
+
+      - name: Run report lint self-test
+        run: |
+          python scripts/report_lint.py --self-test

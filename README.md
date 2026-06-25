@@ -24,6 +24,7 @@
 - [`references/source-map.md`](references/source-map.md)：Obsidian 路径和历史报告定位
 - [`scripts/a_share_prefetch.py`](scripts/a_share_prefetch.py)：A 股预抓取脚本
 - [`scripts/pdf_text_extract.py`](scripts/pdf_text_extract.py)：财报 PDF / earnings deck 文本抽取
+- [`scripts/report_lint.py`](scripts/report_lint.py)：报告交付前的硬约束检查
 - [`examples/input-template.md`](examples/input-template.md)：使用时的输入模板
 - [`LICENSE`](LICENSE)：MIT License
 
@@ -47,6 +48,14 @@
 2. Evidence Ledger
 3. 11 个固定分析模块
 4. 最终 Buy / Hold-Index / Watchlist / Avoid 判决
+
+完整 Obsidian 报告交付前必须跑：
+
+```bash
+python3 scripts/report_lint.py "/path/to/report.md"
+```
+
+没通过就修报告，不能说“跑完了”。
 
 ## A 股预抓取脚本
 
@@ -166,5 +175,6 @@ python3 scripts/pdf_text_extract.py <pdf_or_url>
 - A 股预抓取脚本：`summary`、`peer_comparison`、权益法平台识别、中国 10Y 缓存
 - 非 A 股 preflight：IR + filing + PDF + 收盘/盘后价格分离
 - PDF 文本抽取脚本
+- 报告 lint：三原则、四档贴现、Evidence Ledger、11 模块、source links 等交付前检查
 - 周期/高 Capex 双估值闸门
 - 四档贴现回本测试：10Y×1 / 10Y×2 / 8% / 10%
