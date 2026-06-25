@@ -130,6 +130,17 @@ Before the final verdict, explicitly answer:
 2. Since sunk cost is not cost and opportunity cost is the real cost, does it beat the relevant alternative?
 3. Is the required 10-year growth physically plausible, especially under r=8%?
 
+The discounted 10-year payback test must always include four explicit rows:
+
+| Discount rate | Purpose |
+|---|---|
+| Relevant 10Y government bond yield ×1 | Risk-free baseline |
+| Relevant 10Y government bond yield ×2 | Opportunity-cost hard hurdle |
+| 8% | Normal equity-cost hurdle |
+| 10% | High-risk equity hurdle |
+
+Do not replace the four-row test with only `r=8%` / `r=9%`, even when `10Y×2` is close to 9%.
+
 Use a dedicated heading such as `### 三原则扣问`. These answers must appear in the final verdict section, not only in the First-Page Verdict table.
 
 Buy should require all three to pass. If not, use Hold-Index, Watchlist, or Avoid unless a clearly justified super-compounder exception applies.
