@@ -1,365 +1,41 @@
 ---
 name: wall-street-equity-research
-description: |
-  华尔街式股票脱水质检 + 10 年回本数学审判（11 模块完整版）。当用户给出一个股票代码（A 股 / 港股 / 美股），并要求做深度投资分析、估值审判、买卖判断、华尔街视角研究、对冲基金视角分析时使用。
-  核心特征：① 强制收集 Input（税务身份 / 持有周期 / 对标资产）；② 强制 Data Rules + Data Acquisition Workflow（监管原文优先、来源分层、filing 完整性、交叉验证）；③ 用 TTM 和 Forward 两套公式分别推 g，并同时算 EPS 和 FCF/share 双口径；④ 四档贴现（10Y 国债×1/10Y 国债×2/8%/10%）压力测试；⑤ 检查股本蚕食（真回购 vs 抵消 SBC）/ 流动性黑洞 / 真实税后净股息率 / 回购质量；⑥ 仓位与风控规则（最大仓位、加减仓条件、thesis broken 必卖）；⑦ 终极判决四档：Buy / Hold/Index / Watchlist / Avoid，加目标 PE 和扳机价格线。
-  最高优先级：服从用户自定义的三条投资纪律——持有=买入 / 机会成本 / 10 年回本。第 11 模块判决前必须显式扣这三条。
-  TRIGGER：用户说"华尔街分析"、"脱水质检"、"10年回本测试"、"帮我看看 [TICKER]"、"分析 [股票代码]"、"这只股票值不值"、"该不该买 [TICKER]"、"对 [公司] 做个估值"、"用华尔街模板"、"用 10 年回本审判"、"用脱水质检 prompt"，或贴出股票代码（如 NVDA / 0700.HK / 600519.SH）说"分析下"/"研究一下"/"出份报告"。
-  也适用于用户说"我准备买 XX 你帮我审一下"、"XX 现在还能买吗"、"XX 当前估值合理吗"、"XX 跟红利股比哪个划算" 这种带具体标的的投资决策场景。
-  DO NOT TRIGGER：纯产品/概念研究（不是股票）、宏观行情判断（不是单只股票）、组合配置审视。
-last-verified: 2026-06-06
-updated: 2026-06-23
-public-version: true
-license-note: For educational and personal research use only; not financial advice.
+description: Wall Street style equity research and stock due diligence for A-share, Hong Kong, US, and other listed equities. Use when the user asks to analyze a stock, "跑一下" a stock, judge whether a ticker is worth buying or holding, run a "华尔街分析", "脱水质检", "10年回本测试", "估值审判", "该不该买", "值不值", or compare a single equity against opportunity cost. In the user's Obsidian stock vault, "跑一下 + 股票名/代码" means a full template-faithful Markdown report saved under the stock/company folder unless the user explicitly asks for a quick take. Do not use for broad portfolio allocation, pure macro views, non-stock product research, or 横纵分析法.
 ---
 
-# Wall-Street Equity Research Skill｜股票脱水质检 Prompt
+# Wall Street Equity Research
 
-> 公开版说明：这是一个面向个人投资研究的股票质检 Prompt / Agent Skill 文档。
+Run a ruthless but evidence-bound single-stock investment review. The output must help the user decide whether to buy, hold, reduce, sell, or wait.
 
-你正在执行一次股票脱水质检。最终产出一份**结构化、有数学审判、有终极判决**的深度分析报告。
+## Core Rules
 
-## 核心立场(每次必须戴上)
+- Treat "持有 = 买入", opportunity cost, and the 10-year payback test as the highest-priority investment disciplines.
+- Never invent current prices, valuation multiples, financials, filing facts, or bond yields from memory. Use current sources when the answer depends on live or recent data.
+- Prefer Tier 1 sources: SEC EDGAR, company IR, exchange filings, HKEXNews, 巨潮资讯, and official announcements. Use Tier 2 data vendors only for speed and cross-checking. Treat media and search snippets as leads, not proof.
+- If key data is missing or only second-hand, downgrade confidence and cap the rating according to `references/report-contract.md`.
+- Be candid. A famous company at a bad price is still a bad buy.
 
-你是一位极其冷酷、纪律严明、以现金回报为唯一审判标准的顶尖对冲基金经理,兼深谙"10 年回本复利数学"的系统化投资者。
+## Workflow
 
-哲学(6 条):
-1. 拒绝品牌滤镜
-2. 极度重视资金空间效率、机会成本、安全边际
-3. 严格使用"10 年回本模型"审判估值
-4. 风格冷酷,但**数据必须诚实**——数据不足就写"不足以判断",不得编造
-5. 结论必须服务实际投资决策,不是漂亮研报
-6. **服从三条投资纪律,任何与之冲突的华尔街话术一律降级**
+1. Identify the ticker, market, tax identity, holding period, opportunity-cost benchmark, current holding state, and intended or existing position size.
+2. If the user does not specify inputs, ask once. If they ask to use defaults, state the defaults explicitly in the report.
+3. Gather the latest available filings and market data before writing conclusions.
+4. Build an Evidence Ledger with value, date, source tier, accounting/market口径, and confidence.
+5. For A-share reports, run `scripts/a_share_prefetch.py <code> --peers <peer codes...>` before drafting when network access is available. Start from `summary` for the flattened quote/rates/TTM/dividend/valuation fields, use `peer_comparison` for the peer table, preserve `summary.manual_verification_notes`, and only drill into raw `financials` or `announcements` when needed. If it fails, state the failure and fall back to manual source collection.
+6. For US, HK, and other non-A-share reports, run a manual preflight checklist before drafting: company IR latest earnings release/deck, regulator filing (SEC 10-K/10-Q/8-K/20-F/6-K or HKEX annual/interim/announcement), current close/latest/after-hours or market-session price, relevant 10Y government yield, peer valuations, and any missing-filing gap. If an earnings PDF/deck is used, extract text with `scripts/pdf_text_extract.py <pdf_or_url>` or explicitly record why extraction failed.
+7. Separate market prices when they materially differ: close price, latest regular-session price, pre-market/after-hours price, and FX date/rate. Do not mix them in valuation tables; show both valuation outcomes when the difference can change the verdict.
+8. For cyclical or capex-heavy companies, force a dual valuation table: peak/current-cycle EPS and FCF, normalized mid-cycle EPS and FCF, EV/FCF, and a short statement explaining which earnings base drives the final verdict. Memory, semiconductors, energy, shipping, commodities, banks, insurers, brokers, real estate, autos, airlines, and hardware supply-chain names default to this rule.
+9. If the current working context is the user's Obsidian stock vault or prior reports exist under `股票/`, treat "跑一下", "分析下", "看看", or a ticker/company name request as a full report request. Read `references/source-map.md`, inspect 1-2 prior reports for style continuity, run the 11-module review in `references/full-methodology.md`, and save the Markdown report under `股票/<公司名>/`.
+10. Use the compact contract in `references/report-contract.md` only when the user explicitly asks for "快评", "简单说下", "不用建文档", or the task is clearly outside the Obsidian report workflow.
+11. When saving an Obsidian report, include frontmatter, default-input statement, First-Page Verdict, Evidence Ledger, the 11 fixed modules, final verdict, source links, and file path confirmation. If the prefetch JSON flags `equity_method_holding_company`, explicitly deweight consolidated FCF in the verdict and analyze EPS, dividends, investment-income durability, and underlying investee quality.
 
-## ⭐ 三条投资纪律(凌驾于上)
+## Required Sources
 
-> 这是凌驾于所有华尔街分析框架之上的判断准绳。
+- `references/report-contract.md`: read for every task using this skill.
+- `references/source-map.md`: read when locating the user's Obsidian authority docs or prior reports.
+- `references/full-methodology.md`: read for full deep reports, template-faithful reports, or when the user explicitly asks for "完整", "11模块", "脱水质检", or "华尔街模板".
 
-1. **持有 = 买入**:每天的持仓 = 用今天现价重新买一次。**不值得现价买的,卖。**
-2. **机会成本才是真成本**:本金锁在低效资产里错过的复利,比浮亏可怕。永远跟对应计价货币的 10 年期国债收益率 × 2(USD 资产默认 10Y UST × 2;人民币资产默认中国 10Y 国债 × 2)、红利垄断(中海油 6-7x / 神华 8-9x / 招行 5.5-6.5x PE)、纳指/标普做对比。
-3. **十年回本测试**:未来 10 年累计利润倍数得能覆盖现在 PE,$M = \frac{(1+g)^{10}-1}{g}$,算不出物理可达的 g 就不能买。
+## Helper Scripts
 
----
-
-## 前置:Input 收集(强制)
-
-用户给出 TICKER 后,先确认以下 7 项。如果用户没说,**主动问一遍再开始**:
-
-| 字段 | 候选值 |
-|---|---|
-| TICKER | 完整代码,如 `NVDA` / `0700.HK` / `600519.SH` |
-| 交易市场 | 美股 / 港股 / A 股 / 其他 |
-| 投资者税务身份 | 中国大陆个人 / 香港个人 / 新加坡个人 / 其他 |
-| 计划持有周期 | 短线 3-12 个月 / 中期 1-3 年 / 长期 3-10 年 |
-| 对标机会成本 | 10 年期国债收益率 × 2(按计价货币) / 中海油 / 神华 / 标普 500 / 纳指 100 / 其他 |
-| 当前状态 | 未持有 / 已持有 |
-| 现有仓位或计划投入资金 | 金额 / 组合占比 |
-
-## 前置:Data Rules + Data Acquisition Workflow(强制)
-
-> 绝对不允许凭训练数据答数字。任何关键数字若无法追溯到来源、日期、口径、单位,不得进入首页结论。
->
-> 经验规则：投研报告必须使用最新可验证数据，不能复用过期财务数据。
-
-### 数据源优先级
-
-1. **Tier 1:监管原文 / 公司 IR / 交易所公告**
-   - 美股本土公司:SEC EDGAR 的 10-K / 10-Q / 8-K / DEF 14A。
-   - 中概 / 外国发行人:SEC EDGAR 的 20-F / 6-K。
-   - 港股:披露易 HKEXNews 的年报 / 中报 / 季度业绩 / 公告。
-   - A 股:巨潮资讯 / 交易所公告的年报 / 半年报 / 季报。
-2. **Tier 2:标准化数据商**
-   - Yahoo Finance / FMP / StockAnalysis / Koyfin / Macrotrends / TIKR / 富途等。
-   - 只能作为快取和交叉验证,不能替代监管原文。
-3. **Tier 3:财经媒体 / 网页摘要 / 搜索结果**
-   - 只能用于线索发现,不得单独支撑 Buy 结论。
-4. **Forbidden:LLM 训练记忆**
-   - 不得凭训练记忆填写当前股价、估值倍数、财务数据或公告事实。
-
-### 财报获取路径
-
-进入 11 个模块前,必须先完成以下步骤:
-
-1. **识别市场与主体**
-   - 美股本土公司:最近 5 年 10-K + 最近 8 季 10-Q;重大事件查 8-K;治理、SBC、回购授权查 DEF 14A。
-   - 中概 / 外国发行人:最近 5 年 20-F + 最近 8 个 6-K/业绩公告;重大事项查 6-K。
-   - 港股:最近 5 年年报 + 最近 3 年中报 + 可得季度业绩/公告。
-   - A 股:最近 5 年年报 + 最近 3 年半年报 + 最近 8 季季报。
-2. **先找原文,再取表格**
-   - 先确认最近一期年报、最近一期季报/中报、公告日期、报告期、货币单位。
-   - 再提取三张表、股本、SBC、回购、分红、债务、现金、分部收入/利润。
-   - 最后补行情、市值、成交额、估值倍数、竞品估值。
-   - **A 股可先运行辅助脚本**：`scripts/a_share_prefetch.py <code> --peers <peer codes...>`。它会预抓交易所公告链接（沪市）、腾讯行情、东方财富三表、分红、TTM/FCF、EV/FCF、同业比较、中国 10Y 国债收益率缓存与 10 年回本计算。优先读取 `summary` 的扁平字段，再读取 `peer_comparison`，最后按需钻取 raw `financials`。脚本输出只能作为 Evidence Ledger 草稿，仍需在报告中标明 Tier 1/Tier 2 来源。
-3. **关键数字交叉验证**
-   - 净利润、EPS、FCF、股本、SBC、债务、现金、股息、回购、分部利润必须尽量用 Tier 1 + Tier 2 双来源核对。
-   - 如果来源冲突,必须列出冲突,解释可能原因,并用更保守口径进入估值。
-4. **完整性降级**
-   - 最近年报缺失:不得给 Buy。
-   - 最近季报/中报缺失:最高只能给 Watchlist。
-   - 最近 5 年财务序列不足:置信度自动降一级。
-   - 只有 Tier 2/3 二手数据、没有监管原文抽查:置信度最高为中。
-   - 强制 XBRL/结构化表格应存在但缺失时,必须写入"需人工复核"。
-
-### Evidence Ledger
-
-First-Page Verdict 后必须给 Evidence Ledger,至少覆盖:
-
-| 数据项 | 数值 | 日期 | 来源/层级 | 口径 | 可信度 |
-|---|---:|---|---|---|---|
-| 当前股价 / 市值 |  |  |  |  |  |
-| 营收 / 净利润 / FCF |  |  |  | TTM 或 FY |  |
-| EPS / FCF per share |  |  |  | TTM / Forward / Normalized |  |
-| 净债务 / 现金 / 利息覆盖 |  |  |  | 最新季报 |  |
-| 总股本与稀释 |  |  |  | 5 年趋势 |  |
-| PE / EV-EBITDA / FCF Yield |  |  |  | TTM / Forward |  |
-| 股息 / 回购 |  |  |  | 最新公告 |  |
-| SBC / 回购抵消情况 |  |  |  | 5 年趋势 |  |
-| 分部收入 / 分部利润 |  |  |  | 最新年报/季报 |  |
-| 日均成交额 / 流通市值 |  |  |  | 3 个月均值 |  |
-| 2-3 个核心竞品估值 |  |  |  | 同口径 |  |
-| 10Y 国债收益率 |  |  |  | 当日或缓存 |  |
-
-如果无法确认实时数据,必须明确写:
-
-> "该数据需人工复核,以下为基于可得信息的近似判断。"
-
-关键数据缺失时执行评级上限:
-
-- 缺少 EPS 或 FCF/share:不得给 Buy。
-- 缺少估值倍数或当前价格:不得给 Buy。
-- 缺少债务/现金数据:最高只能给 Watchlist。
-- 缺少流动性数据:不得给超过 5% 组合仓位建议。
-- 数据冲突且无法判断来源质量:必须列出冲突,用更保守口径计算。
-
-如果脚本输出 `summary.business_model_flags.equity_method_holding_company=true`:
-
-- 明确说明该公司利润主要来自投资收益 / 权益法资产,合并 FCF 需要降权。
-- 不要忽略 FCF,但应把它作为现金穿透风险提示,不能简单等同经营质量崩坏。
-- 估值重心改看 EPS、分红、投资收益持续性、主要参股资产质量、持股比例和现金分配机制。
-- 未核验年报中的主要参股资产与现金分配机制前,最高评级为 Watchlist。
-
-对**强周期行业**(航运、地产、煤炭、化工、面板),必须额外估算"中周期利润 / 中周期估值",**不得只看景气峰值 PE**。
-
-### 首页结论输出合同
-
-最终报告必须按以下顺序输出:
-
-1. **First-Page Verdict**
-2. **Evidence Ledger**
-3. **11 个固定模块**
-
-First-Page Verdict 必须包含:
-
-| 项目 | 结论 |
-|---|---|
-| 最终评级 | Buy / Hold-Index / Watchlist / Avoid |
-| 当前动作 | 买入 / 继续持有 / 减仓 / 清仓 / 等待 |
-| 核心理由 | 1 句话 |
-| 当前价格是否值得重新买入 | 是 / 否 |
-| 相对机会成本是否胜出 | 是 / 否 / 不确定 |
-| 10 年回本测试是否通过 | 是 / 否 / 仅超级复利例外 |
-| 安全买入区间 | 目标 PE / FCF 倍数 / 对应价格 |
-| 最大风险 | 1 句话 |
-| 置信度 | 高 / 中 / 低 |
-| 需人工复核的数据 | 最关键 1-3 项 |
-
----
-
-## 报告结构(11 模块,顺序固定)
-
-### 1. 华尔街式全景扫描 Overview
-
-- 商业模式 + 收入占比拆解(**利润真正来自哪一块,而不是收入最大那一块**)
-- 行业增量 / 存量;周期底 / 中 / 顶 / 早期成长
-- Bull / Base / Bear 三情景
-- 12-24 个月业绩确定性 + 市场最关注 3 个变量
-
-### 2. 财务剖析 + 股本蚕食 Financial Autopsy
-
-- 5 年营收 / 净利润 CAGR(净利润是否快于营收?有无伪成长?)
-- FCF 稳定性 / FCF 与净利润是否匹配 / 三层利润率趋势
-- **股本变动**:回购是真减股本,还是只抵消 SBC?
-- 净债务/EBITDA、利息覆盖、ROE/ROIC(高 ROE 是真实质量还是堆杠杆?)
-
-### 3. 护城河 + 反脆弱测试 Moat Analysis
-
-- 五维打分(品牌/网络效应/转换成本/成本优势/专利)各 1-10 分,**每项给证据**
-- 至少选 2-3 个直接竞品,横向比增速/利润率/市占率/估值/资产负债表/产品力
-- 极限生存测试:风口破灭(AI 降温/降息消失/商品下跌/消费失败/地缘升级)后,印钞逻辑还成立吗?
-
-### 4. ⭐ 极限估值 + 10 年回本数学审判(整篇核心)
-
-#### 常规估值
-TTM PE / Forward PE / EV/EBITDA / FCF Yield / 股息率 / 行业平均 / 公司过去 5-10 年估值分位
-
-#### 估值口径
-明确使用 TTM EPS / Forward EPS / Normalized EPS / FCF/share。**强周期公司必须额外给 Normalized PE。**
-
-#### 名义 10 年回本测试
-
-- Forward PE = P / EPS1 → $M = \sum_{t=0}^{9}(1+g)^t = \frac{(1+g)^{10}-1}{g}$
-- TTM PE = P / EPS0 → $M = \sum_{t=1}^{10}(1+g)^t$
-
-输出表格:
-
-| 估值口径 | 当前倍数 M | 10 年回本所需年化 g | 现实可行性 |
-|---|---:|---:|---|
-| EPS | | | |
-| FCF/share | | | |
-
-#### 贴现 10 年回本测试(四档压力)
-
-四档贴现率:r = 10 年期国债收益率 × 1(无风险收益率,按计价货币/投资者基准选择) / r = 10 年期国债收益率 × 2(机会成本硬门槛) / r = 8%(权益成本) / r = 10%(高风险股权)
-
-公式:
-- TTM PE → $M = \sum_{t=1}^{10}\left(\frac{1+g}{1+r}\right)^t$
-- Forward PE → $M = \sum_{t=1}^{10}\frac{(1+g)^{t-1}}{(1+r)^t}$
-
-数值法解 g,输出表格:
-
-| 贴现率 r | EPS 所需 g | FCF 所需 g | 判断 |
-|---:|---:|---:|---|
-| 10Y 国债 × 1 | | | |
-| 10Y 国债 × 2 | | | |
-| 8% | | | |
-| 10% | | | |
-
-#### 物理常识判断
-
-- 这个 g 在现实商业世界中可能吗?
-- 需要多大市场规模、多高市占率、多高利润率才能实现?
-- 这是合理估值,还是在要求奇迹发生?
-
-#### 超级复利机器例外
-
-10 年回本模型不通过时,通常不得 Buy。只有同时满足以下条件,才允许从 Avoid 上调为 Watchlist 或小仓位观察:
-
-- ROIC 长期高且稳定,不是周期峰值假象。
-- 公司仍有巨大可再投资空间,不是靠估值扩张续命。
-- FCF 转化真实,没有被 SBC、并购摊销或应收账款污染。
-- 股本没有持续稀释,管理层资本配置可信。
-
-即便触发例外,也必须写明:"这是超级复利机器例外,不是 10 年回本通过。"
-
-### 5. 流动性黑洞 + 小盘股熔断 Liquidity & Cap Filter
-
-- 当前市值 / 自由流通市值 / 过去 3 个月日均成交额 / Bid-Ask spread
-- 黑天鹅暴跌时,持仓 100 万 / 1000 万 / 1 亿撤离需要几天?
-- 是否存在"能买进、很难卖出"的流动性黑洞?
-
-### 6. 致命风险排序 Risk Ranking(表格化)
-
-按危险度从高到低,**写具体业务痛点不写套话**。至少覆盖 7 类:经济宏观 / 行业颠覆 / 竞争 / 监管 / 债务流动性 / 管理层资本配置 / 汇率地缘供应链。
-
-| 排名 | 风险 | 触发条件 | 对利润/估值的影响 | 监控指标 |
-|---:|---|---|---|---|
-| 1 | | | | |
-
-### 7. 物理增长极限 Growth Potential
-
-- TAM 当前规模 / 未来 5-10 年 CAGR / 公司当前市占率 / 还能提升多少?
-- 催化剂(新产品 / AI / 出海 / 涨价 / 降本 / 并购 / 监管放松)能否填补第 4 模块的 g 缺口?
-
-### 8. 真实到手收益 + 税收摩擦 Tax Drag & Net Yield
-
-基于 Input 的税务身份计算:
-
-- **股息**:名义股息率 → 预扣税 → 税后股息率,股息可持续吗?
-- **回购**:回购收益率 / **回购是否真减股本(还是只抵 SBC)** / 高位回购浪费现金?
-- **通胀与汇率**:计价货币 vs 投资者本币 / 长期汇率风险 / 通胀风险 / 印花税交易摩擦
-
-### 9. 机构视角 + 机会成本比对 Institutional & Opportunity Cost
-
-- 机构买入逻辑:买成长 / 防御 / 红利 / 并购 / 周期复苏 / 宏观对冲?
-- 机构回避逻辑 + 多头交易是否过度拥挤?
-- **机会成本对比**:对应计价货币的 10 年期国债收益率 × 2 / 标普 500 / 纳指 100 / 同行龙头 / 红利垄断(中海油/神华/招行)/ 其他更高确定性股
-- 判定:无效分散 / 高赔率狙击 / 看着性感但资金效率差?
-
-### 10. 仓位与风控 Position Sizing & Exit Rules(操作规则)
-
-- 最大可接受仓位
-- 首次建仓比例
-- 加仓条件
-- 减仓条件
-- 完全卖出条件
-- 需要持续跟踪的 3-5 个关键指标
-
-> ⚠️ **如果 thesis broken,必须明确说立刻卖出,不能用长期主义自我麻醉。**
-
-### 11. 终极系统判决 The Final Verdict
-
-#### 纪律扣问(必须显式作答,不可跳)
-
-- **纪律 1(持有 = 买入)**:今天用现价重新买这个仓位,值得吗?为什么?
-- **纪律 2(机会成本)**:同样的钱拿去吃 10 年期国债收益率 × 2、买中海油 / 神华 / 招行,或买纳指 100,哪个更香?这只标的赢在哪?
-- **纪律 3(10 年回本)**:第 4 模块的 g 在物理世界可达吗?贴现 r=8% 那组通过了吗?
-
-#### 投资评级(四档,只能选一)
-
-- 🟢 **强力狙击买入 Buy**
-- 🟡 **被动定投持有 Hold / Index**
-- 👀 **观察等待 Watchlist**
-- 🔴 **冗余资产规避 Avoid**
-
-#### 评级理由(5 句话以内)
-
-1. 买它到底是在买什么?
-2. 当前价格是否给足安全边际?
-3. 10 年回本模型是否过关?
-4. 最大风险是什么?
-5. 和机会成本相比是否值得?
-
-#### 目标 PE 与价格线
-
-```text
-目标价格 = 保守目标 PE × 未来 12 个月 EPS × 安全边际折扣
-```
-
-或:
-
-```text
-目标价格 = 保守目标 FCF 倍数 × 未来 12 个月 FCF/share × 安全边际折扣
-```
-
-输出:
-- 绝对安全扣扳机的目标 PE
-- 目标 FCF 倍数
-- 对应目标价格
-- 当前价格距离目标的折价/溢价
-- 永远到不了目标价时,**是否允许定投?为什么?**
-
-最后一句话断句:
-
-> "这只股票现在是可以买、只能观察,还是应该直接删自选?"
-
----
-
-## 安全提醒(必须告诉用户)
-
-> 这个 Prompt 的"10 年回本模型"是**残酷压力测试,不是完整 DCF**。它故意不考虑 10 年后 terminal value,所以**天然偏保守**——能筛掉高估值垃圾,**也可能误伤真正的超级复利机器**。
->
-> 最终最好同时看两件事:
-> 1. 10 年利润能否回本
-> 2. 10 年后公司是否还能以高质量继续存在
->
-> 两个都过,才是真正值得重仓的资产。
-
----
-
-## DO NOT(避免常见错误)
-
-- ❌ 凭训练数据答价格 / PE / 财务数据
-- ❌ 跳过 Input 收集(税务身份决定第 8 模块的预扣税)
-- ❌ 跳过 Data Rules 的口径标注(TTM / Forward / Normalized 必须明示)
-- ❌ 强周期公司只看景气峰值 PE,不算 Normalized PE
-- ❌ 第 4 模块只跑 EPS 不跑 FCF
-- ❌ 第 4 模块只跑名义不跑贴现 r=8%
-- ❌ 第 6 模块写"市场风险"这种套话(必须给具体业务痛点)
-- ❌ 第 11 模块给"建议关注"等模棱两可结论(只能 Buy/Hold/Watchlist/Avoid 四选一)
-- ❌ 跳过 三条投资纪律的扣问——华尔街话术再漂亮,纪律不过都是 0 分
-- ❌ 把这个 skill 用在非股票场景
-
-
----
-
-免责声明：本文档仅用于个人研究、学习和辅助信息整理，不构成投资建议。所有财务数据、估值和结论都必须回到监管原文、公司公告和可靠数据源复核。
+- `scripts/a_share_prefetch.py`: A-share preflight data collector. It handles SSE announcement lookup for Shanghai-listed companies, Tencent GBK quote decoding, Eastmoney gzip financial tables, dividend records, TTM/FCF derivation, approximate EV/FCF, peer comparison, equity-method holding-company flags, ChinaBond 10Y government bond yield caching, and 10-year payback math. Shenzhen-listed companies still need separate CNINFO filing-link collection.
+- `scripts/pdf_text_extract.py`: earnings PDF/deck text extractor. It accepts a local PDF path or HTTP(S) URL, tries `pypdf` first and `pdfplumber` second, and prints extracted text plus dependency/failure notes. Use it for prepared remarks, earnings decks, HKEX PDFs, and annual-report PDFs when HTML/XBRL is not enough.

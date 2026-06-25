@@ -9,6 +9,8 @@
 - Evidence Ledger：关键数字必须标注日期、来源、口径、可信度
 - 10 年回本测试：名义与贴现双口径，EPS 与 FCF/share 双口径
 - A 股预抓取脚本：公告链接、行情、三表、分红、FCF、EV/FCF、同业比较、权益法平台识别、中国 10Y 缓存
+- 非 A 股 preflight：公司 IR、SEC/HKEX filing、PDF deck、收盘/盘后价格、10Y 收益率和同业估值
+- 周期/高 Capex 双估值：峰值利润、新周期中枢、旧周期平准、EV/FCF
 - 三条投资纪律：持有=买入、机会成本、10 年回本
 - 最终四档判决：Buy / Hold-Index / Watchlist / Avoid
 
@@ -17,7 +19,11 @@
 ## 文件
 
 - [`SKILL.md`](SKILL.md)：完整 Prompt / Agent Skill 文档
+- [`references/report-contract.md`](references/report-contract.md)：报告输出契约
+- [`references/full-methodology.md`](references/full-methodology.md)：11 模块完整方法论
+- [`references/source-map.md`](references/source-map.md)：Obsidian 路径和历史报告定位
 - [`scripts/a_share_prefetch.py`](scripts/a_share_prefetch.py)：A 股预抓取脚本
+- [`scripts/pdf_text_extract.py`](scripts/pdf_text_extract.py)：财报 PDF / earnings deck 文本抽取
 - [`examples/input-template.md`](examples/input-template.md)：使用时的输入模板
 - [`LICENSE`](LICENSE)：MIT License
 
@@ -82,6 +88,39 @@ python3 scripts/a_share_prefetch.py 600900 --china-10y-cache-days 7
 - JSON 不能直接当报告粘贴。应先读 `summary`，再读 `peer_comparison`，最后按需钻取 raw `financials`，并转换成 Evidence Ledger、标注 Tier 1 / Tier 2。
 - 如果 `summary.business_model_flags.equity_method_holding_company=true`，合并 FCF 必须降权，重点改看 EPS、分红、投资收益持续性、主要参股资产质量和现金分配机制。
 
+## 非 A 股 preflight
+
+美股、港股和其他非 A 股报告，在写结论前先完成：
+
+- 公司 IR 最新 earnings release；
+- earnings deck / prepared remarks PDF；
+- SEC 10-K / 10-Q / 8-K / 20-F / 6-K，或 HKEX 年报 / 中报 / 公告；
+- filing gap，例如 earnings release 新于正式 10-Q；
+- 收盘价、最新 regular-session 价格、盘前/盘后价格分开；
+- 对应计价货币 10Y 国债收益率；
+- 同业估值和关键口径冲突。
+
+PDF 抽取：
+
+```bash
+python3 scripts/pdf_text_extract.py <pdf_or_url>
+```
+
+如果 PDF 抽取失败，报告必须写明失败原因；不能用新闻摘要冒充管理层原文。
+
+## 周期股和高 Capex 闸门
+
+以下行业默认必须拆峰值利润和中周期利润：存储、半导体硬件链、能源、煤炭、化工、航运、面板、银行、保险、券商、地产、汽车、航空。
+
+报告必须同时看：
+
+- 峰值 / 当前周期 EPS 与 FCF；
+- 新周期中枢 EPS 与 FCF；
+- 旧周期平准 EPS 与 FCF；
+- EV/FCF。
+
+只靠峰值利润支撑的 Buy，默认降为 Watchlist 或 Avoid-Chase。
+
 ## 核心原则
 
 ### 数据优先级
@@ -117,16 +156,15 @@ python3 scripts/a_share_prefetch.py 600900 --china-10y-cache-days 7
 
 ## 版本
 
-当前公开版基于 `optimized-v4`。
+当前公开版基于 `optimized-v7-preflight-cycle-pdf`。
 
 主要特性：
 
-- 新增 Data Source Priority
-- 新增 Data Acquisition Workflow
-- 新增 Filing Completeness Check
-- 新增关键数字交叉验证
-- 强制 Evidence Ledger
-- 用 10 年期国债收益率 × 2 替代固定现金收益假设
-- 新增 A 股预抓取脚本
-- A 股脚本新增 `summary`、`peer_comparison`、权益法平台识别和人工复核提示
-- 贴现回本测试升级为四档：10Y×1 / 10Y×2 / 8% / 10%
+- Data Source Priority / Data Acquisition Workflow / Filing Completeness Check
+- 关键数字交叉验证和 Evidence Ledger
+- 10 年期国债收益率 × 2 机会成本
+- A 股预抓取脚本：`summary`、`peer_comparison`、权益法平台识别、中国 10Y 缓存
+- 非 A 股 preflight：IR + filing + PDF + 收盘/盘后价格分离
+- PDF 文本抽取脚本
+- 周期/高 Capex 双估值闸门
+- 四档贴现回本测试：10Y×1 / 10Y×2 / 8% / 10%

@@ -1,0 +1,3 @@
+display_name: Wall Street Equity Research
+short_description: Run evidence-bound stock research with 10-year payback discipline.
+default_prompt: Analyze this stock with the Wall Street equity research framework and give me a buy, hold, watchlist, or avoid verdict.
