@@ -10,6 +10,7 @@ Run a ruthless but evidence-bound single-stock investment review. The output mus
 ## Core Rules
 
 - Treat "持有 = 买入", opportunity cost, and the 10-year payback test as the highest-priority investment disciplines.
+- Full reports must include a dedicated final "三原则扣问" section before the rating: 持有=买入, 沉没成本不是成本/机会成本才是真成本, and 10 年回本. Do not treat First-Page Verdict rows as a substitute.
 - Never invent current prices, valuation multiples, financials, filing facts, or bond yields from memory. Use current sources when the answer depends on live or recent data.
 - Prefer Tier 1 sources: SEC EDGAR, company IR, exchange filings, HKEXNews, 巨潮资讯, and official announcements. Use Tier 2 data vendors only for speed and cross-checking. Treat media and search snippets as leads, not proof.
 - If key data is missing or only second-hand, downgrade confidence and cap the rating according to `references/report-contract.md`.

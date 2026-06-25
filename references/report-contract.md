@@ -127,7 +127,9 @@ Default to this stricter treatment for memory, semiconductors, energy, shipping,
 Before the final verdict, explicitly answer:
 
 1. If holding equals buying today, would you buy at the current price?
-2. Does it beat the relevant opportunity cost?
+2. Since sunk cost is not cost and opportunity cost is the real cost, does it beat the relevant alternative?
 3. Is the required 10-year growth physically plausible, especially under r=8%?
+
+Use a dedicated heading such as `### 三原则扣问`. These answers must appear in the final verdict section, not only in the First-Page Verdict table.
 
 Buy should require all three to pass. If not, use Hold-Index, Watchlist, or Avoid unless a clearly justified super-compounder exception applies.
