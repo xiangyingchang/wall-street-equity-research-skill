@@ -27,16 +27,21 @@ Run a ruthless but evidence-bound single-stock investment review. The output mus
 7. Separate market prices when they materially differ: close price, latest regular-session price, pre-market/after-hours price, and FX date/rate. Do not mix them in valuation tables; show both valuation outcomes when the difference can change the verdict.
 8. Every full valuation section must include the four-row discounted 10-year payback test: relevant 10Y government yield ×1, relevant 10Y government yield ×2, 8%, and 10%. Do not substitute only `r=8%` / `r=9%`.
 9. For cyclical or capex-heavy companies, force a dual valuation table: peak/current-cycle EPS and FCF, normalized mid-cycle EPS and FCF, EV/FCF, and a short statement explaining which earnings base drives the final verdict. Memory, semiconductors, energy, shipping, commodities, banks, insurers, brokers, real estate, autos, airlines, and hardware supply-chain names default to this rule.
-10. If the current working context is the user's Obsidian stock vault or prior reports exist under `股票/`, treat "跑一下", "分析下", "看看", or a ticker/company name request as a full report request. Read `references/source-map.md`, inspect 1-2 prior reports for style continuity, run the 11-module review in `references/full-methodology.md`, and save the Markdown report under `股票/<公司名>/`.
-11. Before telling the user a full Obsidian report is complete, run `python3 scripts/report_lint.py <report.md>` from this skill. If lint fails, fix the report and rerun it until it passes. Report completion without a passing lint is a process failure.
-12. Use the compact contract in `references/report-contract.md` only when the user explicitly asks for "快评", "简单说下", "不用建文档", or the task is clearly outside the Obsidian report workflow.
-13. When saving an Obsidian report, include frontmatter, default-input statement, First-Page Verdict, Evidence Ledger, the 11 fixed modules, final verdict, source links, and file path confirmation. If the prefetch JSON flags `equity_method_holding_company`, explicitly deweight consolidated FCF in the verdict and analyze EPS, dividends, investment-income durability, and underlying investee quality.
+10. If prior reports exist for the same ticker/company, output a "与上次报告差异" section before the Evidence Ledger. Compare prior price, valuation, rating, buy/hold line, core assumptions, and the new facts that changed the conclusion.
+11. Keep rating action language hard. `Hold-Index` is not Buy-lite: for an unheld position, describe only holding, waiting, or a capped observation-sized position such as 1%-2%. Do not use "可以买", "可买区", "主动买入", or "建仓" unless the rating is Buy or the phrase is explicitly limited as an observation position and not a Buy recommendation.
+12. If current price, 10Y yield, or peer valuation relies on unconfirmed Tier 2 market data, cap overall confidence at Medium/中 unless it is cross-verified by at least two independent current sources. Strong SEC filing evidence does not upgrade weak live market data.
+13. If company IR, PDF, or website extraction fails because of 403, scraping blocks, or dependency errors, use regulator archives such as SEC 8-K exhibits, 10-Q, and 10-K as the primary fallback. Record the failure and do not treat search snippets or website summaries as management commentary.
+14. If the current working context is the user's Obsidian stock vault or prior reports exist under `股票/`, treat "跑一下", "分析下", "看看", or a ticker/company name request as a full report request. Read `references/source-map.md`, inspect 1-2 prior reports for style continuity, run the 11-module review in `references/full-methodology.md`, and save the Markdown report under `股票/<公司名>/`.
+15. Before telling the user a full Obsidian report is complete, run `python3 scripts/report_lint.py <report.md>` from this skill. If lint fails, fix the report and rerun it until it passes. Report completion without a passing lint is a process failure.
+16. Use the compact contract in `references/report-contract.md` only when the user explicitly asks for "快评", "简单说下", "不用建文档", or the task is clearly outside the Obsidian report workflow.
+17. When saving an Obsidian report, include frontmatter, default-input statement, First-Page Verdict, Evidence Ledger, the 11 fixed modules, final verdict, source links, and file path confirmation. If the prefetch JSON flags `equity_method_holding_company`, explicitly deweight consolidated FCF in the verdict and analyze EPS, dividends, investment-income durability, and underlying investee quality.
 
 ## Required Sources
 
 - `references/report-contract.md`: read for every task using this skill.
 - `references/source-map.md`: read when locating the user's Obsidian authority docs or prior reports.
 - `references/full-methodology.md`: read for full deep reports, template-faithful reports, or when the user explicitly asks for "完整", "11模块", "脱水质检", or "华尔街模板".
+- `references/change-log.md`: update whenever this skill is changed. Record the date, files changed, reason, and verification.
 
 ## Helper Scripts
 

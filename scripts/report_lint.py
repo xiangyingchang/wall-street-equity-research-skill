@@ -57,9 +57,61 @@ def has_discount_row(text: str, row: str) -> bool:
     raise ValueError(row)
 
 
+def frontmatter_verdict(text: str) -> str | None:
+    match = re.search(r"\A---\s*\n(.*?)\n---\s*\n", text, re.S)
+    if not match:
+        return None
+    verdict = re.search(r"^verdict:\s*(.+?)\s*$", match.group(1), re.I | re.M)
+    if not verdict:
+        return None
+    return verdict.group(1).strip().strip("\"'")
+
+
+def has_prior_report(text: str) -> bool:
+    return bool(
+        re.search(r"^previous_report:\s*\S+", text, re.I | re.M)
+        or re.search(r"旧报告|上次报告|prior report|previous report", text, re.I)
+    )
+
+
+def has_prior_report_delta(text: str) -> bool:
+    return bool(re.search(r"与.*(旧报告|上次报告).*差异|prior report.*delta|changes vs", text, re.I))
+
+
+def buy_like_language_errors(text: str, verdict: str | None) -> list[str]:
+    if not verdict or re.search(r"\bBuy\b", verdict, re.I):
+        return []
+
+    errors: list[str] = []
+    risky_patterns = [
+        ("可买区", re.compile(r"可买区")),
+        ("可以买", re.compile(r"可以买")),
+        ("主动买入", re.compile(r"主动\s*买入|主动\s*Buy", re.I)),
+        ("建仓", re.compile(r"建仓")),
+    ]
+    guard = re.compile(
+        r"观察仓|观察性|试探区|小仓观察|不构成\s*(主动\s*)?Buy|不是\s*(主动\s*)?Buy|not\s+a\s+Buy|observation",
+        re.I,
+    )
+
+    for label, pattern in risky_patterns:
+        for match in pattern.finditer(text):
+            start = max(0, match.start() - 120)
+            end = min(len(text), match.end() + 120)
+            context = text[start:end]
+            if guard.search(context):
+                continue
+            line = text.count("\n", 0, match.start()) + 1
+            errors.append(
+                f"non-Buy verdict uses buy-like language '{label}' without observation-only qualifier near line {line}"
+            )
+    return errors
+
+
 def lint(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     errors: list[str] = []
+    verdict = frontmatter_verdict(text)
 
     for label, pattern in REQUIRED_PATTERNS:
         if not pattern.search(text):
@@ -84,18 +136,30 @@ def lint(path: Path) -> list[str]:
     if re.search(r"###\s*三原则扣问", text) is None:
         errors.append("missing dedicated '### 三原则扣问' heading")
 
+    if has_prior_report(text) and not has_prior_report_delta(text):
+        errors.append("missing prior-report delta section")
+
+    errors.extend(buy_like_language_errors(text, verdict))
+
     return errors
 
 
 def self_test() -> int:
     good_report = """---
 title: Test
+verdict: Watchlist
+previous_report: old.md
 ---
 
 > 默认输入：长期 3-10 年；机会成本=美国 10Y 国债 ×2。
 
 ## First-Page Verdict
 现价 / 当前价格：$10。最新财报：earnings release。
+
+## 与上次报告差异
+| 项目 | 旧 | 新 |
+|---|---:|---:|
+| 评级 | Watchlist | Watchlist |
 
 ## Evidence Ledger
 | 指标 | 值 |
@@ -134,15 +198,34 @@ title: Test
 - Company IR
 """
     bad_report = good_report.replace("| 10Y 国债 ×1 | 1% | 通过 |\n", "")
+    non_buy_buy_language = good_report.replace(
+        "## Evidence Ledger",
+        "## Evidence Ledger\n\n| 价格区间 | 动作 |\n|---|---|\n| $10-12 | 可买区 |\n",
+    )
+    missing_delta = good_report.replace(
+        """## 与上次报告差异
+| 项目 | 旧 | 新 |
+|---|---:|---:|
+| 评级 | Watchlist | Watchlist |
+
+""",
+        "",
+    )
 
     with tempfile.TemporaryDirectory() as tmp:
         good_path = Path(tmp) / "good.md"
         bad_path = Path(tmp) / "bad.md"
+        non_buy_path = Path(tmp) / "non-buy.md"
+        missing_delta_path = Path(tmp) / "missing-delta.md"
         good_path.write_text(good_report, encoding="utf-8")
         bad_path.write_text(bad_report, encoding="utf-8")
+        non_buy_path.write_text(non_buy_buy_language, encoding="utf-8")
+        missing_delta_path.write_text(missing_delta, encoding="utf-8")
 
         good_errors = lint(good_path)
         bad_errors = lint(bad_path)
+        non_buy_errors = lint(non_buy_path)
+        missing_delta_errors = lint(missing_delta_path)
 
     if good_errors:
         print("SELF-TEST FAIL: valid sample did not pass")
@@ -153,6 +236,18 @@ title: Test
     if not any("10Y x1 discount row" in error for error in bad_errors):
         print("SELF-TEST FAIL: invalid sample did not fail on missing 10Y x1 row")
         for error in bad_errors:
+            print(f"- {error}")
+        return 1
+
+    if not any("buy-like language" in error for error in non_buy_errors):
+        print("SELF-TEST FAIL: non-Buy sample did not fail on buy-like language")
+        for error in non_buy_errors:
+            print(f"- {error}")
+        return 1
+
+    if not any("prior-report delta" in error for error in missing_delta_errors):
+        print("SELF-TEST FAIL: prior-report sample did not fail on missing delta section")
+        for error in missing_delta_errors:
             print(f"- {error}")
         return 1
 
