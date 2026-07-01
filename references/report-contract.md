@@ -24,7 +24,7 @@ In the user's Obsidian stock vault, these phrases imply a full report saved as M
 
 Only use a chat-only quick take when the user explicitly asks for "快评", "简单说下", "不用建文档", "先别写文件", or equivalent.
 
-The saved report must not include visible YAML frontmatter. It must include a default-input statement, First-Page Verdict, Evidence Ledger, Key Forces, Variant View, Pre-Mortem, Action Triggers, 11 fixed modules, final verdict, and source links.
+The saved report must not include visible YAML frontmatter. It must include a default-input statement, First-Page Verdict, Evidence Ledger, Key Forces, Variant View, Pre-Mortem, Action Triggers, 10 fixed modules, final verdict, and source links.
 
 Metadata such as ticker, company, market, date, verdict, and action belongs in the filename, title, Evidence Ledger, or internal workflow notes. Do not expose YAML frontmatter in the final report body.
 
@@ -36,7 +36,7 @@ Start full reports in this order:
 
 1. First-Page Verdict
 2. Evidence Ledger
-3. 11 fixed modules
+3. 10 fixed modules
 
 The verdict table must include:
 
@@ -74,7 +74,7 @@ Include, when relevant:
 - PE, forward PE, EV/EBITDA, FCF yield, PB, dividend yield
 - Dividend DPS, total dividends, buybacks, SBC, share count trend
 - Segment revenue/profit, key operating metrics
-- Liquidity and average trading value
+- Liquidity and average trading value only when liquidity is a real constraint; for large liquid names, do not create a standalone liquidity module.
 - 2-3 direct competitor valuation references
 - Relevant 10Y government bond yield and opportunity-cost benchmark
 

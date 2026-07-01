@@ -65,27 +65,23 @@ TODO
 | 8% | TODO | TODO | TODO |
 | 10% | TODO | TODO | TODO |
 
-## 5. 流动性黑洞 Liquidity & Cap Filter
+## 5. 致命风险排序 Risk Ranking
 
 TODO
 
-## 6. 致命风险排序 Risk Ranking
+## 6. 物理增长极限 Growth Potential
 
 TODO
 
-## 7. 物理增长极限 Growth Potential
+## 7. 真实到手收益 + 税收摩擦 Tax Drag & Net Yield
 
 TODO
 
-## 8. 真实到手收益 + 税收摩擦 Tax Drag & Net Yield
+## 8. 机构视角 + 机会成本比对 Institutional & Opportunity Cost
 
 TODO
 
-## 9. 机构视角 + 机会成本比对 Institutional & Opportunity Cost
-
-TODO
-
-## 10. 仓位与风控 Position Sizing & Exit Rules
+## 9. 仓位与风控 Position Sizing & Exit Rules
 
 TODO
 
@@ -97,7 +93,7 @@ TODO
 
 TODO
 
-## 11. 最终判决 Final Verdict
+## 10. 最终判决 Final Verdict
 
 ### Variant View
 

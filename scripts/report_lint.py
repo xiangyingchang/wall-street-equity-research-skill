@@ -38,7 +38,6 @@ EXPECTED_TOP_SECTIONS = [
     "8.",
     "9.",
     "10.",
-    "11.",
 ]
 
 
@@ -118,7 +117,7 @@ def lint_text(text: str) -> list[str]:
     contract_tokens = [token for token in tokens if token != "Sources"]
     if contract_tokens[: len(EXPECTED_TOP_SECTIONS)] != EXPECTED_TOP_SECTIONS:
         errors.append(
-            "top-level section order must be First-Page Verdict -> Evidence Ledger -> ## 1. through ## 11."
+            "top-level section order must be First-Page Verdict -> Evidence Ledger -> ## 1. through ## 10."
         )
     extra_before_sources = [
         token
@@ -133,8 +132,8 @@ def lint_text(text: str) -> list[str]:
 
     module1 = section_body(text, r"1\.")
     module4 = section_body(text, r"4\.")
+    module9 = section_body(text, r"9\.")
     module10 = section_body(text, r"10\.")
-    module11 = section_body(text, r"11\.")
 
     if not re.search(r"^###\s+Key Forces\b", module1, re.M):
         errors.append("module 1 must include '### Key Forces'")
@@ -151,12 +150,12 @@ def lint_text(text: str) -> list[str]:
         if not re.search(pattern, module4, re.I):
             errors.append(f"missing {label}")
 
-    if not re.search(r"^###\s+Pre-Mortem\b|^###\s+预演失败\b", module10, re.M):
-        errors.append("module 10 must include '### Pre-Mortem'")
-    if not re.search(r"^###\s+Action Triggers\b|^###\s+动作触发", module10, re.M):
-        errors.append("module 10 must include '### Action Triggers'")
-    if not re.search(r"###\s*三原则扣问", module11):
-        errors.append("module 11 must include dedicated '### 三原则扣问'")
+    if not re.search(r"^###\s+Pre-Mortem\b|^###\s+预演失败\b", module9, re.M):
+        errors.append("module 9 must include '### Pre-Mortem'")
+    if not re.search(r"^###\s+Action Triggers\b|^###\s+动作触发", module9, re.M):
+        errors.append("module 9 must include '### Action Triggers'")
+    if not re.search(r"###\s*三原则扣问", module10):
+        errors.append("module 10 must include dedicated '### 三原则扣问'")
 
     missing_discount = [
         label
@@ -176,12 +175,12 @@ def lint_text(text: str) -> list[str]:
         errors.append("CapEx growth is mentioned but no nearby reason/explanation is provided")
 
     if re.search(r"最终评级\s*\|[^|\n]*Buy|verdict:\s*Buy", text, re.I):
-        if not re.search(r"持有\s*[=＝]\s*买入[\s\S]{0,300}(是|愿意|通过)", module11):
-            errors.append("Buy rating requires a positive hold-equals-buy answer in module 11")
-        if not re.search(r"机会成本[\s\S]{0,300}(胜出|明显|通过|高于)", module11):
-            errors.append("Buy rating requires opportunity-cost pass in module 11")
-        if not re.search(r"10\s*年回本[\s\S]{0,300}(通过|可解释)", module11):
-            errors.append("Buy rating requires 10-year payback pass in module 11")
+        if not re.search(r"持有\s*[=＝]\s*买入[\s\S]{0,300}(是|愿意|通过)", module10):
+            errors.append("Buy rating requires a positive hold-equals-buy answer in module 10")
+        if not re.search(r"机会成本[\s\S]{0,300}(胜出|明显|通过|高于)", module10):
+            errors.append("Buy rating requires opportunity-cost pass in module 10")
+        if not re.search(r"10\s*年回本[\s\S]{0,300}(通过|可解释)", module10):
+            errors.append("Buy rating requires 10-year payback pass in module 10")
 
     return errors
 
@@ -247,12 +246,11 @@ EV/FCF 与中周期估值。
 | 8% | 8% | 观察 |
 | 10% | 10% | 偏难 |
 
-## 5. 流动性黑洞
-## 6. 致命风险排序 Risk Ranking
-## 7. 物理增长极限 Growth Potential
-## 8. 真实到手收益 + 税收摩擦
-## 9. 机构视角 + 机会成本
-## 10. 仓位与风控
+## 5. 致命风险排序 Risk Ranking
+## 6. 物理增长极限 Growth Potential
+## 7. 真实到手收益 + 税收摩擦
+## 8. 机构视角 + 机会成本
+## 9. 仓位与风控
 
 ### Pre-Mortem
 失败路径：增长低于预期。
@@ -260,7 +258,7 @@ EV/FCF 与中周期估值。
 ### Action Triggers
 买入 / 加仓 / 持有 / 减仓 / 卖出条件。
 
-## 11. 最终判决 Final Verdict
+## 10. 最终判决 Final Verdict
 
 ### Variant View
 市场共识：普通好公司。我们的判断：价格不够好。

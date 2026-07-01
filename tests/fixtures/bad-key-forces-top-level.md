@@ -26,12 +26,11 @@ action: Wait
 ## 2. 财务剖析 Financial Autopsy
 ## 3. 护城河 Moat Analysis
 ## 4. 极限估值 + 10 年回本数学审判
-## 5. 流动性黑洞
-## 6. 致命风险排序 Risk Ranking
-## 7. 物理增长极限 Growth Potential
-## 8. 真实到手收益 + 税收摩擦
-## 9. 机构视角 + 机会成本
-## 10. 仓位与风控
-## 11. 最终判决 Final Verdict
+## 5. 致命风险排序 Risk Ranking
+## 6. 物理增长极限 Growth Potential
+## 7. 真实到手收益 + 税收摩擦
+## 8. 机构视角 + 机会成本
+## 9. 仓位与风控
+## 10. 最终判决 Final Verdict
 ## Sources
 - Company IR
