@@ -11,6 +11,8 @@ Run a ruthless but evidence-bound single-stock investment review. The output mus
 
 - Treat "持有 = 买入", opportunity cost, and the 10-year payback test as the highest-priority investment disciplines.
 - Full reports must include a dedicated final "三原则扣问" section before the rating: 持有=买入, 沉没成本不是成本/机会成本才是真成本, and 10 年回本. Do not treat First-Page Verdict rows as a substitute.
+- Full reports must identify 1-3 `Key Forces` before module analysis, state a `Variant View` against market consensus, include a `Pre-Mortem` failure path, and finish with quantified `Action Triggers`.
+- For latest-earnings updates, explicitly state `本次财报改变了什么` and `本次财报没有改变什么`. Do not let a fresh report become a generic company profile.
 - Never invent current prices, valuation multiples, financials, filing facts, or bond yields from memory. Use current sources when the answer depends on live or recent data.
 - Prefer Tier 1 sources: SEC EDGAR, company IR, exchange filings, HKEXNews, 巨潮资讯, and official announcements. Use Tier 2 data vendors only for speed and cross-checking. Treat media and search snippets as leads, not proof.
 - If key data is missing or only second-hand, downgrade confidence and cap the rating according to `references/report-contract.md`.
@@ -27,24 +29,28 @@ Run a ruthless but evidence-bound single-stock investment review. The output mus
 7. Separate market prices when they materially differ: close price, latest regular-session price, pre-market/after-hours price, and FX date/rate. Do not mix them in valuation tables; show both valuation outcomes when the difference can change the verdict.
 8. Every full valuation section must include the four-row discounted 10-year payback test: relevant 10Y government yield ×1, relevant 10Y government yield ×2, 8%, and 10%. Do not substitute only `r=8%` / `r=9%`.
 9. For cyclical or capex-heavy companies, force a dual valuation table: peak/current-cycle EPS and FCF, normalized mid-cycle EPS and FCF, EV/FCF, and a short statement explaining which earnings base drives the final verdict. Memory, semiconductors, energy, shipping, commodities, banks, insurers, brokers, real estate, autos, airlines, and hardware supply-chain names default to this rule.
-10. If prior reports exist for the same ticker/company, output a "与上次报告差异" section before the Evidence Ledger. Compare prior price, valuation, rating, buy/hold line, core assumptions, and the new facts that changed the conclusion.
-11. Keep rating action language hard. `Hold-Index` is not Buy-lite: for an unheld position, describe only holding, waiting, or a capped observation-sized position such as 1%-2%. Do not use "可以买", "可买区", "主动买入", or "建仓" unless the rating is Buy or the phrase is explicitly limited as an observation position and not a Buy recommendation.
-12. If current price, 10Y yield, or peer valuation relies on unconfirmed Tier 2 market data, cap overall confidence at Medium/中 unless it is cross-verified by at least two independent current sources. Strong SEC filing evidence does not upgrade weak live market data.
-13. If company IR, PDF, or website extraction fails because of 403, scraping blocks, or dependency errors, use regulator archives such as SEC 8-K exhibits, 10-Q, and 10-K as the primary fallback. Record the failure and do not treat search snippets or website summaries as management commentary.
-14. If the current working context is the user's Obsidian stock vault or prior reports exist under `股票/`, treat "跑一下", "分析下", "看看", or a ticker/company name request as a full report request. Read `references/source-map.md`, inspect 1-2 prior reports for style continuity, run the 11-module review in `references/full-methodology.md`, and save the Markdown report under `股票/<公司名>/`.
-15. Before telling the user a full Obsidian report is complete, run `python3 scripts/report_lint.py <report.md>` from this skill. If lint fails, fix the report and rerun it until it passes. Report completion without a passing lint is a process failure.
-16. Use the compact contract in `references/report-contract.md` only when the user explicitly asks for "快评", "简单说下", "不用建文档", or the task is clearly outside the Obsidian report workflow.
-17. When saving an Obsidian report, include frontmatter, default-input statement, First-Page Verdict, Evidence Ledger, the 11 fixed modules, final verdict, source links, and file path confirmation. If the prefetch JSON flags `equity_method_holding_company`, explicitly deweight consolidated FCF in the verdict and analyze EPS, dividends, investment-income durability, and underlying investee quality.
+10. If the current working context is the user's Obsidian stock vault or prior reports exist under `股票/`, treat "跑一下", "分析下", "看看", or a ticker/company name request as a full report request. Read `references/source-map.md`, inspect 1-2 prior reports for style continuity, run the 11-module review in `references/full-methodology.md`, and save the Markdown report under `股票/<公司名>/`.
+11. For new full Obsidian reports, start from `templates/full-report.md` or run `python3 scripts/new_report.py --ticker <ticker> --company <company> --market <market> --out <path>`. Do not hand-roll the report skeleton.
+12. Before telling the user a full Obsidian report is complete, run `python3 scripts/report_lint.py <report.md>` from this skill. If lint fails, fix the report and rerun it until it passes. Report completion without a passing lint is a process failure.
+13. After changing this skill's report contract, template, or lint rules, run both `python3 scripts/report_lint.py --self-test` and `python3 scripts/report_lint.py --fixtures tests/fixtures`. Treat either failure as a blocker.
+14. Use the compact contract in `references/report-contract.md` only when the user explicitly asks for "快评", "简单说下", "不用建文档", or the task is clearly outside the Obsidian report workflow.
+15. When saving an Obsidian report, do not include visible YAML frontmatter. Include default-input statement, First-Page Verdict, Evidence Ledger, Key Forces inside module 1, Variant View, Pre-Mortem, Action Triggers, the 11 fixed modules, final verdict, source links, and file path confirmation. If the prefetch JSON flags `equity_method_holding_company`, explicitly deweight consolidated FCF in the verdict and analyze EPS, dividends, investment-income durability, and underlying investee quality.
 
 ## Required Sources
 
 - `references/report-contract.md`: read for every task using this skill.
 - `references/source-map.md`: read when locating the user's Obsidian authority docs or prior reports.
 - `references/full-methodology.md`: read for full deep reports, template-faithful reports, or when the user explicitly asks for "完整", "11模块", "脱水质检", or "华尔街模板".
-- `references/change-log.md`: update whenever this skill is changed. Record the date, files changed, reason, and verification.
 
 ## Helper Scripts
 
 - `scripts/a_share_prefetch.py`: A-share preflight data collector. It handles SSE announcement lookup for Shanghai-listed companies, Tencent GBK quote decoding, Eastmoney gzip financial tables, dividend records, TTM/FCF derivation, approximate EV/FCF, peer comparison, equity-method holding-company flags, ChinaBond 10Y government bond yield caching, and 10-year payback math. Shenzhen-listed companies still need separate CNINFO filing-link collection.
 - `scripts/pdf_text_extract.py`: earnings PDF/deck text extractor. It accepts a local PDF path or HTTP(S) URL, tries `pypdf` first and `pdfplumber` second, and prints extracted text plus dependency/failure notes. Use it for prepared remarks, earnings decks, HKEX PDFs, and annual-report PDFs when HTML/XBRL is not enough.
-- `scripts/report_lint.py`: Markdown report contract checker. Run it before final delivery for every full Obsidian report; it checks frontmatter, First-Page Verdict, Evidence Ledger, 11 numbered modules, final verdict, source links, 三原则扣问, current data markers, 10Y yield, and the four discount rows.
+- `scripts/new_report.py`: canonical report skeleton generator backed by `templates/full-report.md`. Use it for new full Obsidian reports to avoid structure drift.
+- `scripts/report_lint.py`: Markdown report contract checker. Run it before final delivery for every full Obsidian report; it rejects visible YAML frontmatter and checks strict top-level section order, Key Forces placement, module-specific required subsections, source links, 三原则扣问, current data markers, 10Y yield, and the four discount rows.
+
+## Regression Fixtures
+
+- `tests/fixtures/good-full-report.md`: canonical passing structure.
+- `tests/fixtures/bad-key-forces-top-level.md`: ensures Key Forces cannot become a top-level module.
+- `tests/fixtures/bad-frontmatter-visible.md`: ensures report bodies do not expose YAML frontmatter.

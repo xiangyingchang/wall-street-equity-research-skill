@@ -24,25 +24,19 @@ In the user's Obsidian stock vault, these phrases imply a full report saved as M
 
 Only use a chat-only quick take when the user explicitly asks for "快评", "简单说下", "不用建文档", "先别写文件", or equivalent.
 
-The saved report must include frontmatter, a default-input statement, First-Page Verdict, Evidence Ledger, 11 fixed modules, final verdict, and source links.
+The saved report must not include visible YAML frontmatter. It must include a default-input statement, First-Page Verdict, Evidence Ledger, Key Forces, Variant View, Pre-Mortem, Action Triggers, 11 fixed modules, final verdict, and source links.
 
-When a prior report exists for the same ticker/company, include a `与上次报告差异` section immediately after First-Page Verdict and before Evidence Ledger. The table must compare:
+Metadata such as ticker, company, market, date, verdict, and action belongs in the filename, title, Evidence Ledger, or internal workflow notes. Do not expose YAML frontmatter in the final report body.
 
-- Prior and current price.
-- Prior and current valuation multiples.
-- Prior and current rating/action.
-- Prior buy/hold/avoid line.
-- New Tier 1 facts that changed or confirmed the conclusion.
-- Any old assumption that was corrected.
+For new reports, start from `templates/full-report.md` or generate a skeleton with `scripts/new_report.py`. Hand-written skeletons are not acceptable for full Obsidian reports.
 
 ## First-Page Verdict
 
 Start full reports in this order:
 
 1. First-Page Verdict
-2. 与上次报告差异, when a prior report exists
-3. Evidence Ledger
-4. 11 fixed modules
+2. Evidence Ledger
+3. 11 fixed modules
 
 The verdict table must include:
 
@@ -59,18 +53,15 @@ The verdict table must include:
 | Confidence | High / Medium / Low |
 | Needs manual verification | 1-3 most important items |
 
-## Rating Action Boundaries
+## Key Forces
 
-Keep the action wording as strict as the rating. Do not let a lower rating read like a soft Buy.
+Inside `## 1. 华尔街式全景扫描 Overview`, include a dedicated subsection named `### Key Forces` before the general business overview. Do not create an extra top-level `## Key Forces` section that interrupts the 11-module structure.
 
-| Rating | Allowed action language | Forbidden or restricted language |
-|---|---|---|
-| Buy | Buy, build position, add according to stated position sizing | Still must specify max position and invalidation triggers |
-| Hold-Index | Hold existing position; for unheld positions, at most `观察仓` / `1%-2% observation position` / wait | Do not write `可以买`, `可买区`, `主动买入`, or `建仓` unless explicitly qualified as observation-only and not a Buy recommendation |
-| Watchlist | Wait, track, no new position except explicit paper/monitoring list | Do not imply capital deployment |
-| Avoid | Sell, reduce, remove, or do not buy | Do not include buy-zone language except as a distant re-evaluation trigger |
+Rules:
 
-For non-Buy ratings, price bands must distinguish `观察性试探区` from true buy zones. Use `舒服区` or `Buy candidate` only when the report explains what additional evidence would upgrade the rating.
+- Identify 1-3 variables that will decide intrinsic value over the next 3-5 years.
+- Give extra depth to modules connected to these variables; do not spread attention evenly when the value driver is concentrated.
+- For latest-earnings updates, add two bullets: `本次财报改变了什么` and `本次财报没有改变什么`.
 
 ## Evidence Ledger
 
@@ -102,8 +93,6 @@ For US, HK, and other non-A-share reports, complete and disclose this preflight 
 
 If a source is a PDF, extract text with `scripts/pdf_text_extract.py <pdf_or_url>` when possible. If extraction fails, record the tool/dependency failure and cap confidence for any management-commentary claim based only on headlines or snippets.
 
-If company IR pages, PDFs, or press-release pages are blocked by 403/scraping protections, use regulator archives as the first fallback: SEC 8-K exhibits, 10-Q, 10-K, 20-F, 6-K, HKEX filings, or exchange announcements. Do not use search snippets or media summaries as substitutes for management commentary.
-
 If `summary.business_model_flags.equity_method_holding_company` is true:
 
 - State that consolidated FCF is structurally less useful and should be deweighted.
@@ -120,7 +109,6 @@ If `summary.business_model_flags.equity_method_holding_company` is true:
 - Missing debt/cash data: maximum Watchlist.
 - Missing liquidity data: do not recommend more than 5% portfolio weight.
 - Only Tier 2/3 data and no filing spot-check: confidence maximum Medium.
-- Current price, 10Y yield, or peer valuation from a single unconfirmed Tier 2 market-data source: overall confidence maximum Medium unless cross-verified by at least two independent current sources.
 - Conflicting data with unresolved source quality: show the conflict and use the conservative口径.
 
 ## 10-Year Payback
@@ -170,3 +158,11 @@ Do not replace the four-row test with only `r=8%` / `r=9%`, even when `10Y×2` i
 Use a dedicated heading such as `### 三原则扣问`. These answers must appear in the final verdict section, not only in the First-Page Verdict table.
 
 Buy should require all three to pass. If not, use Hold-Index, Watchlist, or Avoid unless a clearly justified super-compounder exception applies.
+
+## Variant View, Pre-Mortem, and Action Triggers
+
+Every full report must include these dedicated headings:
+
+- `### Variant View`: state market consensus, the report's different view, and why the market may be wrong.
+- `### Pre-Mortem`: if the investment fails, name the most likely failure path and the earliest observable warning signal.
+- `### Action Triggers`: give quantified buy/add/hold/reduce/sell conditions where possible. At minimum, include price, valuation, operating, and thesis-break triggers.
