@@ -1,5 +1,23 @@
 # Wall Street Equity Research Skill Change Log
 
+## 2026-07-24
+
+### Change
+
+- Limited `本次财报改变了什么 / 没有改变什么` to explicit latest-earnings update reports.
+- Restored ordinary full-report `Key Forces` to business model, value drivers, and the 1-3 variables that determine intrinsic value.
+- Updated the canonical template and lint rules so ordinary full reports no longer need fake earnings-update bullets.
+
+### Reason
+
+A general company initiation report should not pretend to be an earnings update. The old template and lint gate forced irrelevant wording and weakened the analytical focus of `Key Forces`.
+
+### Verification
+
+- `python3 scripts/report_lint.py --self-test`
+- `python3 scripts/report_lint.py --fixtures tests/fixtures`
+- `python3 /Users/muskxiang/.bg-agent/config-with-app/skills/skill-creator/scripts/quick_validate.py .`
+
 ## 2026-06-30
 
 ### Change

@@ -33,9 +33,6 @@
 2. TODO
 3. TODO
 
-- **本次财报改变了什么**：TODO
-- **本次财报没有改变什么**：TODO
-
 TODO
 
 ## 2. 财务剖析 Financial Autopsy
