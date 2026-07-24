@@ -61,7 +61,7 @@ Rules:
 
 - Identify 1-3 variables that will decide intrinsic value over the next 3-5 years.
 - Give extra depth to modules connected to these variables; do not spread attention evenly when the value driver is concentrated.
-- For latest-earnings updates, add two bullets: `本次财报改变了什么` and `本次财报没有改变什么`.
+- For latest-earnings updates only, add two bullets: `本次财报改变了什么` and `本次财报没有改变什么`. For ordinary full stock reports, do not force these bullets; use `Key Forces` to explain the core business model, value driver, and 1-3 variables that decide intrinsic value.
 
 ## Evidence Ledger
 

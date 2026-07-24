@@ -19,7 +19,6 @@ REQUIRED_PATTERNS = [
     ("current price", re.compile(r"现价|当前价格|close price|regular-session|after-hours|盘后|收盘价", re.I)),
     ("latest filing or earnings", re.compile(r"最新财报|最新季报|最新年报|earnings release|10-K|10-Q|20-F|6-K|HKEX|公告", re.I)),
     ("10Y government yield", re.compile(r"10Y|10 年|10年|国债|Treasury", re.I)),
-    ("earnings changed/unchanged", re.compile(r"本次财报改变了什么|改变了什么|没有改变什么|未改变什么", re.I)),
     ("hold equals buy", re.compile(r"持有\s*[=＝]\s*买入|持有等于买入", re.I)),
     ("sunk cost discipline", re.compile(r"沉没成本|机会成本才是真成本|opportunity cost", re.I)),
     ("10-year payback discipline", re.compile(r"10\s*年回本|十年回本|10-year payback", re.I)),
@@ -137,10 +136,14 @@ def lint_text(text: str) -> list[str]:
 
     if not re.search(r"^###\s+Key Forces\b", module1, re.M):
         errors.append("module 1 must include '### Key Forces'")
-    if not re.search(r"本次财报改变了什么", module1):
-        errors.append("module 1 Key Forces must include '本次财报改变了什么'")
-    if not re.search(r"本次财报(没有|未)改变什么|本次财报没有改变了什么", module1):
-        errors.append("module 1 Key Forces must include '本次财报没有改变什么'")
+    is_latest_earnings_update = bool(
+        re.search(r"最新财报更新|财报更新|earnings update|latest earnings update", text, re.I)
+    )
+    if is_latest_earnings_update:
+        if not re.search(r"本次财报改变了什么", module1):
+            errors.append("latest-earnings update must include '本次财报改变了什么' inside module 1")
+        if not re.search(r"本次财报(没有|未)改变什么|本次财报没有改变了什么", module1):
+            errors.append("latest-earnings update must include '本次财报没有改变什么' inside module 1")
 
     for label, pattern in [
         ("module 4 nominal 10-year payback", r"名义\s*10\s*年回本|名义十年回本"),
@@ -222,8 +225,9 @@ def self_test() -> int:
 ## 1. 华尔街式全景扫描 Overview
 
 ### Key Forces
-- 本次财报改变了什么：增长放慢。
-- 本次财报没有改变什么：护城河仍在。
+- 需求强度。
+- 成本结构。
+- 估值锚。
 
 ## 2. 财务剖析 Financial Autopsy
 CapEx +19.1%，主要由于产能建设提速。
