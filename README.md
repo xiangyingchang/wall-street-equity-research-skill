@@ -20,11 +20,15 @@
 
 - [`SKILL.md`](SKILL.md)：完整 Prompt / Agent Skill 文档
 - [`references/report-contract.md`](references/report-contract.md)：报告输出契约
-- [`references/full-methodology.md`](references/full-methodology.md)：11 模块完整方法论
+- [`references/full-methodology.md`](references/full-methodology.md)：10 个固定模块加前置模块区段的方法论
+- [`references/data-validation.md`](references/data-validation.md)：数据验证与可执行审计流程
+- [`references/researchability.md`](references/researchability.md)：A/B/C 与置信度定义
 - [`references/source-map.md`](references/source-map.md)：Obsidian 路径和历史报告定位
 - [`scripts/a_share_prefetch.py`](scripts/a_share_prefetch.py)：A 股预抓取脚本
 - [`scripts/pdf_text_extract.py`](scripts/pdf_text_extract.py)：财报 PDF / earnings deck 文本抽取
 - [`scripts/report_lint.py`](scripts/report_lint.py)：报告交付前的硬约束检查
+- [`scripts/financial_rigor.py`](scripts/financial_rigor.py)：Decimal 计算与交叉验证
+- [`scripts/report_audit.py`](scripts/report_audit.py)：manifest/results 审计工作流
 - [`examples/input-template.md`](examples/input-template.md)：使用时的输入模板
 - [`LICENSE`](LICENSE)：MIT License
 
@@ -175,6 +179,6 @@ python3 scripts/pdf_text_extract.py <pdf_or_url>
 - A 股预抓取脚本：`summary`、`peer_comparison`、权益法平台识别、中国 10Y 缓存
 - 非 A 股 preflight：IR + filing + PDF + 收盘/盘后价格分离
 - PDF 文本抽取脚本
-- 报告 lint：三原则、四档贴现、Evidence Ledger、11 模块、source links 等交付前检查
+- 报告 lint：三原则、四档贴现、Evidence Ledger、10 个固定模块、source links 等交付前检查
 - 周期/高 Capex 双估值闸门
 - 四档贴现回本测试：10Y×1 / 10Y×2 / 8% / 10%

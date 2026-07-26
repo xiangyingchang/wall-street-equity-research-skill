@@ -14,14 +14,26 @@
 | 10 年回本测试是否通过 | TODO |
 | 安全买入区间 | TODO |
 | 最大风险 | TODO |
-| 置信度 | TODO |
 | 需人工复核的数据 | TODO |
+
+### Researchability Record
+
+| 项目 | 结论 |
+|---|---|
+| 报告类型 | 常规报告 / 最新财报更新（TODO） |
+| 信息丰富度 | A / B / C（TODO） |
+| AI 研究置信度 | 高 / 中 / 低（受信息丰富度约束） |
+| 投资确定性 | 高 / 中 / 低（独立的商业判断） |
+| 首页决策置信度 | 高 / 中 / 低（由证据与 thesis 保守导出） |
+| 差异说明 | 仅当两者表面不一致时，用一句话解释 TODO |
 
 ## Evidence Ledger
 
 | 数据项 | 数值 | 日期 | 来源/层级 | 口径 | 可信度 |
 |---|---:|---|---|---|---|
 | 当前价格 | TODO | {{date}} | TODO | TODO | TODO |
+| 市值（价格 × 股本） | TODO | {{date}} | TODO | 计算值；输入与偏差 TODO | TODO |
+| 每股 FCF / 估值倍数 | TODO | {{date}} | TODO | 计算值；输入与偏差 TODO | TODO |
 | 10Y 国债 ×1 / ×2 | TODO | {{date}} | TODO | TODO | TODO |
 | 最新财报 | TODO | TODO | TODO | TODO | TODO |
 
@@ -96,6 +108,8 @@ TODO
 
 TODO
 
+> 仅在四镜头存在未解决的实质分歧时，列在此处或下方最终判决，最多 4 条；不要角色扮演引用。
+
 ### 三原则扣问
 
 | 原则 | 回答 |
@@ -103,6 +117,10 @@ TODO
 | 持有 = 买入 | TODO |
 | 沉没成本不是成本，机会成本才是真成本 | TODO |
 | 10 年回本测试 | TODO |
+
+### Confidence Boundary
+
+AI 研究置信度与投资确定性是不同判断；如两者表面不一致，以上方 Researchability Record 的一句话说明为准。
 
 ## Sources
 

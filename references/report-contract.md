@@ -24,7 +24,9 @@ In the user's Obsidian stock vault, these phrases imply a full report saved as M
 
 Only use a chat-only quick take when the user explicitly asks for "快评", "简单说下", "不用建文档", "先别写文件", or equivalent.
 
-The saved report must not include visible YAML frontmatter. It must include a default-input statement, First-Page Verdict, Evidence Ledger, Key Forces, Variant View, Pre-Mortem, Action Triggers, 10 fixed modules, final verdict, and source links.
+The saved report must not include visible YAML frontmatter. It must include default input, First-Page Verdict, Evidence Ledger, Key Forces, Variant View, Pre-Mortem, Action Triggers, 10 fixed modules plus pre-module sections, final verdict, and source links.
+
+Read `references/data-validation.md` before populating the Evidence Ledger. Automation may calculate and flag, but it must not fetch or silently resolve evidence conflicts.
 
 Metadata such as ticker, company, market, date, verdict, and action belongs in the filename, title, Evidence Ledger, or internal workflow notes. Do not expose YAML frontmatter in the final report body.
 
@@ -34,8 +36,8 @@ For new reports, start from `templates/full-report.md` or generate a skeleton wi
 
 Start full reports in this order:
 
-1. First-Page Verdict
-2. Evidence Ledger
+1. First-Page Verdict (pre-module section)
+2. Evidence Ledger (pre-module section)
 3. 10 fixed modules
 
 The verdict table must include:
@@ -50,12 +52,13 @@ The verdict table must include:
 | 10-year payback test | Pass / Fail / Super-compounder exception only |
 | Safe buy zone | Target multiple and implied price |
 | Biggest risk | One sentence |
-| Confidence | High / Medium / Low |
 | Needs manual verification | 1-3 most important items |
+
+Immediately below this table, add one compact `### Researchability Record`, including First-page Confidence. Follow `references/researchability.md` exactly; do not add a second generic report-confidence label. The final verdict only confirms the distinction, without repeating the record.
 
 ## Key Forces
 
-Inside `## 1. 华尔街式全景扫描 Overview`, include a dedicated subsection named `### Key Forces` before the general business overview. Do not create an extra top-level `## Key Forces` section that interrupts the 11-module structure.
+Inside `## 1. 华尔街式全景扫描 Overview`, include a dedicated subsection named `### Key Forces` before the general business overview. Do not create an extra top-level `## Key Forces` section that interrupts the 10-module structure.
 
 Rules:
 
@@ -79,6 +82,8 @@ Include, when relevant:
 - Relevant 10Y government bond yield and opportunity-cost benchmark
 
 Each row should include value, date, source/tier,口径, and confidence.
+
+For calculated fields, add an input/output check: market cap (price x shares), valuation multiple (price / per-share metric), FCF/share, and any scenario target. Run `scripts/financial_rigor.py` where applicable. Record `consistent` at <=1%; reconcile and explain >1%-5%; block values >5% until Tier 1 verification. After lint, run `python3 scripts/report_audit.py extract --report <report.md> --manifest-out <manifest.json> --results-out <results.json>`. Fill every generated result with `fresh_value`, `source.name`, `source.tier`, `source.source_url`, and `source.authority_type`; where allowed Tier 2 is used, also fill `secondary_source` (including `value`), boolean `reconciliation`, and `reconciliation_explanation`. Then run `python3 scripts/report_audit.py verdict --report <report.md> --manifest <manifest.json> --results <results.json>`. The denominator is eligible numeric Markdown table cells; reports must put key decision numbers in Markdown tables, while prose numbers are outside automated coverage. The audit is manual-only and blocks empty extraction, stale reports, missing fresh values, or invalid provenance.
 
 For A-share reports, the Evidence Ledger should be seeded from `scripts/a_share_prefetch.py` when possible. Use `summary` first, `peer_comparison` second, and raw `financials` only for drill-down. Do not blindly paste the JSON: convert it into the report table, keep Tier 1/Tier 2 labels explicit, and preserve `summary.manual_verification_notes`.
 
@@ -166,3 +171,7 @@ Every full report must include these dedicated headings:
 - `### Variant View`: state market consensus, the report's different view, and why the market may be wrong.
 - `### Pre-Mortem`: if the investment fails, name the most likely failure path and the earliest observable warning signal.
 - `### Action Triggers`: give quantified buy/add/hold/reduce/sell conditions where possible. At minimum, include price, valuation, operating, and thesis-break triggers.
+
+## Variant View Boundary
+
+Do not add a four-lens section or roleplay quotes. Only list unresolved material disagreements in `### Variant View` or Final Verdict, capped at four bullets; otherwise synthesize the conclusion normally. The authoritative lens-to-module mapping is in `references/full-methodology.md`.

@@ -101,6 +101,14 @@ def top_section_token(title: str) -> str | None:
     return title
 
 
+def researchability_values(first_page: str) -> tuple[str | None, str | None, str | None]:
+    def value(label: str) -> str | None:
+        match = re.search(rf"(?:{label})[^\n]*?(?:[:：|])\s*(A|B|C|高|中|低|high|medium|low)\b", first_page, re.I)
+        return match.group(1).lower() if match else None
+
+    return value(r"信息丰富度|information richness"), value(r"AI\s*研究置信度|AI research confidence"), value(r"投资确定性|investment certainty")
+
+
 def lint_text(text: str) -> list[str]:
     errors: list[str] = []
 
@@ -133,12 +141,35 @@ def lint_text(text: str) -> list[str]:
     module4 = section_body(text, r"4\.")
     module9 = section_body(text, r"9\.")
     module10 = section_body(text, r"10\.")
+    first_page = section_body(text, r"First-Page Verdict|首页结论|一页结论")
+
+    report_type = re.search(r"报告类型\s*(?:[:：|])\s*(常规报告|最新财报更新)", first_page)
+    if not report_type:
+        errors.append("Researchability Record must declare 报告类型 as 常规报告 or 最新财报更新")
+
+    richness, ai_confidence, investment_certainty = researchability_values(first_page)
+    decision_confidence_match = re.search(r"(?:首页决策置信度|first-page confidence)[^\n]*?(?:[:：|])\s*(高|中|低|high|medium|low)\b", first_page, re.I)
+    if richness not in {"a", "b", "c"}:
+        errors.append("Researchability Record must declare information richness A, B, or C")
+    confidence_rank = {"low": 1, "低": 1, "medium": 2, "中": 2, "high": 3, "高": 3}
+    if ai_confidence not in confidence_rank:
+        errors.append("Researchability Record must declare AI research confidence High, Medium, or Low")
+    if investment_certainty not in confidence_rank:
+        errors.append("Researchability Record must declare investment certainty High, Medium, or Low")
+    if not decision_confidence_match:
+        errors.append("Researchability Record must declare First-page Confidence High, Medium, or Low")
+    if richness == "b" and confidence_rank.get(ai_confidence, 99) > 2:
+        errors.append("B information richness caps AI research confidence at Medium")
+    if richness == "c" and confidence_rank.get(ai_confidence, 99) > 1:
+        errors.append("C information richness caps AI research confidence at Low")
+    if ai_confidence and investment_certainty and ai_confidence != investment_certainty:
+        explanation = re.search(r"(?:差异说明|mismatch explanation)\s*(?:[:：|])\s*([^|\n]{8,})", first_page, re.I)
+        if not explanation:
+            errors.append("Researchability Record needs a one-sentence mismatch explanation")
 
     if not re.search(r"^###\s+Key Forces\b", module1, re.M):
         errors.append("module 1 must include '### Key Forces'")
-    is_latest_earnings_update = bool(
-        re.search(r"最新财报更新|财报更新|earnings update|latest earnings update", text, re.I)
-    )
+    is_latest_earnings_update = bool(report_type and report_type.group(1) == "最新财报更新")
     if is_latest_earnings_update:
         if not re.search(r"本次财报改变了什么", module1):
             errors.append("latest-earnings update must include '本次财报改变了什么' inside module 1")
@@ -217,6 +248,16 @@ def self_test() -> int:
 ## First-Page Verdict
 现价 / 当前价格：$10。最新财报：earnings release。最终评级 | Buy
 
+### Researchability Record
+| 项目 | 结论 |
+|---|---|
+| 报告类型 | 常规报告 |
+| 信息丰富度 | A |
+| AI 研究置信度 | 高 |
+| 投资确定性 | 中 |
+| 首页决策置信度 | 中 |
+| 差异说明 | 证据完整但竞争格局仍使经济结果不确定。 |
+
 ## Evidence Ledger
 | 指标 | 值 |
 |---|---|
@@ -274,17 +315,24 @@ EV/FCF 与中周期估值。
 | 沉没成本不是成本，机会成本才是真成本 | 机会成本胜出 |
 | 10 年回本测试 | 通过 |
 
+### Confidence Boundary
+AI 研究置信度与投资确定性不同；差异说明见首页 Researchability Record。
+
 ## Sources
 - Company IR
 """
     bad_report = good_report.replace("| 10Y 国债 ×1 | 1% | 通过 |\n", "")
     bad_key_forces = good_report.replace("## 1. 华尔街式全景扫描 Overview\n\n### Key Forces", "## Key Forces")
+    bad_earnings_update = good_report.replace("| 报告类型 | 常规报告 |", "| 报告类型 | 最新财报更新 |")
+    bad_researchability = good_report.replace("| 信息丰富度 | A |", "| 信息丰富度 | C |").replace("| AI 研究置信度 | 高 |", "| AI 研究置信度 | 中 |")
 
     with tempfile.TemporaryDirectory() as tmp:
         cases = {
             "good.md": (good_report, False),
             "bad_discount.md": (bad_report, True),
             "bad_key_forces.md": (bad_key_forces, True),
+            "bad_earnings_update.md": (bad_earnings_update, True),
+            "bad_researchability.md": (bad_researchability, True),
         }
         for name, (content, should_error) in cases.items():
             path = Path(tmp) / name

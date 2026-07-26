@@ -16,8 +16,12 @@ jobs:
 
       - name: Check Python syntax
         run: |
-          python -m py_compile scripts/a_share_prefetch.py scripts/pdf_text_extract.py scripts/report_lint.py
+          python -m py_compile scripts/*.py
 
-      - name: Run report lint self-test
+      - name: Run validation self-tests
         run: |
+          python scripts/financial_rigor.py --self-test
+          python scripts/report_audit.py --self-test
           python scripts/report_lint.py --self-test
+          python scripts/report_lint.py --fixtures tests/fixtures
+          python -m unittest tests/test_validation_cli.py
