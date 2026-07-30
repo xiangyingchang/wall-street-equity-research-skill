@@ -26,7 +26,7 @@ In the user's Obsidian stock vault, these phrases imply a full report saved as M
 
 Only use a chat-only quick take when the user explicitly asks for "快评", "简单说下", "不用建文档", "先别写文件", or equivalent.
 
-The saved report must not include visible YAML frontmatter. It must include default input, First-Page Verdict, Evidence Ledger, Key Forces, Variant View, Pre-Mortem, one Action Matrix, 10 fixed modules plus pre-module sections, final verdict, and source links.
+The saved report must not include visible YAML frontmatter. It must include default input, First-Page Verdict, Evidence Ledger, Key Forces, Variant View, Pre-Mortem, one Action Matrix, 9 fixed modules plus pre-module sections, final verdict, and source links.
 
 Read `references/data-validation.md` before populating the Evidence Ledger. Automation may calculate and flag, but it must not fetch or silently resolve evidence conflicts.
 
@@ -46,7 +46,7 @@ Start full reports in this order:
 
 1. First-Page Verdict (pre-module section)
 2. Evidence Ledger (pre-module section)
-3. 10 fixed modules
+3. 9 fixed modules
 
 The verdict table must include:
 
@@ -66,7 +66,7 @@ Immediately below this table, add one compact `### Researchability Record`, incl
 
 ## Key Forces
 
-Inside `## 1. 华尔街式全景扫描 Overview`, include a dedicated subsection named `### Key Forces` before the general business overview. Do not create an extra top-level `## Key Forces` section that interrupts the 10-module structure.
+Inside `## 1. 华尔街式全景扫描 Overview`, include a dedicated subsection named `### Key Forces` before the general business overview. Do not create an extra top-level `## Key Forces` section that interrupts the 9-module structure.
 
 Rules:
 
@@ -178,8 +178,8 @@ Every full report must include these dedicated headings:
 
 - `### Variant View`: state market consensus, the report's different view, and why the market may be wrong.
 - `### Pre-Mortem`: if the investment fails, name the most likely failure path and the earliest observable warning signal.
-- `### Action Matrix`: include exactly one table in module 9 with the exact columns `Action | Trigger type | Executable condition | Position/execution`. It must cover Buy, Add, Hold, Reduce, Sell and price, valuation, operating, thesis-break trigger types. Honest N/A is allowed only for Buy or Add; non-N/A executable rows must still cover every trigger type and at least Hold, Reduce, and Sell.
-When a research pack is present and its `action_matrix` is non-empty, Audit v5 cross-checks that the report's module 9 table is in structural correspondence with the pack entries: the same action set and trigger-type set, with no missing or extra actions. Each pack `action_matrix` entry must declare exactly `action`, `trigger_type`, `condition`, `execution`, and `na` (true only for Buy or Add).
+- `### Action Matrix`: include exactly one table in module 8 with the exact columns `Action | Trigger type | Executable condition | Position/execution`. It must cover Buy, Add, Hold, Reduce, Sell and price, valuation, operating, thesis-break trigger types. Honest N/A is allowed only for Buy or Add; non-N/A executable rows must still cover every trigger type and at least Hold, Reduce, and Sell.
+When a research pack is present and its `action_matrix` is non-empty, Audit v5 cross-checks that the report's module 8 table is in structural correspondence with the pack entries: the same action set and trigger-type set, with no missing or extra actions. Each pack `action_matrix` entry must declare exactly `action`, `trigger_type`, `condition`, `execution`, and `na` (true only for Buy or Add).
 
 All executable conditional trades and thresholds belong only in this matrix. First-Page Verdict and Final Verdict may state the current action and summarize price ranges, but must not define a conditional trade. The legacy `Action Triggers` heading is not allowed.
 
@@ -188,7 +188,7 @@ All executable conditional trades and thresholds belong only in this matrix. Fir
 `scripts/report_lint.py` enforces three semantic gates in addition to its structural checks:
 
 - **Tax identity**: the report must declare a tax identity context (for example `税务身份=中国大陆个人`, a US-listed investor, or an HK-listed investor) so tax friction is not silently omitted. An explicit `N/A` is allowed only with a stated reason. This prevents reports that omit tax considerations entirely.
-- **Opportunity-cost benchmark**: whenever the report mentions valuation, it must reference an opportunity-cost benchmark (a 10Y government bond yield, an index return, or an explicit alternative asset). The contract already requires an opportunity-cost pass for Buy ratings in module 10; this gate extends the benchmark requirement to every rating, so a non-Buy report cannot lean on valuation language while naming no benchmark.
+- **Opportunity-cost benchmark**: whenever the report mentions valuation, it must reference an opportunity-cost benchmark (a 10Y government bond yield, an index return, or an explicit alternative asset). The contract already requires an opportunity-cost pass for Buy ratings in module 9; this gate extends the benchmark requirement to every rating, so a non-Buy report cannot lean on valuation language while naming no benchmark.
 - **Previous-report delta**: when the pack's `previous_report` is set or the report text references a prior report, the report must contain a delta/comparison covering at least the rating change (or an explicit "unchanged"), a key metric change, and the thesis change (or an explicit "unchanged"). This stops reruns from silently dropping the comparison against the prior report.
 
 ## Variant View Boundary

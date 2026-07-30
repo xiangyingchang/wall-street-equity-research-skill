@@ -1,9 +1,9 @@
 ---
 name: wall-street-equity-research
 description: |
-  华尔街式股票脱水质检 + 10 年回本数学审判（10 个固定模块 + 前置信息）。当用户给出一个股票代码（A 股 / 港股 / 美股），并要求做深度投资分析、估值审判、买卖判断、华尔街视角研究、对冲基金视角分析时使用。
+  华尔街式股票脱水质检 + 10 年回本数学审判（9 个固定模块 + 前置信息）。当用户给出一个股票代码（A 股 / 港股 / 美股），并要求做深度投资分析、估值审判、买卖判断、华尔街视角研究、对冲基金视角分析时使用。
   核心特征：① 强制收集 Input（税务身份 / 持有周期 / 对标资产）；② 强制 Data Rules + Data Acquisition Workflow（监管原文优先、来源分层、filing 完整性、交叉验证）；③ 用 TTM 和 Forward 两套公式分别推 g，并同时算 EPS 和 FCF/share 双口径；④ 四档贴现 scale（10Y 国债×1 无风险收益率 / 10Y 国债×2 / 8% / 10%）压力测试；⑤ 检查股本蚕食（真回购 vs 抵消 SBC）/ 真实税后净股息率 / 回购质量；⑥ 仓位与风控规则（最大仓位、加减仓条件、thesis broken 必卖）；⑦ 终极判决四档：Buy / Hold-Index / Watchlist / Avoid，加目标 PE 和扳机价格线。流动性只在小盘、冷门、停牌风险或成交异常时作为条件触发项处理。
-  最高优先级：服从 Musk V4 备忘录的三条纪律——持有=买入 / 机会成本 / 10 年回本。第 10 模块判决前必须显式扣这三条。
+  最高优先级：服从 Musk V4 备忘录的三条纪律——持有=买入 / 机会成本 / 10 年回本。第 9 模块判决前必须显式扣这三条。
   TRIGGER：用户说"华尔街分析"、"脱水质检"、"10年回本测试"、"帮我看看 [TICKER]"、"分析 [股票代码]"、"这只股票值不值"、"该不该买 [TICKER]"、"对 [公司] 做个估值"、"用华尔街模板"、"用 10 年回本审判"、"用脱水质检 prompt"，或贴出股票代码（如 NVDA / 0700.HK / 600519.SH）说"分析下"/"研究一下"/"出份报告"。
   也适用于用户说"我准备买 XX 你帮我审一下"、"XX 现在还能买吗"、"XX 当前估值合理吗"、"XX 跟红利股比哪个划算"这种带具体标的的投资决策场景。
   DO NOT TRIGGER：横纵分析法（用 hv-analysis）、纯产品/概念研究（不是股票）、宏观行情判断（不是单只股票）、组合配置审视（用 V4 备忘录而不是单股审判）。
@@ -13,7 +13,7 @@ disable: false
 agent_created: true
 ---
 
-# 华尔街式股票脱水质检 Skill（10 个固定模块 + 前置信息）
+# 华尔街式股票脱水质检 Skill（9 个固定模块 + 前置信息）
 
 你正在执行一次股票脱水质检。最终产出一份**结构化、有数学审判、有终极判决**的深度分析报告。
 
@@ -161,7 +161,7 @@ First-Page Verdict 后必须给 Evidence Ledger，至少覆盖：
 
 1. **First-Page Verdict**
 2. **Evidence Ledger**
-3. **10 个固定模块**
+3. **9 个固定模块**
 
 First-Page Verdict 必须包含：
 
@@ -182,7 +182,7 @@ First-Page Verdict 必须包含：
 
 ---
 
-## 报告结构（10 个固定模块 + 前置信息，顺序固定）
+## 报告结构（9 个固定模块 + 前置信息，顺序固定）
 
 ### 1. 华尔街式全景扫描 Overview
 
@@ -291,22 +291,14 @@ TTM PE / Forward PE / EV/EBITDA / FCF Yield / 股息率 / 行业平均 / 公司�
 - **Key Forces 回扣**：未来 3-5 年真正决定公司价值的 1-3 个变量是什么？普通全量报告写商业模式、价值驱动和关键变量；只有最新财报更新报告才写“本次财报改变了什么 / 没有改变什么”。
 - **Variant View**：市场共识是什么？我们的不同判断是什么？市场错在哪里，证据链是什么？
 
-### 7. 真实到手收益 + 税收摩擦 Tax Drag & Net Yield
-
-基于 Input 的税务身份计算：
-
-- **股息**：名义股息率 → 预扣税 → 税后股息率，股息可持续吗？
-- **回购**：回购收益率 / **回购是否真减股本（还是只抵 SBC）** / 高位回购浪费现金？
-- **通胀与汇率**：计价货币 vs 投资者本币 / 长期汇率风险 / 通胀风险 / 印花税交易摩擦
-
-### 8. 机构视角 + 机会成本比对 Institutional & Opportunity Cost
+### 7. 机构视角 + 机会成本比对 Institutional & Opportunity Cost
 
 - 机构买入逻辑：买成长 / 防御 / 红利 / 并购 / 周期复苏 / 宏观对冲？
 - 机构回避逻辑 + 多头交易是否过度拥挤？
 - **机会成本对比**：对应计价货币的 10 年期国债收益率 × 2 / 标普 500 / 纳指 100 / 同行龙头 / 红利垄断（中海油/神华/招行）/ 其他更高确定性股
 - 判定：无效分散 / 高赔率狙击 / 看着性感但资金效率差？
 
-### 9. 仓位与风控 Position Sizing & Exit Rules（操作规则）
+### 8. 仓位与风控 Position Sizing & Exit Rules（操作规则）
 
 - 当前状态是未持有还是已持有？
 - 如果已持有：今天是否仍值得用现价重新买入同等仓位？
@@ -317,7 +309,7 @@ TTM PE / Forward PE / EV/EBITDA / FCF Yield / 股息率 / 行业平均 / 公司�
 - 完全卖出条件
 - 需要持续跟踪的 3-5 个关键指标
 - **Pre-Mortem**：如果这笔投资最后失败，最可能的失败路径是什么？最早能观察到的预警指标是什么？
-- **Action Matrix**：第 9 模块只允许一个权威矩阵，列名必须是 `Action | Trigger type | Executable condition | Position/execution`，覆盖 Buy / Add / Hold / Reduce / Sell 及 price / valuation / operating / thesis-break。所有可执行条件交易和阈值只能写在这里。只有 Buy / Add 可以诚实标注 N/A；非 N/A 行仍须覆盖四类触发器以及 Hold / Reduce / Sell。
+- **Action Matrix**：第 8 模块只允许一个权威矩阵，列名必须是 `Action | Trigger type | Executable condition | Position/execution`，覆盖 Buy / Add / Hold / Reduce / Sell 及 price / valuation / operating / thesis-break。所有可执行条件交易和阈值只能写在这里。只有 Buy / Add 可以诚实标注 N/A；非 N/A 行仍须覆盖四类触发器以及 Hold / Reduce / Sell。
 
 仓位建议必须同时受三件事约束：
 
@@ -327,9 +319,9 @@ TTM PE / Forward PE / EV/EBITDA / FCF Yield / 股息率 / 行业平均 / 公司�
 
 > ⚠️ **如果 thesis broken，必须明确说立刻卖出，不能用长期主义自我麻醉。**
 
-### 10. 终极系统判决 The Final Verdict
+### 9. 终极系统判决 The Final Verdict
 
-四镜头的唯一映射：段永平用于商业/管理层（1/2），巴菲特用于护城河/资本配置（3/7），芒格用于反证/预演失败（5/9），李录用于长期轨迹（6/8/10）。不得新建顶级章节或角色扮演引用；输出约束见 `references/report-contract.md`。
+四镜头的唯一映射：段永平用于商业/管理层（1/2），巴菲特用于护城河与资本配置（3，资本配置另见模块 2 股本蚕食），芒格用于反证/预演失败（5/8），李录用于长期轨迹（6/7/9）。不得新建顶级章节或角色扮演引用；输出约束见 `references/report-contract.md`。
 
 #### 纪律扣问（必须显式作答，不可跳）
 
@@ -454,7 +446,7 @@ Obsidian/股票/[公司名]/[TICKER]-[公司名]-华尔街式分析报告-YYYY-M
 ## DO NOT（避免常见错误）
 
 - ❌ 凭训练数据答价格 / PE / 财务数据
-- ❌ 跳过 Input 收集（税务身份决定第 8 模块的预扣税）
+- ❌ 跳过 Input 收集（税务身份影响机会成本口径与税后收益，必须声明）
 - ❌ "按默认跑"时不声明默认 Input（读者不知道假设前提）
 - ❌ 美股/港股跳过 IR + filing + PDF preflight
 - ❌ PDF 下载到了但不抽取、不记录失败原因
@@ -466,7 +458,7 @@ Obsidian/股票/[公司名]/[TICKER]-[公司名]-华尔街式分析报告-YYYY-M
 - ❌ 第 4 模块只跑名义不跑贴现 r=8%
 - ❌ 第 5 模块写"市场风险"这种套话（必须给具体业务痛点）
 - ❌ 在 Action Matrix 之外重复定义条件交易或阈值
-- ❌ 第 10 模块给"建议关注"等模棱两可结论（只能 Buy/Hold-Index/Watchlist/Avoid 四选一）
+- ❌ 第 9 模块给"建议关注"等模棱两可结论（只能 Buy/Hold-Index/Watchlist/Avoid 四选一）
 - ❌ 跳过 Musk 三条纪律的扣问——华尔街话术再漂亮，纪律不过都是 0 分
 - ❌ 把这个 skill 用在非股票场景（产品 / 概念 / 人物用 hv-analysis）
 - ❌ 输出报告暴露 YAML frontmatter（阅读噪音，且易产生过期元数据）
@@ -474,7 +466,7 @@ Obsidian/股票/[公司名]/[TICKER]-[公司名]-华尔街式分析报告-YYYY-M
 ## Pitfalls
 
 - 凭训练数据答价格 / PE / 财务数据
-- 跳过 Input 收集（税务身份决定第 8 模块的预扣税）
+- 跳过 Input 收集（税务身份影响机会成本口径与税后收益，必须声明）
 - "按默认跑"时不声明默认 Input
 - 美股/港股跳过 IR + filing + PDF preflight
 - PDF 下载到了但不抽取、不记录失败原因
@@ -485,26 +477,26 @@ Obsidian/股票/[公司名]/[TICKER]-[公司名]-华尔街式分析报告-YYYY-M
 - 第 4 模块只跑 EPS/FCF 不跑 EV/FCF
 - 第 4 模块只跑名义不跑贴现 r=8%
 - 第 5 模块写"市场风险"这种套话（必须给具体业务痛点）
-- 第 9 模块缺少唯一 Action Matrix，或在矩阵外重复定义条件交易
-- 第 10 模块给"建议关注"等模棱两可结论（只能 Buy/Hold-Index/Watchlist/Avoid 四选一）
+- 第 8 模块缺少唯一 Action Matrix，或在矩阵外重复定义条件交易
+- 第 9 模块给"建议关注"等模棱两可结论（只能 Buy/Hold-Index/Watchlist/Avoid 四选一）
 - 跳过 Musk 三条纪律的扣问——华尔街话术再漂亮，纪律不过都是 0 分
 - 把这个 skill 用在非股票场景（产品 / 概念 / 人物用 hv-analysis）
 - 大盘高流动性标的还机械展开流动性黑洞模块
-- 第 9 模块仓位约束未检查估值通过 / 最大风险损失 / 真实流动性约束三项
-- 第 10 模块跳过评级闸门直接给 Buy 评级
-- 第 10 模块遗漏置信度与复核清单
+- 第 8 模块仓位约束未检查估值通过 / 最大风险损失 / 真实流动性约束三项
+- 第 9 模块跳过评级闸门直接给 Buy 评级
+- 第 9 模块遗漏置信度与复核清单
 - 输出报告暴露 YAML frontmatter
 
 ## Verification
 
 - 报告正文不得包含 YAML frontmatter；元数据必须进入文件名、标题、First-Page Verdict 或 Evidence Ledger
 - 报告开头必须声明本次使用的默认 Input
-- 报告必须包含 First-Page Verdict + Evidence Ledger 等前置模块区段，以及 10 个固定模块
+- 报告必须包含 First-Page Verdict + Evidence Ledger 等前置模块区段，以及 9 个固定模块
 - Evidence Ledger 必须包含 EV、净债务、OCF、Capex、FCF
 - 第 4 模块必须同时跑 EPS 和 FCF/share 双口径
 - 第 4 模块必须额外跑 EV/FCF 口径（高 capex 公司可能漏判）
 - 第 4 模块必须跑四档贴现（10Y 国债×1 / 10Y 国债×2 / 8% / 10%）
-- 第 9 模块必须输出仓位、Pre-Mortem，以及唯一 Action Matrix；条件交易和阈值不得出现在矩阵外
-- 第 10 模块必须显式回答 Musk 三条纪律
+- 第 8 模块必须输出仓位、Pre-Mortem，以及唯一 Action Matrix；条件交易和阈值不得出现在矩阵外
+- 第 9 模块必须显式回答 Musk 三条纪律
 - 评级只能是 Buy / Hold-Index / Watchlist / Avoid 四选一
 - 所有关键数字必须标注来源层级、日期、口径、单位

@@ -43,7 +43,6 @@ EXPECTED_TOP_SECTIONS = [
     "7.",
     "8.",
     "9.",
-    "10.",
 ]
 REQUIRED_ACTIONS = {"buy", "add", "hold", "reduce", "sell"}
 REQUIRED_TRIGGER_TYPES = {"price", "valuation", "operating", "thesis-break"}
@@ -191,22 +190,22 @@ def researchability_values(first_page: str) -> tuple[str | None, str | None, str
     return value(r"信息丰富度|information richness"), value(r"AI\s*研究置信度|AI research confidence"), value(r"投资确定性|investment certainty")
 
 
-def action_matrix_errors(text: str, module9: str) -> list[str]:
+def action_matrix_errors(text: str, module8: str) -> list[str]:
     errors: list[str] = []
     headings = list(re.finditer(r"^#{1,6}\s+Action Matrix\s*$", text, re.M))
     if len(headings) != 1:
         errors.append(f"report must contain exactly one heading named 'Action Matrix'; found {len(headings)}")
-    module_headings = list(re.finditer(r"^###\s+Action Matrix\s*$", module9, re.M))
+    module_headings = list(re.finditer(r"^###\s+Action Matrix\s*$", module8, re.M))
     if len(module_headings) != 1:
-        errors.append("module 9 must contain exactly one '### Action Matrix' heading")
+        errors.append("module 8 must contain exactly one '### Action Matrix' heading")
         return errors
-    table = find_action_matrix_table(module9)
+    table = find_action_matrix_table(module8)
     if table is None:
         # The shared locator collapses heading/table/header problems to None;
         # re-derive only the detail needed for a lint-grade message so the
         # canonical locate contract stays single-sourced in validation_common.
         matrix_heading = module_headings[0]
-        tail = module9[matrix_heading.end() :]
+        tail = module8[matrix_heading.end() :]
         next_heading = re.search(r"^#{1,6}\s+", tail, re.M)
         matrix_block = tail[: next_heading.start()] if next_heading else tail
         tables = list(iter_markdown_tables(matrix_block))
@@ -330,7 +329,7 @@ def opportunity_cost_benchmark_errors(text: str) -> list[str]:
     benchmark for every rating.
 
     The contract already enforces an opportunity-cost pass for Buy ratings in
-    module 10. This gate extends the requirement: whenever the report mentions
+    module 9. This gate extends the requirement: whenever the report mentions
     valuation, it must also reference an opportunity-cost benchmark (10Y
     government bond, index return, or explicit alternative) somewhere in the
     report, regardless of the final rating.
@@ -389,7 +388,7 @@ def lint_text(text: str) -> list[str]:
     contract_tokens = [token for token in tokens if token != "Sources"]
     if contract_tokens[: len(EXPECTED_TOP_SECTIONS)] != EXPECTED_TOP_SECTIONS:
         errors.append(
-            "top-level section order must be First-Page Verdict -> Evidence Ledger -> ## 1. through ## 10."
+           "top-level section order must be First-Page Verdict -> Evidence Ledger -> ## 1. through ## 9."
         )
     extra_before_sources = [
         token
@@ -404,8 +403,8 @@ def lint_text(text: str) -> list[str]:
 
     module1 = section_body(text, r"1\.")
     module4 = section_body(text, r"4\.")
+    module8 = section_body(text, r"8\.")
     module9 = section_body(text, r"9\.")
-    module10 = section_body(text, r"10\.")
     first_page = section_body(text, r"First-Page Verdict|首页结论|一页结论")
 
     report_type = re.search(r"报告类型\s*(?:[:：|])\s*(常规报告|最新财报更新)", first_page)
@@ -449,17 +448,17 @@ def lint_text(text: str) -> list[str]:
         if not re.search(pattern, module4, re.I):
             errors.append(f"missing {label}")
 
-    if not re.search(r"^###\s+Pre-Mortem\b|^###\s+预演失败\b", module9, re.M):
-        errors.append("module 9 must include '### Pre-Mortem'")
+    if not re.search(r"^###\s+Pre-Mortem\b|^###\s+预演失败\b", module8, re.M):
+        errors.append("module 8 must include '### Pre-Mortem'")
     if re.search(r"^#{1,6}\s+(?:Action Triggers|动作触发)\s*$", text, re.M | re.I):
-        errors.append("legacy 'Action Triggers' heading is not allowed; use the sole module 9 Action Matrix")
-    errors.extend(action_matrix_errors(text, module9))
+        errors.append("legacy 'Action Triggers' heading is not allowed; use the sole module 8 Action Matrix")
+    errors.extend(action_matrix_errors(text, module8))
     errors.extend(external_conditional_trade_errors(text))
     errors.extend(tax_identity_errors(text))
     errors.extend(opportunity_cost_benchmark_errors(text))
     errors.extend(previous_report_delta_errors(text))
-    if not re.search(r"###\s*三原则扣问", module10):
-        errors.append("module 10 must include dedicated '### 三原则扣问'")
+    if not re.search(r"###\s*三原则扣问", module9):
+        errors.append("module 9 must include dedicated '### 三原则扣问'")
 
     missing_discount = [
         label
@@ -479,12 +478,12 @@ def lint_text(text: str) -> list[str]:
         errors.append("CapEx growth is mentioned but no nearby reason/explanation is provided")
 
     if re.search(r"最终评级\s*\|[^|\n]*Buy|verdict:\s*Buy", text, re.I):
-        if not re.search(r"持有\s*[=＝]\s*买入[\s\S]{0,300}(是|愿意|通过)", module10):
-            errors.append("Buy rating requires a positive hold-equals-buy answer in module 10")
-        if not re.search(r"机会成本[\s\S]{0,300}(胜出|明显|通过|高于)", module10):
-            errors.append("Buy rating requires opportunity-cost pass in module 10")
-        if not re.search(r"10\s*年回本[\s\S]{0,300}(通过|可解释)", module10):
-            errors.append("Buy rating requires 10-year payback pass in module 10")
+        if not re.search(r"持有\s*[=＝]\s*买入[\s\S]{0,300}(是|愿意|通过)", module9):
+            errors.append("Buy rating requires a positive hold-equals-buy answer in module 9")
+        if not re.search(r"机会成本[\s\S]{0,300}(胜出|明显|通过|高于)", module9):
+            errors.append("Buy rating requires opportunity-cost pass in module 9")
+        if not re.search(r"10\s*年回本[\s\S]{0,300}(通过|可解释)", module9):
+            errors.append("Buy rating requires 10-year payback pass in module 9")
 
     return errors
 
@@ -563,9 +562,8 @@ EV/FCF 与中周期估值。
 
 ## 5. 致命风险排序 Risk Ranking
 ## 6. 物理增长极限 Growth Potential
-## 7. 真实到手收益 + 税收摩擦
-## 8. 机构视角 + 机会成本
-## 9. 仓位与风控
+## 7. 机构视角 + 机会成本
+## 8. 仓位与风控
 
 ### Pre-Mortem
 失败路径：增长低于预期。
@@ -573,13 +571,13 @@ EV/FCF 与中周期估值。
 ### Action Matrix
 | Action | Trigger type | Executable condition | Position/execution |
 |---|---|---|---|
-| Buy | valuation | N/A — current action is not Buy | No position |
+| Buy | valuation | N/A - current action is not Buy | No position |
 | Add | price | Price < $8 and operating gates pass | Add 1% |
 | Hold | operating | Revenue >= $10B | Hold current position |
 | Reduce | valuation | Price >= $20 | Reduce to 3% |
 | Sell | thesis-break | Thesis broken | Exit position |
 
-## 10. 最终判决 Final Verdict
+## 9. 最终判决 Final Verdict
 
 ### Variant View
 市场共识：普通好公司。我们的判断：价格不够好。

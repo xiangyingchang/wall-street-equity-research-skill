@@ -14,9 +14,9 @@ Use for one listed equity when the user asks for valuation, buy/hold/sell judgme
 ## Hard Rules
 
 - Never invent live prices, filings, yields, or valuation data; Tier 1 evidence decides conflicts.
-- Use `templates/full-report.md`; reports have pre-module sections plus 10 fixed modules, never visible YAML frontmatter.
+- Use `templates/full-report.md`; reports have pre-module sections plus 9 fixed modules, never visible YAML frontmatter.
 - Keep earnings deltas only for `报告类型=最新财报更新`; ordinary reports do not require them.
-- Include Key Forces, Variant View, Pre-Mortem, one module 9 Action Matrix, four discount rows, and final 三原则扣问.
+- Include Key Forces, Variant View, Pre-Mortem, one module 8 Action Matrix, four discount rows, and final 三原则扣问.
 - Keep every executable conditional trade and threshold only in the Action Matrix; First-Page and Final Verdict may state the current action or summarize ranges without defining another trade rule.
 - Apply calculated-value checks and the manual audit; do not let automation fetch or resolve provenance.
 - Treat `research-pack-v1` as durable recovery state only; never add provider, model, token, timing, retry, or runtime telemetry.
@@ -54,6 +54,6 @@ Return the report path, final rating/action, key uncertainty, and verification r
 - `references/data-validation.md` — sources, provenance, discrepancy, and executable audit workflow.
 - `references/research-pack-v1.md` — deterministic recovery pack, checkpoints, and valuation-basis lock.
 - `references/researchability.md` — authoritative A/B/C and confidence rules.
-- `references/full-methodology.md` — 10-module method and four-lens mapping.
+- `references/full-methodology.md` — 9-module method and four-lens mapping.
 - `references/source-map.md` — Obsidian locations and prior-report continuity.
 - `templates/full-report.md` — required report skeleton.

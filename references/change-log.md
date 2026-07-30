@@ -2,6 +2,25 @@
 
 ## 2026-07-30
 
+### Remove module 7 (Tax Drag & Net Yield); reduce from 10 to 9 modules
+
+**Change:**
+
+- Removed the dedicated `## 7. 真实到手收益 + 税收摩擦 Tax Drag & Net Yield` module from the report contract, methodology, template, and fixtures. The report now has 9 fixed modules instead of 10.
+- Renumbered the trailing modules: old 8 (Institutional & Opportunity Cost) -> 7, old 9 (Position Sizing & Exit Rules / Pre-Mortem / Action Matrix) -> 8, old 10 (Final Verdict / Variant View / 三原则扣问) -> 9.
+- `scripts/report_lint.py`: removed `"7."` (the old Tax Drag slot) and `"10."` from `EXPECTED_TOP_SECTIONS` so the expected top-level sequence is `First-Page Verdict -> Evidence Ledger -> ## 1. through ## 9.`; renamed the lint section bindings `module9`/`module10` to `module8`/`module9` (Pre-Mortem and Action Matrix now checked against module 8; 三原则扣问 and Buy-rating gates now checked against module 9); updated `action_matrix_errors` signature/docstring and all "module 9"/"module 10" lint messages to "module 8"/"module 9"; renumbered the built-in self-test good report.
+- `templates/full-report.md` and `tests/fixtures/good-full-report.md`: removed the module-7 section and renumbered 8/9/10 to 7/8/9.
+- `SKILL.md` and `references/report-contract.md`: "10 fixed modules" -> "9 fixed modules", "10-module" -> "9-module", and "module 9 Action Matrix" -> "module 8 Action Matrix"; the Buy-rating opportunity-cost pass reference moved from module 10 to module 9.
+- `references/full-methodology.md`: removed the module-7 section, renumbered subsequent module headings and all positional `第 N 模块` references; reworded the four-lens mapping (capital allocation no longer has a dedicated module; buyback/SBC remains in module 2) and the two `税务身份决定第 8 模块的预扣税` lines (withholding tax no longer has a dedicated module; tax identity still affects opportunity-cost and after-tax return caliber, and the tax-identity lint gate still requires declaring 税务身份).
+- Migrated the two live Obsidian reports (META 2026-07-30, MU 2026-07-30-rerun) to the 9-module structure.
+
+**Reason:** The user decided tax drag / net yield analysis is no longer needed in reports. Removing it shortens every report by one module and drops a section whose content (withholding tax, buyback yield) overlapped with module 2 (Financial Autopsy) and module 7 (Institutional & Opportunity Cost). The tax-identity lint gate is retained so reports still declare their investor tax context.
+
+**Scope boundary:** No provider/model/token telemetry was added. The audit v4/v5 paths, research-pack schema, payback formulas, and the structural Action Matrix contract are unchanged; only module numbers and the removed module's prose moved. The Action Matrix table is still located by its `### Action Matrix` heading, now under module 8 instead of module 9.
+
+**Verification:** `python3 -m py_compile scripts/*.py` passed; `python3 -m unittest discover -s tests` passed; `financial_rigor.py`, `report_audit.py`, and `report_lint.py` self-tests passed; `report_lint.py --fixtures tests/fixtures` passed; both live reports pass lint; `git diff --check` passed.
+
+
 ### Network-effects moat requires quantified user metrics
 
 **Change:**

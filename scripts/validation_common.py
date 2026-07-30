@@ -55,7 +55,7 @@ ACTION_MATRIX_NA_VALUE = re.compile(r"^(?:n\s*/?\s*a\b|not\s+applicable\b|不适
 
 
 def find_action_matrix_table(block: str) -> dict[str, Any] | None:
-    """Locate the single canonical module 9 Action Matrix table in a block.
+    """Locate the single canonical module 8 Action Matrix table in a block.
 
     The contract: exactly one `### Action Matrix` heading followed by one
     Markdown table whose header is the canonical four-column contract. Returns

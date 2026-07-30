@@ -88,15 +88,11 @@ TODO
 
 TODO
 
-## 7. 真实到手收益 + 税收摩擦 Tax Drag & Net Yield
+## 7. 机构视角 + 机会成本比对 Institutional & Opportunity Cost
 
 TODO
 
-## 8. 机构视角 + 机会成本比对 Institutional & Opportunity Cost
-
-TODO
-
-## 9. 仓位与风控 Position Sizing & Exit Rules
+## 8. 仓位与风控 Position Sizing & Exit Rules
 
 TODO
 
@@ -114,7 +110,7 @@ TODO
 | Reduce | valuation | TODO explicit comparator/threshold | TODO |
 | Sell | thesis-break | TODO thesis-break condition | TODO |
 
-## 10. 最终判决 Final Verdict
+## 9. 最终判决 Final Verdict
 
 ### Variant View
 

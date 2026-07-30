@@ -46,9 +46,8 @@ EV/FCF 与中周期估值。
 
 ## 5. 致命风险排序 Risk Ranking
 ## 6. 物理增长极限 Growth Potential
-## 7. 真实到手收益 + 税收摩擦
-## 8. 机构视角 + 机会成本
-## 9. 仓位与风控
+## 7. 机构视角 + 机会成本
+## 8. 仓位与风控
 
 ### Pre-Mortem
 失败路径：增长低于预期。
@@ -62,7 +61,7 @@ EV/FCF 与中周期估值。
 | Reduce | valuation | Price >= $20 | Reduce to 3% |
 | Sell | thesis-break | Thesis broken | Exit position |
 
-## 10. 最终判决 Final Verdict
+## 9. 最终判决 Final Verdict
 
 ### Variant View
 市场共识：普通好公司。我们的判断：价格不够好。

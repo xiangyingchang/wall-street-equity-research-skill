@@ -942,7 +942,7 @@ class AuditV5Tests(unittest.TestCase):
         from report_audit import action_matrix_correspondence_issues
         matrix_report = (
             FIXTURE.read_text(encoding="utf-8")
-            + "\n\n## 9. 仓位与风控\n\n### Action Matrix\n"
+            + "\n\n## 8. 仓位与风控\n\n### Action Matrix\n"
             "| Action | Trigger type | Executable condition | Position/execution |\n"
             "|---|---|---|---|\n"
             "| Buy | valuation | N/A | No position |\n"

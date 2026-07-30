@@ -103,7 +103,7 @@ SOURCE_TIERS = {"Tier 1", "Tier 2", "Internal"}
 FACT_TYPES = {"decimal", "date", "string"}
 # Action Matrix entry schema (semantic gate, Batch 2C). Each entry must declare
 # exactly these keys. `action` and `trigger_type` are casefolded against the
-# canonical report vocabulary so the pack and the report's module 9 table stay
+# canonical report vocabulary so the pack and the report's module 8 table stay
 # in structural correspondence; `na` is the honest "not applicable" flag and is
 # only permitted for Buy or Add.
 ACTION_MATRIX_KEYS = {"action", "trigger_type", "condition", "execution", "na"}

@@ -520,7 +520,7 @@ def _validate_v5_record(pack: dict[str, Any], record_id: str) -> None:
 
 
 def _report_action_matrix_sets(report: str) -> tuple[set[str], set[str]] | None:
-    """Extract the (actions, trigger_types) declared in the report's module 9
+    """Extract the (actions, trigger_types) declared in the report's module 8
     Action Matrix table, or None when the table cannot be located.
 
     Uses the shared canonical single-table locator in validation_common so the
@@ -549,7 +549,7 @@ def _report_action_matrix_sets(report: str) -> tuple[set[str], set[str]] | None:
 def action_matrix_correspondence_issues(pack: dict[str, Any], report: str) -> list[str]:
     """Semantic Action Matrix cross-check (v5-only, Batch 2C).
 
-    When the pack's `action_matrix` is non-empty, verify the report's module 9
+    When the pack's `action_matrix` is non-empty, verify the report's module 8
     Action Matrix table is in structural correspondence with the pack entries:
     same action set and same trigger-type set, with no missing or extra actions.
     This is a structural correspondence check, not a free-text condition parser.
@@ -568,7 +568,7 @@ def action_matrix_correspondence_issues(pack: dict[str, Any], report: str) -> li
     if report_sets is None:
         return [
             "pack action_matrix is non-empty but the report has no single "
-            "canonical module 9 Action Matrix table to cross-check"
+            "canonical module 8 Action Matrix table to cross-check"
         ]
     report_actions, report_trigger_types = report_sets
     issues: list[str] = []

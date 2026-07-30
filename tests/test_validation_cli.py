@@ -273,7 +273,7 @@ class ValidationCliTests(unittest.TestCase):
             "missing-action": (fixture.replace("| Buy | valuation | N/A — current action is not Buy | No position |\n", ""), "missing actions: buy"),
             "missing-type": (fixture.replace("| Sell | thesis-break | Thesis broken | Exit position |", "| Sell | operating | Thesis broken | Exit position |"), "missing trigger types: thesis-break"),
             "external-trade": (fixture.replace("## Sources", "如果价格低于 $8，就 Buy。\n\n## Sources"), "conditional threshold trade"),
-            "post-matrix-h4-trade": (fixture.replace("## 10.", "#### Post-matrix note\n价格低于 $8：加仓\n\n## 10.", 1), "conditional threshold trade"),
+           "post-matrix-h4-trade": (fixture.replace("## 9.", "#### Post-matrix note\n价格低于 $8：加仓\n\n## 9.", 1), "conditional threshold trade"),
             "all-na": (fixture.replace("| Add | price | Price < $8 and operating gates pass | Add 1% |", "| Add | price | N/A | N/A |").replace("| Hold | operating | Revenue >= $10B | Hold current position |", "| Hold | operating | N/A | N/A |").replace("| Reduce | valuation | Price >= $20 | Reduce to 3% |", "| Reduce | valuation | N/A | N/A |").replace("| Sell | thesis-break | Thesis broken | Exit position |", "| Sell | thesis-break | N/A | N/A |"), "missing executable non-N/A"),
             "hold-na": (fixture.replace("| Hold | operating | Revenue >= $10B | Hold current position |", "| Hold | operating | N/A | N/A |"), "N/A is allowed only for Buy or Add"),
             "legacy": (fixture.replace("### Action Matrix", "### Action Triggers", 1), "legacy 'Action Triggers'"),
@@ -580,7 +580,7 @@ class ValidationCliTests(unittest.TestCase):
                 .replace("10Y 国债 ×2", "贴现率 ×2")
                 .replace("机会成本才是真成本", "沉没成本才是真成本")
                 .replace("机会成本胜出", "持有成本胜出")
-                .replace("## 8. 机构视角 + 机会成本", "## 8. 机构视角")
+                .replace("## 7. 机构视角 + 机会成本", "## 7. 机构视角")
             )
             no_benchmark.write_text(stripped, encoding="utf-8")
             blocked = run("scripts/report_lint.py", str(no_benchmark))
