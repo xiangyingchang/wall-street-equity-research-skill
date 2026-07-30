@@ -2,6 +2,18 @@
 
 ## 2026-07-30
 
+### Network-effects moat requires quantified user metrics
+
+**Change:**
+
+- **Hard Rule (SKILL.md):** Added a rule that when the moat analysis claims network effects, the Evidence Ledger must include multi-period DAU/MAU/DAP or equivalent engagement data with YoY trends, and module 3 must contain a dedicated user-metrics table. Never substitute qualitative descriptions for quantified user evidence.
+- **Decision Gate:** Added a new gate for network-effects companies.
+- **Execution Step 3:** Explicitly calls for at minimum three-period user/engagement metrics with YoY trends.
+
+**Reason:** The wall-street-equity-research method judges moats by evidence, not narrative. Network effects are the most commonly claimed yet least quantified moat—every platform company says it, few provide the data to prove it. This rule closes that gap by requiring user-metric tables in any report that invokes network effects as a moat. Meta 2026-07-30 report was the first report to comply.
+
+**Scope boundary:** Applies to all reports where the moat analysis claims network effects, social platforms, two-sided marketplaces, or user flywheels. Companies where the moat is based on other factors (IP, regulation, cost advantage) are unaffected.
+
 ### 4R Code Review Fixes - Atomic transactions, lock timeout, symlink hardening, Action Matrix dedup, verdict messages
 
 **Change:**

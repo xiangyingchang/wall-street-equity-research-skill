@@ -20,6 +20,7 @@ Use for one listed equity when the user asks for valuation, buy/hold/sell judgme
 - Keep every executable conditional trade and threshold only in the Action Matrix; First-Page and Final Verdict may state the current action or summarize ranges without defining another trade rule.
 - Apply calculated-value checks and the manual audit; do not let automation fetch or resolve provenance.
 - Treat `research-pack-v1` as durable recovery state only; never add provider, model, token, timing, retry, or runtime telemetry.
+- **Network-effects moat = user metrics required.** If the moat analysis claims network effects (社交网络、双边平台、用户飞轮), the Evidence Ledger must include at minimum multi-period DAU/MAU/DAP or equivalent engagement data with YoY trends, and module 3 must contain a dedicated user-metrics table that supports the claim. Common sources: company IR operating metrics, SEC 10-K/10-Q business section, earnings slides. Never substitute qualitative descriptions ("全球最大社交平台") for quantified user evidence.
 - In pack-backed v5, declare derived inputs by `fact_ref` or `derived_ref`; only payback `years` may be a literal. Never copy caller-supplied values, units, dates, or source IDs into reference inputs.
 
 ## Decision Gates
@@ -30,6 +31,7 @@ Use for one listed equity when the user asks for valuation, buy/hold/sell judgme
 | A-share | Run `scripts/a_share_prefetch.py` when network access permits; preserve its manual notes. |
 | US/HK/other | Complete IR, filing, current-price, 10Y, peer, and PDF-extraction preflight. |
 | Latest earnings update | Add what changed and what did not inside module 1. |
+| Network-effects moat claim | Evidence Ledger must include multi-period user/engagement metrics; module 3 must contain a user-metrics table with YoY trends. |
 | Missing or conflicting critical evidence | Apply the rating caps in `references/report-contract.md`. |
 | Resumable or multi-session report | Initialize `research-pack-v1` and resume from its first missing or stale checkpoint. |
 
@@ -37,7 +39,7 @@ Use for one listed equity when the user asks for valuation, buy/hold/sell judgme
 
 1. Collect ticker, market, tax identity, horizon, opportunity cost, holding state, and size; state defaults when used.
 2. Create the canonical skeleton. `scripts/new_report.py` runs recognition automatically and fails closed; add `--research-pack [path]` for a durable recovery pack. For a manually created or copied skeleton, immediately run `python3 scripts/report_audit.py recognize --report <report.md>`. Fix missing, ambiguous, or unrecognized mandatory labels before populating values.
-3. Build the Evidence Ledger with atomic field labels, date, tier, basis, unit, and calculated input/output checks. Apply `scripts/financial_rigor.py` thresholds.
+3. Build the Evidence Ledger with atomic field labels, date, tier, basis, unit, and calculated input/output checks. If the company relies on network effects, add at minimum three-period DAU/MAU/DAP or equivalent engagement metrics with YoY trends. Apply `scripts/financial_rigor.py` thresholds.
 4. Add the compact Researchability Record under First-Page Verdict and follow `references/researchability.md`.
 5. Run the 10 modules using `references/full-methodology.md`; use its four-lens mapping without roleplay or a new section.
 6. Lint and rerun `report_audit.py recognize`. Without a research pack, use the unchanged v4 `extract --results-out ...` and `verdict --results ...` workflow. With a current pack containing bound derived records, use v5 `extract --pack ... --manifest-out ...` and `verdict --pack ... --manifest ...`; v5 resolves reference inputs from the pack snapshot, rejects symlinked artifacts, never accepts a results file, and only a successful verdict may write `audit_passed`.
