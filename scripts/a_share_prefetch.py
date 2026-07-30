@@ -19,6 +19,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from financial_formulas import PaybackError, solve_payback as solve_canonical_payback
+
 
 SSE_BULLETIN_URL = "https://query.sse.com.cn/security/stock/queryCompanyBulletin.do"
 EASTMONEY_FIN_URL = "https://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/"
@@ -273,17 +275,14 @@ def ttm_metric(zy_quarter: list[dict], field: str) -> float | None:
 
 
 def solve_payback(multiple: float, r: float = 0.0) -> float | None:
+    """Preserve the A-share float/None contract over the canonical TTM engine."""
     if not multiple or multiple <= 0:
         return None
-    lo, hi = -0.9, 1.0
-    for _ in range(200):
-        mid = (lo + hi) / 2
-        value = sum(((1 + mid) / (1 + r)) ** t for t in range(1, 11))
-        if value < multiple:
-            lo = mid
-        else:
-            hi = mid
-    return (lo + hi) / 2
+    try:
+        result = solve_canonical_payback("payback_ttm_v1", multiple, r, 10)
+    except PaybackError:
+        return None
+    return float(result.root)
 
 
 def cache_age_days(cache: dict) -> float | None:

@@ -13,6 +13,8 @@ Adjust the benchmark by currency and asset class:
 - USD assets: US 10Y Treasury x2, Nasdaq 100, S&P 500, Alphabet, Microsoft, NVIDIA, or other relevant US alternatives.
 - RMB/HKD China assets: China 10Y government bond x2, CNOOC, Shenhua, CMB, broad China equity alternatives.
 
+The tax identity and opportunity-cost benchmark are not optional flavor text: `report_lint.py` blocks any report that omits the tax identity, and blocks any valuation report that names no opportunity-cost benchmark. See Semantic Lint Gates below.
+
 ## Output Mode Defaults
 
 In the user's Obsidian stock vault, these phrases imply a full report saved as Markdown:
@@ -24,13 +26,19 @@ In the user's Obsidian stock vault, these phrases imply a full report saved as M
 
 Only use a chat-only quick take when the user explicitly asks for "快评", "简单说下", "不用建文档", "先别写文件", or equivalent.
 
-The saved report must not include visible YAML frontmatter. It must include default input, First-Page Verdict, Evidence Ledger, Key Forces, Variant View, Pre-Mortem, Action Triggers, 10 fixed modules plus pre-module sections, final verdict, and source links.
+The saved report must not include visible YAML frontmatter. It must include default input, First-Page Verdict, Evidence Ledger, Key Forces, Variant View, Pre-Mortem, one Action Matrix, 10 fixed modules plus pre-module sections, final verdict, and source links.
 
 Read `references/data-validation.md` before populating the Evidence Ledger. Automation may calculate and flag, but it must not fetch or silently resolve evidence conflicts.
 
 Metadata such as ticker, company, market, date, verdict, and action belongs in the filename, title, Evidence Ledger, or internal workflow notes. Do not expose YAML frontmatter in the final report body.
 
-For new reports, start from `templates/full-report.md` or generate a skeleton with `scripts/new_report.py`. Hand-written skeletons are not acceptable for full Obsidian reports.
+For new reports, start from `templates/full-report.md` or generate a skeleton with `scripts/new_report.py`. Hand-written skeletons are not acceptable for full Obsidian reports. The generator runs recognition automatically and fails closed. For a manually created or copied canonical skeleton, immediately run `python3 scripts/report_audit.py recognize --report <report.md>`. Placeholder values are valid, but every mandatory decision field label must be recognized without ambiguity. Both paths must rerun recognition before extraction.
+
+## Durable Research Pack
+
+For a resumable or multi-session full report, initialize `research-pack-v1` with `scripts/new_report.py --research-pack [path]` or `scripts/research_pack.py init`. Initialization records absolute report continuity paths and refuses report/pack symlinks. `new_report.py` validates arguments and pack conflicts before touching an existing report, stages report and pack outputs, and rolls back both sides on failure; without a pack it prints only the historical report-path line. Follow `references/research-pack-v1.md` for the strict source, fact, checkpoint, and valuation-basis contracts.
+
+The pack is a durable recovery checkpoint. It may preserve canonical inputs and detect stale downstream stages, but it does not fetch or validate real-world evidence and does not replace the report, lint, recognition, or audit verdict. Every downstream stage and valuation revision requires all upstream checkpoints through `facts_ready` to remain current by recomputed hash; a stale valuation lock may be replaced only after upstream recovery. Strict schema validation rejects duplicate JSON keys, unknown defined keys, non-finite JSON, malformed types, missing or cyclic fact/derived/source references, detached TTM fiscal dates (including shifted Q4 or annual FY anchors), invalid unit algebra/rounding/bindings, nonempty deferred `evidence_gates`, and recursive case-insensitive telemetry keys. URL hosts normalize IDNA dot variants and DNS trailing dots before source identity. Every skill-supported pack writer shares an advisory lock across read-modify-write; this prevents lost updates among cooperative writers but cannot protect against unrelated processes that bypass the lock.
 
 ## First-Page Verdict
 
@@ -83,7 +91,7 @@ Include, when relevant:
 
 Each row should include value, date, source/tier,口径, and confidence.
 
-For calculated fields, add an input/output check: market cap (price x shares), valuation multiple (price / per-share metric), FCF/share, and any scenario target. Run `scripts/financial_rigor.py` where applicable. Record `consistent` at <=1%; reconcile and explain >1%-5%; block values >5% until Tier 1 verification. After lint, run `python3 scripts/report_audit.py extract --report <report.md> --manifest-out <manifest.json> --results-out <results.json>`. Fill every generated result with `fresh_value`, `source.name`, `source.tier`, `source.source_url`, and `source.authority_type`; where allowed Tier 2 is used, also fill `secondary_source` (including `value`), boolean `reconciliation`, and `reconciliation_explanation`. Then run `python3 scripts/report_audit.py verdict --report <report.md> --manifest <manifest.json> --results <results.json>`. The denominator is eligible numeric Markdown table cells; reports must put key decision numbers in Markdown tables, while prose numbers are outside automated coverage. The audit is manual-only and blocks empty extraction, stale reports, missing fresh values, or invalid provenance.
+For calculated fields, add an input/output check: market cap (price x shares), valuation multiple (price / per-share metric), FCF/share, and any scenario target. Run `scripts/financial_rigor.py` where applicable. Record `consistent` at <=1%; reconcile and explain >1%-5%; block values >5% until Tier 1 verification. After lint, rerun recognition. Reports without a research pack use Audit v4 `extract --results-out` and `verdict --results`; v4 paths must be distinct and output files are an atomic pair. Its legacy numeric parser is frozen, so `/share` support is v5-only. Reports with strict bound derived records and current checkpoints through `draft_ready` use Audit v5 `extract --pack` and `verdict --pack`. V5 inputs use `fact_ref`/acyclic `derived_ref`; only payback years may be literal. Fiscal-date plausibility and unit algebra are validated before exact cells. V5 rejects `--results`, duplicate JSON keys, path collisions, symlink inputs, forged snapshot values or Python types, and cooperative concurrent pack changes. Verdict holds the shared pack lock from its in-lock snapshot comparison through commit. A failed verdict leaves artifacts unchanged; PASS atomically writes the manifest-bound `audit_passed` pack, and identical reruns remain PASS without byte changes. Both modes are offline, and legacy v4 manifest bytes and decisions remain compatible.
 
 For A-share reports, the Evidence Ledger should be seeded from `scripts/a_share_prefetch.py` when possible. Use `summary` first, `peer_comparison` second, and raw `financials` only for drill-down. Do not blindly paste the JSON: convert it into the report table, keep Tier 1/Tier 2 labels explicit, and preserve `summary.manual_verification_notes`.
 
@@ -164,13 +172,24 @@ Use a dedicated heading such as `### 三原则扣问`. These answers must appear
 
 Buy should require all three to pass. If not, use Hold-Index, Watchlist, or Avoid unless a clearly justified super-compounder exception applies.
 
-## Variant View, Pre-Mortem, and Action Triggers
+## Variant View, Pre-Mortem, and Action Matrix
 
 Every full report must include these dedicated headings:
 
 - `### Variant View`: state market consensus, the report's different view, and why the market may be wrong.
 - `### Pre-Mortem`: if the investment fails, name the most likely failure path and the earliest observable warning signal.
-- `### Action Triggers`: give quantified buy/add/hold/reduce/sell conditions where possible. At minimum, include price, valuation, operating, and thesis-break triggers.
+- `### Action Matrix`: include exactly one table in module 9 with the exact columns `Action | Trigger type | Executable condition | Position/execution`. It must cover Buy, Add, Hold, Reduce, Sell and price, valuation, operating, thesis-break trigger types. Honest N/A is allowed only for Buy or Add; non-N/A executable rows must still cover every trigger type and at least Hold, Reduce, and Sell.
+When a research pack is present and its `action_matrix` is non-empty, Audit v5 cross-checks that the report's module 9 table is in structural correspondence with the pack entries: the same action set and trigger-type set, with no missing or extra actions. Each pack `action_matrix` entry must declare exactly `action`, `trigger_type`, `condition`, `execution`, and `na` (true only for Buy or Add).
+
+All executable conditional trades and thresholds belong only in this matrix. First-Page Verdict and Final Verdict may state the current action and summarize price ranges, but must not define a conditional trade. The legacy `Action Triggers` heading is not allowed.
+
+## Semantic Lint Gates
+
+`scripts/report_lint.py` enforces three semantic gates in addition to its structural checks:
+
+- **Tax identity**: the report must declare a tax identity context (for example `税务身份=中国大陆个人`, a US-listed investor, or an HK-listed investor) so tax friction is not silently omitted. An explicit `N/A` is allowed only with a stated reason. This prevents reports that omit tax considerations entirely.
+- **Opportunity-cost benchmark**: whenever the report mentions valuation, it must reference an opportunity-cost benchmark (a 10Y government bond yield, an index return, or an explicit alternative asset). The contract already requires an opportunity-cost pass for Buy ratings in module 10; this gate extends the benchmark requirement to every rating, so a non-Buy report cannot lean on valuation language while naming no benchmark.
+- **Previous-report delta**: when the pack's `previous_report` is set or the report text references a prior report, the report must contain a delta/comparison covering at least the rating change (or an explicit "unchanged"), a key metric change, and the thesis change (or an explicit "unchanged"). This stops reruns from silently dropping the comparison against the prior report.
 
 ## Variant View Boundary
 

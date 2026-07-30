@@ -9,6 +9,13 @@ import sys
 import tempfile
 from pathlib import Path
 
+from validation_common import iter_markdown_tables
+from validation_common import (
+    ACTION_MATRIX_COLUMNS,
+    ACTION_MATRIX_NA_VALUE as NA_VALUE,
+    find_action_matrix_table,
+)
+
 
 REQUIRED_PATTERNS = [
     ("default input statement", re.compile(r"默认输入|input_", re.I)),
@@ -38,6 +45,81 @@ EXPECTED_TOP_SECTIONS = [
     "9.",
     "10.",
 ]
+REQUIRED_ACTIONS = {"buy", "add", "hold", "reduce", "sell"}
+REQUIRED_TRIGGER_TYPES = {"price", "valuation", "operating", "thesis-break"}
+# Tax identity gate (Batch 2C): every report must declare a tax identity
+# context so tax friction is not silently omitted. A declared identity in the
+# default-input line (e.g. 税务身份=中国大陆个人) or an explicit investor context
+# satisfies this; an explicit N/A is allowed only with a stated reason.
+TAX_IDENTITY = re.compile(
+    r"税务身份|tax\s+identity|tax\s+residency|tax\s+status|"
+    r"a[\s-]*share\s+investor|us[\s-]*listed\s+investor|hk[\s-]*listed\s+investor|"
+    r"港股通|a\s*股\s*投资者|美股\s*投资者|港股\s*投资者|"
+    r"中国大陆个人|内地个人|非居民|居民",
+    re.I,
+)
+TAX_IDENTITY_NA = re.compile(
+    r"税务身份[^\n]{0,40}(?:n/?a|不适用)[^\n]{0,60}(?:原因|理由|because|reason|:|：)|"
+    r"tax\s+identity[^\n]{0,40}(?:n/?a|not\s+applicable)[^\n]{0,60}(?:reason|because|:|：)",
+    re.I,
+)
+# Opportunity-cost benchmark gate (Batch 2C): when a report mentions valuation
+# it must reference an opportunity-cost benchmark for every rating, not only Buy.
+OPPORTUNITY_COST_BENCHMARK = re.compile(
+    r"机会成本|opportunity\s+cost|"
+    r"10\s*y(?:ear)?\s*(?:国债|government\s+bond|treasury)|10\s*年\s*国债|"
+    r"国债\s*x\s*2|treasury\s*x\s*2|"
+    r"指数(?:收益|回报)|index\s+(?:return|benchmark)|"
+    r"替代资产|alternative\s+(?:asset|benchmark)|参考标的",
+    re.I,
+)
+VALUATION_CUE = re.compile(
+    r"估值|valuation|pe\b|p/e|ev/ebitda|fcf\s*yield|forward\s+pe|贴现|payback|回本|"
+    r"安全买入|target\s+(?:multiple|price)|目标价|内在价值|intrinsic",
+    re.I,
+)
+# Previous-report delta gate (Batch 2C): when the pack references a previous
+# report (or the report text references a prior report), the report must contain
+# a delta/comparison section covering rating, key metrics, and thesis changes.
+PREVIOUS_REPORT_CUE = re.compile(
+    r"previous\s+report|prior\s+report|上一份报告|前一份报告|上一期报告|上次报告|"
+    r"上次评级|前期报告|对比上期|与上期相比|相比上次|更新报告",
+    re.I,
+)
+RATING_DELTA = re.compile(
+    r"评级[\s\S]{0,80}(?:升级|下调|维持|不变|unchanged|raised|lowered|kept|"
+    r"从[^\n]{0,20}到)|"
+    r"rating[\s\S]{0,80}(?:upgraded|downgraded|maintained|unchanged|kept|"
+    r"raised|lowered)",
+    re.I,
+)
+METRIC_DELTA = re.compile(
+    r"(?:eps|fcf|revenue|营收|净利润|每股收益|自由现金流|市值|pe|估值|multiple|"
+    r"price|价格|股息|dividend|利润|收入)[\s\S]{0,120}(?:变|升降|增减|变化|上涨|下跌|"
+    r"提高|下降|上调|下调|差|比较|对比|vs\.?|versus|从|至|到|"
+    r"changed|grew|rose|fell|increased|decreased|revised|vs\.?\s|compared)",
+    re.I,
+)
+THESIS_DELTA = re.compile(
+    r"(?:投资逻辑|论点|thesis|核心观点|核心逻辑|投资论点|看法|结论)[\s\S]{0,160}"
+    r"(?:变|不变|unchanged|调整|修正|更新|强化|弱化|确认|推翻|维持|未变|未改|"
+    r"updated|revised|confirmed|maintained|shifted)",
+    re.I,
+)
+CONDITIONAL_CUE = re.compile(r"\b(?:if|when|once|unless|only\s+when)\b|若|如果|当|只有|仅在|一旦|触发", re.I)
+PORTFOLIO_SPECIFIC_TRADE = re.compile(r"\b(?:buy|add|hold|reduce|sell)\b|加仓|减仓|清仓|增持|减持", re.I)
+GENERIC_CHINESE_TRADE = re.compile(r"买入|持有|卖出")
+PORTFOLIO_CONTEXT = re.compile(r"仓位|持仓|组合|账户|股票|股份|头寸|position|portfolio|shares?|stake", re.I)
+RULE_STYLE_TRADE = re.compile(r"(?:：|:|=>|→|则|就)\s*(?:买入|持有|卖出)")
+EXPLICIT_THRESHOLD = re.compile(
+    r"(?:[<>≤≥]=?\s*[$¥€£]?\s*\d)|(?:低于|高于|不高于|不低于|至少|至多|达到|超过|跌破|升破|below|above|at\s+least|at\s+most)[^\n]{0,16}[$¥€£]?\s*\d",
+    re.I,
+)
+THESIS_BREAK = re.compile(r"thesis(?:-|\s)*break|thesis\s+broken|论点破坏|投资逻辑破坏|逻辑破坏", re.I)
+NON_EXECUTABLE_RANGE_SUMMARY = re.compile(
+    r"只.*(?:汇总|摘要)|不在此处定义执行|执行(?:条件|规则|来源)[^\n]*Action Matrix|仅见[^\n]*Action Matrix",
+    re.I,
+)
 
 
 def normalize(text: str) -> str:
@@ -107,6 +189,189 @@ def researchability_values(first_page: str) -> tuple[str | None, str | None, str
         return match.group(1).lower() if match else None
 
     return value(r"信息丰富度|information richness"), value(r"AI\s*研究置信度|AI research confidence"), value(r"投资确定性|investment certainty")
+
+
+def action_matrix_errors(text: str, module9: str) -> list[str]:
+    errors: list[str] = []
+    headings = list(re.finditer(r"^#{1,6}\s+Action Matrix\s*$", text, re.M))
+    if len(headings) != 1:
+        errors.append(f"report must contain exactly one heading named 'Action Matrix'; found {len(headings)}")
+    module_headings = list(re.finditer(r"^###\s+Action Matrix\s*$", module9, re.M))
+    if len(module_headings) != 1:
+        errors.append("module 9 must contain exactly one '### Action Matrix' heading")
+        return errors
+    table = find_action_matrix_table(module9)
+    if table is None:
+        # The shared locator collapses heading/table/header problems to None;
+        # re-derive only the detail needed for a lint-grade message so the
+        # canonical locate contract stays single-sourced in validation_common.
+        matrix_heading = module_headings[0]
+        tail = module9[matrix_heading.end() :]
+        next_heading = re.search(r"^#{1,6}\s+", tail, re.M)
+        matrix_block = tail[: next_heading.start()] if next_heading else tail
+        tables = list(iter_markdown_tables(matrix_block))
+        if len(tables) != 1:
+            errors.append(f"Action Matrix must contain exactly one Markdown table; found {len(tables)}")
+        elif tables[0]["headers"] != ACTION_MATRIX_COLUMNS:
+            errors.append(
+                "Action Matrix columns must be exactly: Action | Trigger type | Executable condition | Position/execution"
+            )
+        return errors
+    actions: set[str] = set()
+    trigger_types: set[str] = set()
+    executable_actions: set[str] = set()
+    executable_trigger_types: set[str] = set()
+    for row in table["rows"]:
+        cells = row["cells"]
+        if len(cells) != len(ACTION_MATRIX_COLUMNS):
+            errors.append(f"Action Matrix row at line {row['line_number']} must have exactly four cells")
+            continue
+        action, trigger_type, condition, execution = (cell.strip() for cell in cells)
+        actions.add(action.casefold())
+        trigger_types.add(trigger_type.casefold())
+        if not condition or not execution:
+            errors.append(f"Action Matrix row for '{action or 'unknown'}' must include condition and execution")
+            continue
+        is_na = bool(NA_VALUE.search(condition) or NA_VALUE.search(execution))
+        if is_na and action.casefold() not in {"buy", "add"}:
+            errors.append(f"Action Matrix N/A is allowed only for Buy or Add, not '{action}'")
+        if not is_na:
+            executable_actions.add(action.casefold())
+            executable_trigger_types.add(trigger_type.casefold())
+    missing_actions = sorted(REQUIRED_ACTIONS - actions)
+    missing_types = sorted(REQUIRED_TRIGGER_TYPES - trigger_types)
+    if missing_actions:
+        errors.append(f"Action Matrix missing actions: {', '.join(missing_actions)}")
+    if missing_types:
+        errors.append(f"Action Matrix missing trigger types: {', '.join(missing_types)}")
+    missing_executable_actions = sorted({"hold", "reduce", "sell"} - executable_actions)
+    missing_executable_types = sorted(REQUIRED_TRIGGER_TYPES - executable_trigger_types)
+    if missing_executable_actions:
+        errors.append(f"Action Matrix missing executable non-N/A actions: {', '.join(missing_executable_actions)}")
+    if missing_executable_types:
+        errors.append(f"Action Matrix missing executable non-N/A trigger types: {', '.join(missing_executable_types)}")
+    return errors
+
+
+def canonical_matrix_table_lines(text: str) -> set[int]:
+    """Return only the exact canonical Action Matrix table line numbers."""
+    lines = text.splitlines()
+    heading_indexes = [
+        index for index, line in enumerate(lines) if re.fullmatch(r"###\s+Action Matrix\s*", line)
+    ]
+    if len(heading_indexes) != 1:
+        return set()
+    index = heading_indexes[0] + 1
+    while index < len(lines) and not lines[index].strip():
+        index += 1
+    if index + 1 >= len(lines):
+        return set()
+    headers = [cell.strip() for cell in lines[index].strip().strip("|").split("|")]
+    if headers != ACTION_MATRIX_COLUMNS or not re.fullmatch(r"\|[\s:|-]+\|", lines[index + 1].strip()):
+        return set()
+    masked = {index + 1, index + 2}
+    index += 2
+    while index < len(lines) and lines[index].strip().startswith("|"):
+        masked.add(index + 1)
+        index += 1
+    return masked
+
+
+def has_portfolio_trade(line: str) -> bool:
+    if PORTFOLIO_SPECIFIC_TRADE.search(line):
+        return True
+    return bool(
+        GENERIC_CHINESE_TRADE.search(line)
+        and (PORTFOLIO_CONTEXT.search(line) or RULE_STYLE_TRADE.search(line))
+    )
+
+
+def external_conditional_trade_errors(text: str) -> list[str]:
+    """Flag only explicit conditional threshold trades outside the sole matrix."""
+    masked_lines = canonical_matrix_table_lines(text)
+    scan_text = text
+    sources = re.search(r"^##\s+(?:Source Links|Sources|来源链接|参考资料|参考来源|资料来源)\b.*$", scan_text, re.M | re.I)
+    if sources:
+        scan_text = scan_text[: sources.start()]
+    errors: list[str] = []
+    in_fence = False
+    for line_number, line in enumerate(scan_text.splitlines(), start=1):
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence or line_number in masked_lines or line.lstrip().startswith(">"):
+            continue
+        if NON_EXECUTABLE_RANGE_SUMMARY.search(line):
+            continue
+        conditional_trade = EXPLICIT_THRESHOLD.search(line) and has_portfolio_trade(line)
+        thesis_sell = THESIS_BREAK.search(line) and has_portfolio_trade(line)
+        if conditional_trade or thesis_sell:
+            errors.append(f"conditional threshold trade must appear only in Action Matrix (line {line_number})")
+    return errors
+
+
+def tax_identity_errors(text: str) -> list[str]:
+    """Gate 2 (Batch 2C): the report must declare a tax identity context.
+
+    Tax friction differs by investor type (A-share, US-listed, HK-listed, etc.),
+    so a report that silently omits tax considerations can mislead. A declared
+    identity (e.g. 税务身份=中国大陆个人, a US-listed investor) satisfies the gate;
+    an explicit N/A is allowed only with a stated reason.
+    """
+    if TAX_IDENTITY.search(text):
+        return []
+    if TAX_IDENTITY_NA.search(text):
+        return []
+    return ["report must declare a tax identity (e.g. 税务身份=中国大陆个人) or state N/A with a reason"]
+
+
+def opportunity_cost_benchmark_errors(text: str) -> list[str]:
+    """Gate 3 (Batch 2C): a valuation report must reference an opportunity-cost
+    benchmark for every rating.
+
+    The contract already enforces an opportunity-cost pass for Buy ratings in
+    module 10. This gate extends the requirement: whenever the report mentions
+    valuation, it must also reference an opportunity-cost benchmark (10Y
+    government bond, index return, or explicit alternative) somewhere in the
+    report, regardless of the final rating.
+    """
+    if not VALUATION_CUE.search(text):
+        return []
+    if OPPORTUNITY_COST_BENCHMARK.search(text):
+        return []
+    return [
+        "report mentions valuation but references no opportunity-cost benchmark "
+        "(10Y government bond, index return, or explicit alternative)"
+    ]
+
+
+def previous_report_delta_errors(text: str) -> list[str]:
+    """Gate 4 (Batch 2C): when a previous report is referenced, the report must
+    contain a delta/comparison section.
+
+    The pack's `previous_report` field or in-report prior-report language
+    triggers this gate. It then requires at least: a rating change (or explicit
+    "unchanged"), a key metric change, and a thesis change (or explicit
+    "unchanged"). This prevents reruns that silently drop the comparison.
+    """
+    if not PREVIOUS_REPORT_CUE.search(text):
+        return []
+    errors: list[str] = []
+    if not RATING_DELTA.search(text):
+        errors.append(
+            "previous-report delta must state the rating change or an explicit "
+            "'unchanged' (评级维持/不变)"
+        )
+    if not METRIC_DELTA.search(text):
+        errors.append(
+            "previous-report delta must compare key metrics against the prior report"
+        )
+    if not THESIS_DELTA.search(text):
+        errors.append(
+            "previous-report delta must state the thesis change or an explicit "
+            "'unchanged' (投资逻辑不变)"
+        )
+    return errors
 
 
 def lint_text(text: str) -> list[str]:
@@ -186,8 +451,13 @@ def lint_text(text: str) -> list[str]:
 
     if not re.search(r"^###\s+Pre-Mortem\b|^###\s+预演失败\b", module9, re.M):
         errors.append("module 9 must include '### Pre-Mortem'")
-    if not re.search(r"^###\s+Action Triggers\b|^###\s+动作触发", module9, re.M):
-        errors.append("module 9 must include '### Action Triggers'")
+    if re.search(r"^#{1,6}\s+(?:Action Triggers|动作触发)\s*$", text, re.M | re.I):
+        errors.append("legacy 'Action Triggers' heading is not allowed; use the sole module 9 Action Matrix")
+    errors.extend(action_matrix_errors(text, module9))
+    errors.extend(external_conditional_trade_errors(text))
+    errors.extend(tax_identity_errors(text))
+    errors.extend(opportunity_cost_benchmark_errors(text))
+    errors.extend(previous_report_delta_errors(text))
     if not re.search(r"###\s*三原则扣问", module10):
         errors.append("module 10 must include dedicated '### 三原则扣问'")
 
@@ -243,7 +513,7 @@ def run_fixture_tests(fixtures_dir: Path) -> int:
 
 
 def self_test() -> int:
-    good_report = """> 默认输入：长期 3-10 年；机会成本=美国 10Y 国债 ×2。
+    good_report = """> 默认输入：税务身份=中国大陆个人；持有周期=长期 3-10 年；机会成本=美国 10Y 国债 ×2。
 
 ## First-Page Verdict
 现价 / 当前价格：$10。最新财报：earnings release。最终评级 | Buy
@@ -300,8 +570,14 @@ EV/FCF 与中周期估值。
 ### Pre-Mortem
 失败路径：增长低于预期。
 
-### Action Triggers
-买入 / 加仓 / 持有 / 减仓 / 卖出条件。
+### Action Matrix
+| Action | Trigger type | Executable condition | Position/execution |
+|---|---|---|---|
+| Buy | valuation | N/A — current action is not Buy | No position |
+| Add | price | Price < $8 and operating gates pass | Add 1% |
+| Hold | operating | Revenue >= $10B | Hold current position |
+| Reduce | valuation | Price >= $20 | Reduce to 3% |
+| Sell | thesis-break | Thesis broken | Exit position |
 
 ## 10. 最终判决 Final Verdict
 

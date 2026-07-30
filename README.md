@@ -13,6 +13,7 @@
 - 周期/高 Capex 双估值：峰值利润、新周期中枢、旧周期平准、EV/FCF
 - 三条投资纪律：持有=买入、机会成本、10 年回本
 - 最终四档判决：Buy / Hold-Index / Watchlist / Avoid
+- 单一 Action Matrix：所有条件交易与阈值只在第 9 模块定义
 
 > 免责声明：本仓库仅用于个人研究、学习和辅助信息整理，不构成投资建议。所有财务数据、估值和结论都必须回到监管原文、公司公告和可靠数据源复核。
 
@@ -28,7 +29,9 @@
 - [`scripts/pdf_text_extract.py`](scripts/pdf_text_extract.py)：财报 PDF / earnings deck 文本抽取
 - [`scripts/report_lint.py`](scripts/report_lint.py)：报告交付前的硬约束检查
 - [`scripts/financial_rigor.py`](scripts/financial_rigor.py)：Decimal 计算与交叉验证
-- [`scripts/report_audit.py`](scripts/report_audit.py)：manifest/results 审计工作流
+- [`scripts/report_audit.py`](scripts/report_audit.py)：v4 manifest/results 与 pack-backed v5 派生值审计
+- [`scripts/research_pack.py`](scripts/research_pack.py)：可恢复的研究包与估值口径锁
+- [`references/research-pack-v1.md`](references/research-pack-v1.md)：`research-pack-v1` 数据契约和命令
 - [`examples/input-template.md`](examples/input-template.md)：使用时的输入模板
 - [`LICENSE`](LICENSE)：MIT License
 
@@ -50,16 +53,44 @@
 
 1. First-Page Verdict
 2. Evidence Ledger
-3. 11 个固定分析模块
+3. 10 个固定分析模块
 4. 最终 Buy / Hold-Index / Watchlist / Avoid 判决
 
 完整 Obsidian 报告交付前必须跑：
 
 ```bash
+python3 scripts/report_audit.py recognize --report "/path/to/report.md"
 python3 scripts/report_lint.py "/path/to/report.md"
 ```
 
 没通过就修报告，不能说“跑完了”。
+
+`scripts/new_report.py` 会在写出模板骨架后自动执行字段识别并在失败时删除无效输出。手工创建或复制模板骨架时，必须立即显式运行 `recognize`。两种路径都必须在填完报告后、运行 `report_audit.py extract` 前再执行一次；`recognize` 不要求数值单元格已经填好。
+
+## 可恢复研究包
+
+跨会话或可能中断的完整研究，建议在生成骨架时同时创建 `research-pack-v1`：
+
+```bash
+python3 scripts/new_report.py \
+  --ticker META --company Meta --market US \
+  --out "/path/to/META.md" --research-pack
+```
+
+也可以单独运行 `scripts/research_pack.py init`，随后用 `source-add`、`fact-add`、`derived-add`、`checkpoint`、`valuation-lock` 和 `status` 保存确定性的上游状态。完整命令和 JSON 契约见 [`references/research-pack-v1.md`](references/research-pack-v1.md)。
+
+研究包是持久化恢复检查点，不是 provider/model/token/timing/retry/runtime telemetry，不抓取数据，也不替代报告、lint 或人工审计。
+
+派生记录的输入是引用，不是调用方复制的数据：财务和市场输入使用 `fact_ref`，可组合结果使用无环 `derived_ref`；解析时从不可变 pack 快照取得 value、unit、as-of 和 source IDs。唯一 literal 是 payback 公式的正整数 `years`。TTM sum 要求四个连续财季、70-115 天相邻间隔，且这组中唯一的 `FYyyyy-Q4` 期末年份必须正好等于 `yyyy`；TTM bridge 要求年度 FY 期末年份正好等于声明财年、相邻财年、相同 1-3 季 YTD 长度、350-385 天同比间隔以及兼容 52/53 周财年的桥接日期。公式同时执行维度和十亿单位缩放代数。
+
+包含严格派生记录并完成 `draft_ready` 后，运行 pack-backed Audit v5：
+
+```bash
+python3 scripts/report_audit.py extract --report "/path/to/report.md" --pack "/path/to/pack.json" --manifest-out "/path/to/manifest-v5.json"
+python3 scripts/report_audit.py verdict --report "/path/to/report.md" --pack "/path/to/pack.json" --manifest "/path/to/manifest-v5.json"
+```
+
+v5 不读取 `results.json`，也不抓取网络数据。Extract/verdict 都拒绝 report/pack/manifest symlink 和路径碰撞；严格 JSON 拒绝重复键，公共 snapshot API 也拒绝伪造的 text/bytes、parsed/bytes 或容器类型组合。所有 skill 自带的 research-pack 写入器与 v5 verdict 共用 pack 旁的 advisory lock；verdict 持锁后重新读取并比对快照，再完成重建、复算和提交，因此协作写入器并发时不会丢失更新。该保证只适用于遵守此锁协议的 skill 写入器，无法阻止任意外部程序直接改写文件。成功后 pack 的实际 SHA-256 与 manifest 一致，相同 verdict 重跑仍 PASS 且不改字节。未使用 pack 时，v4 manifest/results 字节、判定逻辑和数值语法保持不变（例如 `$10/share` 仍不是 v4 数值）；v4 同时拒绝破坏性路径碰撞和 symlink 输出，并原子提交两个输出。
 
 ## A 股预抓取脚本
 
@@ -132,7 +163,7 @@ python3 scripts/pdf_text_extract.py <pdf_or_url>
 - 旧周期平准 EPS 与 FCF；
 - EV/FCF。
 
-只靠峰值利润支撑的 Buy，默认降为 Watchlist 或 Avoid-Chase。
+只靠峰值利润支撑的 Buy，评级默认降为 Watchlist 或 Avoid；追高风险单独标记为高，不得写成第五档评级。
 
 ## 核心原则
 
@@ -180,5 +211,6 @@ python3 scripts/pdf_text_extract.py <pdf_or_url>
 - 非 A 股 preflight：IR + filing + PDF + 收盘/盘后价格分离
 - PDF 文本抽取脚本
 - 报告 lint：三原则、四档贴现、Evidence Ledger、10 个固定模块、source links 等交付前检查
+- 报告识别预检：占位符骨架也能验证强制决策字段标签；Action Matrix lint 阻止重复条件交易
 - 周期/高 Capex 双估值闸门
 - 四档贴现回本测试：10Y×1 / 10Y×2 / 8% / 10%

@@ -32,9 +32,15 @@
 | 数据项 | 数值 | 日期 | 来源/层级 | 口径 | 可信度 |
 |---|---:|---|---|---|---|
 | 当前价格 | TODO | {{date}} | TODO | TODO | TODO |
-| 市值（价格 × 股本） | TODO | {{date}} | TODO | 计算值；输入与偏差 TODO | TODO |
-| 每股 FCF / 估值倍数 | TODO | {{date}} | TODO | 计算值；输入与偏差 TODO | TODO |
-| 10Y 国债 ×1 / ×2 | TODO | {{date}} | TODO | TODO | TODO |
+| 总股本 | TODO | {{date}} | TODO | TODO | TODO |
+| 市值 | TODO | {{date}} | TODO | 价格 × 股本；输入与偏差 TODO | TODO |
+| 现金及等价物 | TODO | {{date}} | TODO | TODO | TODO |
+| 有息负债 | TODO | {{date}} | TODO | TODO | TODO |
+| TTM EPS | TODO | {{date}} | TODO | TODO | TODO |
+| TTM FCF/share | TODO | {{date}} | TODO | 计算值；输入与偏差 TODO | TODO |
+| 10Y Treasury | TODO | {{date}} | TODO | ×1 | TODO |
+| 10Y Treasury ×2 | TODO | {{date}} | TODO | ×2 | TODO |
+| 估算组合权重 | TODO | {{date}} | TODO | TODO | TODO |
 | 最新财报 | TODO | TODO | TODO | TODO | TODO |
 
 ## 1. 华尔街式全景扫描 Overview
@@ -67,12 +73,12 @@ TODO
 
 ### 贴现 10 年回本测试
 
-| 贴现率 r | EPS 所需 g | FCF 所需 g | 判断 |
-|---|---:|---:|---|
-| 10Y 国债 ×1 | TODO | TODO | TODO |
-| 10Y 国债 ×2 | TODO | TODO | TODO |
-| 8% | TODO | TODO | TODO |
-| 10% | TODO | TODO | TODO |
+| 贴现率 r | EPS 所需 g | FCF 所需 g | EV/FCF 所需 g | 判断 |
+|---|---:|---:|---:|---|
+| 10Y 国债 ×1 | TODO | TODO | TODO | TODO |
+| 10Y 国债 ×2 | TODO | TODO | TODO | TODO |
+| 8% | TODO | TODO | TODO | TODO |
+| 10% | TODO | TODO | TODO | TODO |
 
 ## 5. 致命风险排序 Risk Ranking
 
@@ -98,9 +104,15 @@ TODO
 
 TODO
 
-### Action Triggers
+### Action Matrix
 
-TODO
+| Action | Trigger type | Executable condition | Position/execution |
+|---|---|---|---|
+| Buy | valuation | N/A — current action only; define an honest valuation condition before using Buy | TODO |
+| Add | price | TODO explicit comparator/threshold | TODO |
+| Hold | operating | TODO explicit comparator/threshold | TODO |
+| Reduce | valuation | TODO explicit comparator/threshold | TODO |
+| Sell | thesis-break | TODO thesis-break condition | TODO |
 
 ## 10. 最终判决 Final Verdict
 

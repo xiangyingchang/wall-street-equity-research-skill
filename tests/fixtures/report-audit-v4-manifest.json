@@ -1,0 +1,98 @@
+{
+  "version": 4,
+  "report_sha256": "ac05f97a5c156df6e4b3000e38b5e5ce34db275c7cac710549d117ca495cc2f0",
+  "requested_ratio": "0.15",
+  "actual_ratio": "1",
+  "eligible_numeric_table_cells": 5,
+  "eligible_universe_ids": [
+    "569009b335c14e60de891da140ffca2b138f99712e6420761cd4307c12400472",
+    "781517285d5fe968cce57eb1ce5265f31375af65c4ad14fb08781a06dd915996",
+    "ab4895a138d6aff2732f32a56026a98f60c521971d45202a5d976887d347b7ba",
+    "e3adeca89dfe976a38bb155ad04d7d6cc21c5eaa4decd9983dad0656ed6b3586",
+    "fabb61c52ca273f2f3427de6d530b6134292304f3fe54d3f3c0d41a4db855a59"
+  ],
+  "items": [
+    {
+      "field": "government_yield",
+      "label": "美国 10Y 国债",
+      "column": "数值",
+      "reported_value": "4.5",
+      "unit": "%",
+      "line_number": 19,
+      "section": "## Evidence Ledger",
+      "required_tier_policy": {
+        "allowed_tiers": [
+          "Tier 1",
+          "Tier 2"
+        ],
+        "tier2_requires_secondary": true
+      },
+      "id": "fabb61c52ca273f2f3427de6d530b6134292304f3fe54d3f3c0d41a4db855a59"
+    },
+    {
+      "field": "payback_eps",
+      "label": "10Y 国债 ×1",
+      "column": "EPS 所需 g",
+      "reported_value": "1",
+      "unit": "%",
+      "line_number": 42,
+      "section": "## 4. 极限估值 + 10 年回本数学审判",
+      "required_tier_policy": {
+        "allowed_tiers": [
+          "Tier 1"
+        ],
+        "tier2_requires_secondary": false
+      },
+      "id": "569009b335c14e60de891da140ffca2b138f99712e6420761cd4307c12400472"
+    },
+    {
+      "field": "payback_eps",
+      "label": "10Y 国债 ×2",
+      "column": "EPS 所需 g",
+      "reported_value": "5",
+      "unit": "%",
+      "line_number": 43,
+      "section": "## 4. 极限估值 + 10 年回本数学审判",
+      "required_tier_policy": {
+        "allowed_tiers": [
+          "Tier 1"
+        ],
+        "tier2_requires_secondary": false
+      },
+      "id": "e3adeca89dfe976a38bb155ad04d7d6cc21c5eaa4decd9983dad0656ed6b3586"
+    },
+    {
+      "field": "payback_eps",
+      "label": "8%",
+      "column": "EPS 所需 g",
+      "reported_value": "8",
+      "unit": "%",
+      "line_number": 44,
+      "section": "## 4. 极限估值 + 10 年回本数学审判",
+      "required_tier_policy": {
+        "allowed_tiers": [
+          "Tier 1"
+        ],
+        "tier2_requires_secondary": false
+      },
+      "id": "ab4895a138d6aff2732f32a56026a98f60c521971d45202a5d976887d347b7ba"
+    },
+    {
+      "field": "payback_eps",
+      "label": "10%",
+      "column": "EPS 所需 g",
+      "reported_value": "10",
+      "unit": "%",
+      "line_number": 45,
+      "section": "## 4. 极限估值 + 10 年回本数学审判",
+      "required_tier_policy": {
+        "allowed_tiers": [
+          "Tier 1"
+        ],
+        "tier2_requires_secondary": false
+      },
+      "id": "781517285d5fe968cce57eb1ce5265f31375af65c4ad14fb08781a06dd915996"
+    }
+  ],
+  "manifest_sha256": "f975952f6eae38a370f1ad5711fc7099b39cb5ce56c8b29880a96cba8b7ad741"
+}

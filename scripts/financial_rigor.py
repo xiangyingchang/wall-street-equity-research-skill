@@ -14,6 +14,7 @@ import json
 import sys
 from decimal import Decimal, localcontext
 
+from financial_formulas import PaybackError, solve_payback
 from validation_common import classify_discrepancy, decimal, direct_discrepancy_percent, symmetric_spread_percent
 
 
@@ -119,6 +120,24 @@ def three_scenario(args: argparse.Namespace) -> None:
         print(f"{label} | {decimal(growth) * HUNDRED:.2f}% | {decimal(multiple)}x | {future_eps:.6f} | {target_price:.6f} | {total_return:.2f}%")
 
 
+def payback(args: argparse.Namespace) -> None:
+    result = solve_payback(args.formula_id, args.multiple, args.discount_rate, args.years)
+    if args.json:
+        print(json.dumps(result.as_json_dict(), sort_keys=True))
+        return
+    print(f"Formula: {result.formula_id}")
+    print(f"Multiple: {result.multiple}")
+    print(f"Discount rate: {result.discount_rate}")
+    print(f"Years: {result.years}")
+    print(f"Required growth: {result.root} ({result.root * HUNDRED}%)")
+    print(f"Modeled multiple: {result.modeled_multiple}")
+    print(f"Absolute residual: {result.absolute_residual}")
+    print(f"Relative residual: {result.relative_residual}")
+    print(f"Iterations: {result.iterations}")
+    print(f"Interval width: {result.interval_width}")
+    print("Converged: yes")
+
+
 def self_test() -> int:
     cases = [
         (Decimal("100"), Decimal("100.5"), "CONSISTENT"),
@@ -180,6 +199,12 @@ def main() -> int:
     scenario.add_argument("--growth", nargs=3, required=True)
     scenario.add_argument("--pe", nargs=3, required=True)
     scenario.add_argument("--years", type=int, default=3)
+    payback_parser = commands.add_parser("payback")
+    payback_parser.add_argument("--formula-id", required=True)
+    payback_parser.add_argument("--multiple", required=True)
+    payback_parser.add_argument("--discount-rate", default="0")
+    payback_parser.add_argument("--years", type=int, default=10)
+    payback_parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     if args.self_test:
         return self_test()
@@ -194,10 +219,12 @@ def main() -> int:
             calc(args.expr)
         elif args.command == "three-scenario":
             three_scenario(args)
+        elif args.command == "payback":
+            payback(args)
         else:
             parser.print_help()
             return 2
-    except (ValueError, ZeroDivisionError, json.JSONDecodeError) as error:
+    except (PaybackError, ValueError, ZeroDivisionError, json.JSONDecodeError) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 2
     return 0

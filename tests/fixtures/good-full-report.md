@@ -53,8 +53,14 @@ EV/FCF 与中周期估值。
 ### Pre-Mortem
 失败路径：增长低于预期。
 
-### Action Triggers
-买入 / 加仓 / 持有 / 减仓 / 卖出条件。
+### Action Matrix
+| Action | Trigger type | Executable condition | Position/execution |
+|---|---|---|---|
+| Buy | valuation | N/A — current action is not Buy | No position |
+| Add | price | Price < $8 and operating gates pass | Add 1% |
+| Hold | operating | Revenue >= $10B | Hold current position |
+| Reduce | valuation | Price >= $20 | Reduce to 3% |
+| Sell | thesis-break | Thesis broken | Exit position |
 
 ## 10. 最终判决 Final Verdict
 

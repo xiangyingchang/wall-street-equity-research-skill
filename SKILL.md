@@ -16,8 +16,11 @@ Use for one listed equity when the user asks for valuation, buy/hold/sell judgme
 - Never invent live prices, filings, yields, or valuation data; Tier 1 evidence decides conflicts.
 - Use `templates/full-report.md`; reports have pre-module sections plus 10 fixed modules, never visible YAML frontmatter.
 - Keep earnings deltas only for `报告类型=最新财报更新`; ordinary reports do not require them.
-- Include Key Forces, Variant View, Pre-Mortem, Action Triggers, four discount rows, and final 三原则扣问.
+- Include Key Forces, Variant View, Pre-Mortem, one module 9 Action Matrix, four discount rows, and final 三原则扣问.
+- Keep every executable conditional trade and threshold only in the Action Matrix; First-Page and Final Verdict may state the current action or summarize ranges without defining another trade rule.
 - Apply calculated-value checks and the manual audit; do not let automation fetch or resolve provenance.
+- Treat `research-pack-v1` as durable recovery state only; never add provider, model, token, timing, retry, or runtime telemetry.
+- In pack-backed v5, declare derived inputs by `fact_ref` or `derived_ref`; only payback `years` may be a literal. Never copy caller-supplied values, units, dates, or source IDs into reference inputs.
 
 ## Decision Gates
 
@@ -28,14 +31,16 @@ Use for one listed equity when the user asks for valuation, buy/hold/sell judgme
 | US/HK/other | Complete IR, filing, current-price, 10Y, peer, and PDF-extraction preflight. |
 | Latest earnings update | Add what changed and what did not inside module 1. |
 | Missing or conflicting critical evidence | Apply the rating caps in `references/report-contract.md`. |
+| Resumable or multi-session report | Initialize `research-pack-v1` and resume from its first missing or stale checkpoint. |
 
 ## Execution Steps
 
 1. Collect ticker, market, tax identity, horizon, opportunity cost, holding state, and size; state defaults when used.
-2. Build the Evidence Ledger with date, tier, basis, unit, and calculated input/output checks. Apply `scripts/financial_rigor.py` thresholds.
-3. Add the compact Researchability Record under First-Page Verdict and follow `references/researchability.md`.
-4. Run the 10 modules using `references/full-methodology.md`; use its four-lens mapping without roleplay or a new section.
-5. Lint, then run `report_audit extract --manifest-out ... --results-out ...`; fill the generated template and run the complete `python3 scripts/report_audit.py verdict --report ... --manifest ... --results ...` command.
+2. Create the canonical skeleton. `scripts/new_report.py` runs recognition automatically and fails closed; add `--research-pack [path]` for a durable recovery pack. For a manually created or copied skeleton, immediately run `python3 scripts/report_audit.py recognize --report <report.md>`. Fix missing, ambiguous, or unrecognized mandatory labels before populating values.
+3. Build the Evidence Ledger with atomic field labels, date, tier, basis, unit, and calculated input/output checks. Apply `scripts/financial_rigor.py` thresholds.
+4. Add the compact Researchability Record under First-Page Verdict and follow `references/researchability.md`.
+5. Run the 10 modules using `references/full-methodology.md`; use its four-lens mapping without roleplay or a new section.
+6. Lint and rerun `report_audit.py recognize`. Without a research pack, use the unchanged v4 `extract --results-out ...` and `verdict --results ...` workflow. With a current pack containing bound derived records, use v5 `extract --pack ... --manifest-out ...` and `verdict --pack ... --manifest ...`; v5 resolves reference inputs from the pack snapshot, rejects symlinked artifacts, never accepts a results file, and only a successful verdict may write `audit_passed`.
 
 ## Output Contract
 
@@ -45,6 +50,7 @@ Return the report path, final rating/action, key uncertainty, and verification r
 
 - `references/report-contract.md` — full-report contract and rating caps.
 - `references/data-validation.md` — sources, provenance, discrepancy, and executable audit workflow.
+- `references/research-pack-v1.md` — deterministic recovery pack, checkpoints, and valuation-basis lock.
 - `references/researchability.md` — authoritative A/B/C and confidence rules.
 - `references/full-methodology.md` — 10-module method and four-lens mapping.
 - `references/source-map.md` — Obsidian locations and prior-report continuity.
