@@ -96,6 +96,31 @@ class ValuationConsistencyCliTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("unknown Adjustment ID", result.stdout)
 
+    def test_scenario_metric_must_match_registered_basis(self) -> None:
+        result = self.run_check(GOOD.replace("| Base | EPS-BASE | $5 | 20x | $100 |", "| Base | EPS-BASE | $50 | 2x | $100 |"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("does not match registered Basis", result.stdout)
+
+    def test_bear_base_bull_ordering_fails(self) -> None:
+        result = self.run_check(GOOD.replace("| Bear | EPS-BEAR | $4 | 15x | $60 | 20% | $48 |", "| Bear | EPS-BEAR | $4 | 30x | $120 | 20% | $96 |"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Bear fair value exceeds Base", result.stdout)
+
+    def test_buy_price_above_fair_value_fails(self) -> None:
+        result = self.run_check(GOOD.replace("| Base | EPS-BASE | $5 | 20x | $100 | 15% | $85 |", "| Base | EPS-BASE | $5 | 20x | $100 | -10% | $110 |"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("buy price exceeds fair value", result.stdout)
+
+    def test_sub_one_percent_fcf_yield_reconciles(self) -> None:
+        report = GOOD.replace("| 当前价格 | $100 |", "| 当前价格 | $1000 |").replace("| TTM PE | 20x |", "| TTM PE | 200x |").replace("| FCF yield | 4% |", "| FCF yield | 0.4% |")
+        result = self.run_check(report)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_normalized_basis_requires_adjustment_bridge(self) -> None:
+        result = self.run_check(GOOD.replace("| EPS-BASE | EPS/share | $5 | FY+1 | ADJ-1 | Base |", "| EPS-BASE | normalized EPS/share | $5 | FY+1 | None | Base |"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("has no Adjustment ID bridge", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

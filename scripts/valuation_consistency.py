@@ -139,6 +139,7 @@ def validate_text(text: str) -> list[Finding]:
         findings.append(Finding("WARNING", "Capex / Owner Earnings Bridge omitted; acceptable only when capital intensity is not material"))
 
     basis_ids: set[str] = set()
+    basis_values: dict[str, Decimal] = {}
     adjustment_ids: set[str] = set()
     if adjustment is not None:
         for row in _rows_as_dict(adjustment):
@@ -156,7 +157,15 @@ def validate_text(text: str) -> list[Finding]:
             if basis_id in basis_ids:
                 findings.append(Finding("ERROR", f"duplicate Basis ID: {basis_id}"))
             basis_ids.add(basis_id)
+            basis_value = _decimal(_get(row, "Value"))
+            if basis_value is not None:
+                basis_values[basis_id] = basis_value
             refs = _get(row, "Adjustments").strip()
+            normalized_cue = " ".join(
+                [_get(row, "Basis ID"), _get(row, "Metric"), _get(row, "Period"), _get(row, "Use")]
+            )
+            if re.search(r"normalized|adjusted|core|中枢|调整后|正常化", normalized_cue, re.I) and _norm(refs) in {"", "none", "n/a", "na", "无"}:
+                findings.append(Finding("ERROR", f"normalized/adjusted Basis {basis_id} has no Adjustment ID bridge"))
             if refs and _norm(refs) not in {"none", "n/a", "na", "无"}:
                 for ref in re.split(r"[,，;；\s]+", refs):
                     if ref and ref not in adjustment_ids:
@@ -176,6 +185,11 @@ def validate_text(text: str) -> list[Finding]:
                 continue
             if basis_id not in basis_ids:
                 findings.append(Finding("ERROR", f"Scenario {name} references unknown Basis ID: {basis_id}"))
+            elif metric is not None and basis_id in basis_values:
+                registered = basis_values[basis_id]
+                basis_error = abs(metric - registered) / max(abs(registered), Decimal("0.01"))
+                if basis_error > Decimal("0.02"):
+                    findings.append(Finding("ERROR", f"Scenario {name} Metric value does not match registered Basis {basis_id}"))
             if None in {metric, multiple, fair, margin, buy}:
                 findings.append(Finding("ERROR", f"Scenario {name} has an unparseable numeric field"))
                 continue
@@ -218,7 +232,7 @@ def validate_text(text: str) -> list[Finding]:
             findings.append(Finding("ERROR", "Evidence Ledger TTM PE does not reconcile to price / TTM EPS"))
     if price is not None and fcf_share is not None and fcf_yield is not None:
         expected = fcf_share / price * Decimal(100)
-        shown = fcf_yield if fcf_yield > Decimal(1) else fcf_yield * Decimal(100)
+        shown = fcf_yield  # Ledger percentages are expressed in percentage points, including values below 1%.
         if abs(shown - expected) > Decimal("0.20"):
             findings.append(Finding("ERROR", "Evidence Ledger FCF yield does not reconcile to FCF/share / price"))
 
