@@ -2,6 +2,22 @@
 
 ## 2026-07-31
 
+### Gate 7 extension + B-level conversion rate fix
+
+**Change:**
+- Extended Gate 7 to cover share counts (2.566B -> 25.66亿) and user/engagement metrics (3.60B DAP -> 36亿), not just $-prefixed money amounts. Added `WESTERN_BARE_SUFFIX` and `SHARE_USER_CONTEXT` patterns; bare suffixes flagged only on lines with share/user-metric context keywords.
+- Fixed critical B-level conversion rate error: previous commit (ceefdd2) used B=1.0, but 1 billion = 10亿, so all B-level amounts were 10x too small (e.g. `$130B` became `$130亿` instead of `$1,300亿`). Correct rate: B=10, M=0.01, T=10000. Re-converted the entire Meta 2026-07-30 report from the original pre-conversion version with correct rates.
+- Fixed PER_SHARE_CONTEXT false-positive: `/股` in "债务/股权比" and "share" in "FCF/share" column name caused entire lines to be skipped, leaving B-level amounts unconverted. Removed the line-skip logic since per-share amounts (e.g. `$6.18`) have no M/B/T suffix and are naturally not matched.
+- Updated PRD, methodology, and report-contract descriptions to reflect correct conversion rates and the "any Western suffix fails" logic (not "亿 coexistence required").
+
+**Reason:** User requested all amounts including share counts and user metrics be converted to "亿" for readability. During implementation, discovered the B-level conversion rate was wrong (B=1.0 instead of B=10), meaning all dollar amounts in the previous commit were 10x too small. This was a silent data-integrity error that lint could not catch (lint only checks for Western suffixes, not conversion correctness).
+
+**Scope boundary:** No change to lint detection logic for $-prefixed amounts (already working). Only extended to bare suffixes on share/user lines. Conversion correctness is the report author's responsibility; lint enforces unit format, not arithmetic.
+
+**Verification:** `python3 -m py_compile scripts/*.py` PASS; `python3 -m unittest discover -s tests` 76/76 PASS; `report_lint.py --self-test` PASS; `report_lint.py --fixtures tests/fixtures` PASS; `git diff --check` PASS. Meta report lint+audit PASS with correct amounts ($1,300亿 capex, $902.64亿 cash, 25.66亿 shares, 36亿 DAP).
+
+## 2026-07-31
+
 ### Amount unit standardization lint gate - absolute amounts must use "亿"
 
 **Change:**

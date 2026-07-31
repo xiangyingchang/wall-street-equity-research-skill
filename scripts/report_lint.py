@@ -391,6 +391,10 @@ NUMERIC_VALUE = re.compile(r"[\d,]+(?:\.\d+)?\s*(?:\$|¥|₩|€|£|x|倍|元|M|
 # Western magnitude suffixes used for absolute money amounts ($130B, $784M, $1.33T).
 # Excludes per-share context and KRW (handled separately).
 WESTERN_MONEY_SUFFIX = re.compile(r"[\$¥€£]\s*[\d,]+(?:\.\d+)?\s*([MBT])\b", re.I)
+# Bare number + Western suffix without currency sign (e.g. 2.566B shares, 3.60B DAP).
+# Only flagged when the same line has a share/user-metric context keyword.
+WESTERN_BARE_SUFFIX = re.compile(r"(?<![$\u00a5\u20ac\u00a3\w])[\d,]+(?:\.\d+)?\s*([MBT])\b", re.I)
+SHARE_USER_CONTEXT = re.compile(r"股|share|diluted|稀释|DAP|DAU|MAU|用户|user|参与|member|subscriber|订阅", re.I)
 YI_USED = re.compile(r"亿")
 PER_SHARE_CONTEXT = re.compile(r"/share|/股|EPS|每股|price\s*=|股息|dividend", re.I)
 KRW_CONTEXT = re.compile(r"KRW|₩|韩元|한국|원")
@@ -530,7 +534,8 @@ def unit_standardization_errors(text: str) -> list[str]:
     """Gate 7: absolute money amounts must use '亿' (yi), not Western M/B/T suffixes.
 
     Any Western magnitude suffix (M/B/T) on an absolute money amount ($130B,
-    $784M) is a unit error regardless of whether '亿' appears elsewhere.
+    $784M), share count (2.566B), or user/engagement metric (3.60B DAP) is a
+    unit error regardless of whether '亿' appears elsewhere.
     Per-share amounts, multiples, ratios, KRW amounts, and formula variables are exempt.
     """
     # KRW reports are exempt: face value too large for '亿' to be practical.
@@ -546,8 +551,13 @@ def unit_standardization_errors(text: str) -> list[str]:
         for m in WESTERN_MONEY_SUFFIX.finditer(line):
             suffix = m.group(1).upper()
             conflicts.append(f"line {line_no}: absolute amount '{line.strip()[:80]}' uses Western '{suffix}' instead of '亿'")
+        # Bare suffix (no currency sign) only counts on share/user-metric lines.
+        if SHARE_USER_CONTEXT.search(line):
+            for m in WESTERN_BARE_SUFFIX.finditer(line):
+                suffix = m.group(1).upper()
+                conflicts.append(f"line {line_no}: share/user count '{line.strip()[:80]}' uses Western '{suffix}' instead of '亿'")
     if conflicts:
-        return ["absolute money amounts must use '亿' (e.g. $1,300亿 not $130B); per-share/multiple/KRW exempt"] + conflicts[:5]
+        return ["amounts and counts must use '亿' (e.g. $1,300亿 not $130B, 25.66亿股 not 2.566B); per-share/multiple/KRW exempt"] + conflicts[:8]
     return []
 
 

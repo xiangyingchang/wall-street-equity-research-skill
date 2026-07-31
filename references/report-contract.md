@@ -182,7 +182,7 @@ These gates are lint-enforced and apply to every full report:
 4. **Variant View placement:** Must appear as `### Variant View` inside module 9 (Final Verdict) only. Must not appear in module 6.
 5. **Price-zone summary (module 8):** Must contain a Markdown table whose header or cells reference at least 2 of the three zone tiers (safe-margin / observation / overvalued). Pure-observation names may state "无价格区间" with a reason to skip; holding positions may not use this exemption.
 6. **Target PE / target price (module 8 or 9):** Must contain a target-price keyword (目标 PE / 目标价 / target PE / target price / 安全买入) near a numeric value. Pure qualitative wording does not satisfy the gate.
-7. **Amount unit standardization:** Absolute money amounts must use "亿" (yi) with the original currency, not Western M/B/T suffixes (e.g. `$1,300亿` not `$130B`). No cross-currency conversion. Per-share amounts, multiples, ratios, and KRW amounts are exempt. When "亿" and Western suffixes coexist for absolute amounts, lint fails.
+7. **Amount unit standardization:** Absolute money amounts, share counts, and user/engagement metrics must use "亿" (yi) with the original currency, not Western M/B/T suffixes (e.g. `$1,300亿` not `$130B`, `25.66亿股` not `2.566B`, `36亿 DAP` not `3.60B`). No cross-currency conversion. Per-share amounts, multiples, ratios, and KRW amounts are exempt. Any Western suffix on these quantities fails lint.
 
 ## Variant View, Pre-Mortem, and Action Matrix
 
