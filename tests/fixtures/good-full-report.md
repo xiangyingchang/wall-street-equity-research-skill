@@ -72,7 +72,7 @@ EV/FCF 与中周期估值。
 |---|---|---|---|
 | Buy | valuation | N/A — current action is not Buy | No position |
 | Add | price | Price < $8 and operating gates pass | Add 1% |
-| Hold | operating | Revenue >= $10B | Hold current position |
+| Hold | operating | Revenue >= $100亿 | Hold current position |
 | Reduce | valuation | Price >= $20 | Reduce to 3% |
 | Sell | thesis-break | Thesis broken | Exit position |
 

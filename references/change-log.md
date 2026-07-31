@@ -2,6 +2,25 @@
 
 ## 2026-07-31
 
+### Amount unit standardization lint gate - absolute amounts must use "亿"
+
+**Change:**
+- **Gate 7 (report_lint.py):** Absolute money amounts must use "亿" (yi) with the original currency, not Western M/B/T suffixes (e.g. `$1,300亿` not `$130B`). No cross-currency conversion. Per-share amounts, multiples, ratios, KRW amounts, and formula variables are exempt. KRW reports are fully exempt (face value too large for "亿" to be practical).
+- Updated `references/full-methodology.md`: added "金额单位标准（lint 强制）" section before Evidence Ledger, documenting the standard and exemptions.
+- Updated `references/report-contract.md`: added Analysis Density Gates entry 7.
+- Updated `SKILL.md` Hard Rules: added amount-unit standardization to the analysis-density-gates bullet.
+- Updated fixture and self-test inline good report: `Revenue >= $10B` -> `Revenue >= $100亿`.
+- Updated `tests/test_validation_cli.py`: synced `$10B` -> `$100亿` in matrix variable and negative-contract cases.
+- Migrated the live Meta 2026-07-30 report: converted 117 absolute-amount occurrences from Western M/B/T to "亿" (e.g. `$130B` -> `$130亿`, `$784M` -> `$7.84亿`, `$1.503T` -> `$15,030亿`).
+
+**Reason:** Meta 2026-07-30 report used Western M/B/T suffixes (`$130B`, `$784M`, `$1.33T`) throughout, with zero occurrences of "亿". Unit inconsistency reduces readability and prevents quick cross-comparison of absolute scale. User requested: amounts at the "亿" magnitude must uniformly use "亿" as the standard unit, with no cross-currency conversion.
+
+**Scope boundary:** No cross-currency conversion (no exchange-rate dependency or audit risk). Per-share amounts (EPS, price, dividend, target price), multiples (PE x), ratios, and percentages are unchanged. KRW reports are exempt. User metrics (DAP 3.60B) and share counts without $ prefix are not enforced by this gate (industry convention).
+
+**Verification:** `python3 -m py_compile scripts/*.py` PASS; `python3 -m unittest discover -s tests` 76/76 PASS; `report_lint.py --self-test` PASS; `report_lint.py --fixtures tests/fixtures` PASS; `git diff --check` PASS. Meta report passes lint and audit after migration. SK海力士 (KRW) correctly exempted.
+
+## 2026-07-31
+
 ### Price discipline lint gates - target PE/price + price-zone summary
 
 **Change:**

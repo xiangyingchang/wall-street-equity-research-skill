@@ -1,21 +1,21 @@
 {
   "version": 4,
-  "report_sha256": "9faf1f127ab896e601115ea67dbe20ed24b5b5d0fbbc15b6c36741de24c828e1",
+  "report_sha256": "4d3b808836cf9b8a04b0d5760beafd43c610945ae972ebc02be9916f587d0224",
   "requested_ratio": "0.15",
   "actual_ratio": "0.4545454545454545454545454545",
   "eligible_numeric_table_cells": 11,
   "eligible_universe_ids": [
-    "18dfbebfa8bcdd4737c7a6caa62b6e41e9e1f9d4311a7951b12d4c7aa7a36885",
-    "3d48cfa3d5f3381c727bb82cb1a4825fc02664c391d92df05d80150c55815e62",
-    "7b98da2c07a0ff5ddce766105d93fda15583b1a77d35eef80fbd25bca1d5b025",
-    "7e8c9b44dcea669a3c079dc50294b22d70ae12a6253d5b7076e52324d15b3ce2",
-    "9806c763e8295ce4d2473d62daaec5ed4797c27af2780c63101987e0983bbab0",
-    "9f39cd63faa1ea4904d7660b617782b1355ff718cf05f8f2ce6aaf2641278aad",
-    "a04089e49f24900f71cad111d9c609a41dfb9a7c92698c0b7a40b138cd3f48a1",
-    "ad12a06f76ceef2d64ca189ccc9504c5cdbf81ef10a9e838087b39e2759ff50a",
-    "d48cf34c7f789bf0a7d2694dead1addd40936051ffe817a0bd858b695911f757",
-    "e0a53e59ded096221d920d43d546b7d4451971419cb40e730788acc11f9b4e0d",
-    "f7036fb68e2e6b44b5ec47ccdf5ea39c07b4a0b81c33ac0edbbc306089ba9916"
+    "0bf74b3b06f2974f3167558c03c5ba55b287a8dfb959a95096983b30d597ca1b",
+    "48b72ae990c8bf5f453d70362fc20e0dbd8f1335df7c7218fa5e13d79a03edde",
+    "5f7a6d0ba5af5418142312f06309d590deb857823fd66ce68f7151c09a1a1e49",
+    "8f0802c640cf7945e0c3db6cb7162df73f81b2ea353d51fc5d7388837a9f4042",
+    "9fdfe960cec0c15472132a3dafba3f7cf2564de28c87299f656dee23d50e4151",
+    "b17ed4b4be81c4abaf7284f31650d7110a17de1cca061663745bb86854f6bf03",
+    "b6e0f9e40e666fcdf2382f94015960904b8d62943887b24c266abe7c3ef2b081",
+    "c212dd70147ee91c4fe13cdf66a2c5bcb1a03b92116e0e64aa7fbcbbc801f364",
+    "cc612f4d02e88163e0a38b98d99f83e56095585ff0292fe15ba5e40977253ad1",
+    "e8bf5f900dd1dea2caf107c9d1740a8be632093c5afaf49c5526be3d7778bff5",
+    "ee444886585eaa9dfd49cfa9949cc7aa4d67377079449e327d7cd7aff8b81e5a"
   ],
   "items": [
     {
@@ -33,7 +33,7 @@
         ],
         "tier2_requires_secondary": true
       },
-      "id": "3d48cfa3d5f3381c727bb82cb1a4825fc02664c391d92df05d80150c55815e62"
+      "id": "5f7a6d0ba5af5418142312f06309d590deb857823fd66ce68f7151c09a1a1e49"
     },
     {
       "field": "payback_eps",
@@ -49,7 +49,7 @@
         ],
         "tier2_requires_secondary": false
       },
-      "id": "a04089e49f24900f71cad111d9c609a41dfb9a7c92698c0b7a40b138cd3f48a1"
+      "id": "e8bf5f900dd1dea2caf107c9d1740a8be632093c5afaf49c5526be3d7778bff5"
     },
     {
       "field": "payback_eps",
@@ -65,7 +65,7 @@
         ],
         "tier2_requires_secondary": false
       },
-      "id": "f7036fb68e2e6b44b5ec47ccdf5ea39c07b4a0b81c33ac0edbbc306089ba9916"
+      "id": "8f0802c640cf7945e0c3db6cb7162df73f81b2ea353d51fc5d7388837a9f4042"
     },
     {
       "field": "payback_eps",
@@ -81,7 +81,7 @@
         ],
         "tier2_requires_secondary": false
       },
-      "id": "d48cf34c7f789bf0a7d2694dead1addd40936051ffe817a0bd858b695911f757"
+      "id": "9fdfe960cec0c15472132a3dafba3f7cf2564de28c87299f656dee23d50e4151"
     },
     {
       "field": "payback_eps",
@@ -97,8 +97,8 @@
         ],
         "tier2_requires_secondary": false
       },
-      "id": "e0a53e59ded096221d920d43d546b7d4451971419cb40e730788acc11f9b4e0d"
+      "id": "0bf74b3b06f2974f3167558c03c5ba55b287a8dfb959a95096983b30d597ca1b"
     }
   ],
-  "manifest_sha256": "34314c3d8d89b73bac407faea16d8441429ec572d01fd27d0b483d2780c894fe"
+  "manifest_sha256": "5bfc8dc8b0b69e64435a5b1f0ff72789bf02a0b273b34fbe8b1a1bc93738c3de"
 }

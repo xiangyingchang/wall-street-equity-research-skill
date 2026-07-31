@@ -388,6 +388,12 @@ PRICE_ZONE_LABELS = re.compile(r"安全边际区|观察区|高估区|安全区|�
 NO_PRICE_ZONE_CLAIM = re.compile(r"无价格区间|no\s+price\s+zone", re.I)
 TARGET_PRICE_KEYWORDS = re.compile(r"目标\s*PE|目标价|target\s+PE|target\s+price|安全买入|安全边际.{0,6}价格|buy.{0,6}zone.{0,6}price", re.I)
 NUMERIC_VALUE = re.compile(r"[\d,]+(?:\.\d+)?\s*(?:\$|¥|₩|€|£|x|倍|元|M|B|T|万亿|亿)", re.I)
+# Western magnitude suffixes used for absolute money amounts ($130B, $784M, $1.33T).
+# Excludes per-share context and KRW (handled separately).
+WESTERN_MONEY_SUFFIX = re.compile(r"[\$¥€£]\s*[\d,]+(?:\.\d+)?\s*([MBT])\b", re.I)
+YI_USED = re.compile(r"亿")
+PER_SHARE_CONTEXT = re.compile(r"/share|/股|EPS|每股|price\s*=|股息|dividend", re.I)
+KRW_CONTEXT = re.compile(r"KRW|₩|韩元|한국|원")
 
 
 def moat_score_table_errors(module3: str) -> list[str]:
@@ -520,6 +526,31 @@ def target_pe_price_errors(module8: str, module9: str) -> list[str]:
     return ["module 8 or 9 must include a quantified target PE / target price (keyword + numeric value)"]
 
 
+def unit_standardization_errors(text: str) -> list[str]:
+    """Gate 7: absolute money amounts must use '亿' (yi), not Western M/B/T suffixes.
+
+    Any Western magnitude suffix (M/B/T) on an absolute money amount ($130B,
+    $784M) is a unit error regardless of whether '亿' appears elsewhere.
+    Per-share amounts, multiples, ratios, KRW amounts, and formula variables are exempt.
+    """
+    # KRW reports are exempt: face value too large for '亿' to be practical.
+    if KRW_CONTEXT.search(text):
+        return []
+    conflicts = []
+    for line_no, line in enumerate(text.splitlines(), start=1):
+        # Skip per-share lines and formula variable lines ($M = ...).
+        if PER_SHARE_CONTEXT.search(line):
+            continue
+        if re.search(r"\$M\s*=", line):
+            continue
+        for m in WESTERN_MONEY_SUFFIX.finditer(line):
+            suffix = m.group(1).upper()
+            conflicts.append(f"line {line_no}: absolute amount '{line.strip()[:80]}' uses Western '{suffix}' instead of '亿'")
+    if conflicts:
+        return ["absolute money amounts must use '亿' (e.g. $1,300亿 not $130B); per-share/multiple/KRW exempt"] + conflicts[:5]
+    return []
+
+
 def lint_text(text: str) -> list[str]:
     errors: list[str] = []
 
@@ -612,6 +643,7 @@ def lint_text(text: str) -> list[str]:
     errors.extend(variant_view_placement_errors(module6, module9))
     errors.extend(price_zone_summary_errors(module8))
     errors.extend(target_pe_price_errors(module8, module9))
+    errors.extend(unit_standardization_errors(text))
     if not re.search(r"###\s*三原则扣问", module9):
         errors.append("module 9 must include dedicated '### 三原则扣问'")
 
@@ -741,7 +773,7 @@ EV/FCF 与中周期估值。
 |---|---|---|---|
 | Buy | valuation | N/A - current action is not Buy | No position |
 | Add | price | Price < $8 and operating gates pass | Add 1% |
-| Hold | operating | Revenue >= $10B | Hold current position |
+| Hold | operating | Revenue >= $100亿 | Hold current position |
 | Reduce | valuation | Price >= $20 | Reduce to 3% |
 | Sell | thesis-break | Thesis broken | Exit position |
 

@@ -262,7 +262,7 @@ class ValidationCliTests(unittest.TestCase):
 |---|---|---|---|
 | Buy | valuation | N/A — current action is not Buy | No position |
 | Add | price | Price < $8 and operating gates pass | Add 1% |
-| Hold | operating | Revenue >= $10B | Hold current position |
+| Hold | operating | Revenue >= $100亿 | Hold current position |
 | Reduce | valuation | Price >= $20 | Reduce to 3% |
 | Sell | thesis-break | Thesis broken | Exit position |
 """
@@ -274,8 +274,8 @@ class ValidationCliTests(unittest.TestCase):
             "missing-type": (fixture.replace("| Sell | thesis-break | Thesis broken | Exit position |", "| Sell | operating | Thesis broken | Exit position |"), "missing trigger types: thesis-break"),
             "external-trade": (fixture.replace("## Sources", "如果价格低于 $8，就 Buy。\n\n## Sources"), "conditional threshold trade"),
            "post-matrix-h4-trade": (fixture.replace("## 9.", "#### Post-matrix note\n价格低于 $8：加仓\n\n## 9.", 1), "conditional threshold trade"),
-            "all-na": (fixture.replace("| Add | price | Price < $8 and operating gates pass | Add 1% |", "| Add | price | N/A | N/A |").replace("| Hold | operating | Revenue >= $10B | Hold current position |", "| Hold | operating | N/A | N/A |").replace("| Reduce | valuation | Price >= $20 | Reduce to 3% |", "| Reduce | valuation | N/A | N/A |").replace("| Sell | thesis-break | Thesis broken | Exit position |", "| Sell | thesis-break | N/A | N/A |"), "missing executable non-N/A"),
-            "hold-na": (fixture.replace("| Hold | operating | Revenue >= $10B | Hold current position |", "| Hold | operating | N/A | N/A |"), "N/A is allowed only for Buy or Add"),
+           "all-na": (fixture.replace("| Add | price | Price < $8 and operating gates pass | Add 1% |", "| Add | price | N/A | N/A |").replace("| Hold | operating | Revenue >= $100亿 | Hold current position |", "| Hold | operating | N/A | N/A |").replace("| Reduce | valuation | Price >= $20 | Reduce to 3% |", "| Reduce | valuation | N/A | N/A |").replace("| Sell | thesis-break | Thesis broken | Exit position |", "| Sell | thesis-break | N/A | N/A |"), "missing executable non-N/A"),
+           "hold-na": (fixture.replace("| Hold | operating | Revenue >= $100亿 | Hold current position |", "| Hold | operating | N/A | N/A |"), "N/A is allowed only for Buy or Add"),
             "legacy": (fixture.replace("### Action Matrix", "### Action Triggers", 1), "legacy 'Action Triggers'"),
         }
         with tempfile.TemporaryDirectory() as raw:
