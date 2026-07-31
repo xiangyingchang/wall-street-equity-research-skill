@@ -2,7 +2,7 @@
 
 ## 状态
 
-实施中 - 2026-08-01
+完成 - 2026-08-01
 
 ## 背景
 
@@ -139,8 +139,19 @@ Forward 12M 必须为四个明确季度/期间之和，或引用有日期和来�
 3. 缺失 Fact ID、未知 operator、字符串与数值非法比较均 FAIL。
 4. `valuation_consistency.py` 对 EPS Bridge 算错、Basis/Bridge 不一致、重复 Fact ID、人工 triggered 表格和机会成本类型混淆 FAIL。
 5. 模板包含 Canonical Fact Registry、Forward Revenue Bridge、Scenario Assumption Registry、runtime EPS Bridge 和 fact-based Current Action Evaluation。
-6. SKILL 版本更新到 1.4.0，report contract / methodology / runtime reference 同步。
+6. SKILL 版本更新到 1.4.0，runtime reference 和 canonical template 同步。
 7. `python3 -m py_compile scripts/*.py` PASS。
 8. `python3 -m unittest discover -s tests` PASS。
 9. `report_lint.py --self-test` 与 fixtures PASS。
 10. `git diff --check` PASS。
+
+## 完成验证
+
+- GitHub Actions `Validate` run #49：PASS。
+- Python syntax：PASS。
+- Financial rigor、report audit、report lint self-tests：PASS。
+- Lint fixtures：PASS。
+- 全量 unittest：109/109 PASS。
+- Meta EPS Bridge regression：`30.7101` PASS。
+- Meta Action Evaluation regression：`38.1% < 35%` 为 false；无其他规则触发时 `REVIEW` PASS。
+- 模板字段识别：修复 `10Y Treasury ×2` 原子标签后 PASS。
