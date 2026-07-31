@@ -2,189 +2,112 @@
 
 ## 状态
 
-实施中 - 2026-08-01
+完成 - 2026-08-01
 
 ## 背景
 
-Meta 2026-08-01 v1.4 报告说明，v1.4 已经解决“给定输入后的数学错误”：Scenario EPS Bridge、IRR、Reverse Expectations 和 Action Evaluation 均可复算。但报告仍能通过结构约束，同时出现以下问题：
+Meta 2026-08-01 v1.4 报告证明，正确公式仍会放大错误或脆弱输入：
 
-1. Canonical Fact Registry 中 TTM operating margin 为 35%，竞品表又写 43%；按四个季度官方数据计算约为 38.08%。
-2. TTM EPS 写为约 $27.25，但四季 GAAP EPS 合计为 $26.55；当前 TTM Fact 没有强制由四个季度自动推导。
-3. Forward Revenue Bridge 虽然有四行，但 Q1/Q2 2027 标注“+12% YoY”的收入与基准季度不匹配；Bull 单季收入低于 Base，Base/Bull 总收入相同，却声称不同增长假设。
-4. Action runtime 已不接受人工 `triggered=true/false`，但阈值仍可任意设置。例如 TTM FCF < $400亿 触发 Reduce，没有阈值来源、回看窗口、确认期、容忍区间或最低数据置信度。
-5. 当前价 $549 被同时描述为“不值得买入”“应 Reduce”和“位于买入区”，跨模块语义冲突没有被拦截。
-6. Scenario Valuation 使用 20.5x 的 Base fair value，而 5-year IRR 使用 18x exit PE；两者可以并存，但报告没有区分 forward reference value、target-return-consistent price 和 safety-margin buy price。
-7. IRR 使用 0.5% dividend yield，Reverse Expectations 未使用同一股息假设，两个对称模型的输入不一致。
-8. `FACT-BULL-FAIR-VALUE` 把主观模型输出注册为事实，混淆了事实、推导值、假设和模型输出。
-9. Verification 中 Valuation consistency、Lint、Audit verdict 仍为 TODO，报告却被当作已完成交付。
-10. 稀释加权平均股数被直接用于市值计算，未区分 period-average diluted shares 与 point-in-time shares outstanding。
+1. TTM operating margin 在不同章节出现 35% 与 43%，但四季度数据约为 38.08%。
+2. TTM EPS 写为约 $27.25，而四季 GAAP EPS 合计为 $26.55。
+3. Forward Revenue 虽有四行，但标注 +12% YoY 的预测与基准季度不匹配；Base/Bull 总额相同却声称不同增长路径。
+4. `$400亿` FCF Reduce 阈值缺少来源、回看窗口、确认期、容忍区间与最低置信度。
+5. 当前价格同时被描述为“不值得买入”“Reduce”和“位于买入区”。
+6. IRR 与 Reverse Expectations 使用了不同股息输入。
+7. Fair value 被注册为 `FACT-*`，混淆事实与模型输出。
+8. weighted-average diluted shares 被直接用于 point-in-time market cap。
+9. Verification 仍为 TODO，但报告被当作完成交付。
 
-根因是 v1.4 保障了“公式闭合”和“条件由 runtime 比较”，但尚未保障：
-
-- 输入自身由来源或上游公式推导；
-- 假设标签与实际数值一致；
-- 阈值具有可审计来源和容忍区间；
-- 决策对轻微输入变化具有稳定性；
-- Fair Value、目标回报价格和买入价使用一致语义；
-- 完整报告在验证未完成时 fail closed。
+根因：v1.4 保障了公式闭合和条件比较，却没有保障输入来源、预测变换、阈值政策、价格语义和决策稳定性。
 
 ## 目标
 
-1. TTM EPS、TTM revenue、TTM operating income、TTM operating margin 等关键指标必须由 runtime 根据明确季度组件生成。
-2. Forward Revenue 每一行必须由 guide、YoY、QoQ、explicit source 或 consensus 模式生成，不能只手填一个最终值并附加不匹配的增长标签。
-3. IRR、Reverse Expectations 和 target-return-consistent current price 使用同一组股息、期限、退出倍数和起始 Basis 输入。
-4. Canonical Registry 明确区分 `FACT`、`DERIVED` 和 `MODEL`；模型输出不得伪装为 Fact。
-5. Action Matrix 的每个数值阈值必须引用 Threshold ID；Threshold 必须声明来源、回看窗口、确认期、容忍区间、最低置信度和理由。
-6. 当实际值处于阈值容忍区间、数据置信度不足、确认期不足，或轻微扰动会改变动作时，resolved action 必须降级为 `REVIEW`。
-7. Price Zone、First-Page Verdict、Action Matrix 和 current action 的语义必须一致。
-8. Forward reference value、target-return price、safety-margin buy price 和 stress price 必须分开。
-9. Verification 存在 TODO / FAIL / 未运行 / Unknown 时，完整报告必须失败。
-10. Point-in-time market cap 不得使用 weighted-average diluted shares，除非显式标为估算并提供 point-in-time reconciliation。
+1. 决策关键 TTM 值由四季度组件自动生成。
+2. Forward Revenue 每期由 guide / YoY / QoQ / explicit / consensus 模式自动生成。
+3. IRR、Reverse Expectations 与 target-return price 共用一组输入。
+4. Canonical Registry 区分 `FACT`、`DERIVED`、`MODEL`。
+5. Action 数值阈值必须引用 Threshold Policy。
+6. 容忍区间、低置信度、确认不足或小扰动导致动作变化时，动作降级为 `REVIEW`。
+7. First Page、Price Zone、Action Matrix 与 current action 语义一致。
+8. Forward reference value、target-return price、buy price 与 stress price 分离。
+9. Verification 未全部 PASS 时 fail closed。
+10. 市值使用 point-in-time shares，或显式估算并 reconciliation。
 
-## 改动范围
+## 已实施
 
-### A. Runtime `ttm-derive`
+### Runtime
 
-新增 JSON 输入命令：
+- `valuation_runtime.py ttm-derive`
+  - `sum`：四季度 EPS、Revenue、FCF 等求和；
+  - `ratio`：四季度 numerator 合计 ÷ denominator 合计；
+  - 强制四个唯一期间。
+- `valuation_runtime.py revenue-bridge`
+  - 支持 `guide_midpoint`、`yoy`、`qoq`、`explicit`、`consensus`；
+  - 输出逐期收入和 Forward 12M 合计。
+- `valuation_runtime.py return-pair`
+  - 共享 dividend、years、exit PE、starting EPS 与 target return；
+  - 同时输出 IRR、Reverse Expectations 与 target-return price。
+- `evaluate-action` v2
+  - 使用结构化 `values`、`thresholds`；
+  - 支持 confidence、uncertainty、tolerance、confirmation；
+  - 条件状态为 true / false / indeterminate；
+  - 高优先级 indeterminate 时 resolved action 为 REVIEW。
+- `valuation_runtime.py robustness`
+  - 对指定 Value ID 进行 ±shock；
+  - 动作变化时 `stable=false`，recommended action 为 REVIEW。
 
-```bash
-python3 scripts/valuation_runtime.py ttm-derive --input ttm.json
-```
+### 报告合同
 
-支持：
+- Canonical Value Registry：`FACT-*` / `DERIVED-*` / `MODEL-*`。
+- TTM Derivation Runtime table。
+- Revenue Forecast Runtime table。
+- Return Pair Runtime table。
+- Threshold Policy Registry。
+- Action Evaluation v2 + Robustness 输出。
+- Scenario Valuation 区分 forward reference、target-return、safety-margin buy、stress price。
+- Verification 增加两个 consistency checker 和全部 runtime PASS 门槛。
 
-- `sum`：四季度 EPS、Revenue、FCF 等求和；
-- `ratio`：四季度 numerator 合计 ÷ denominator 合计，例如 TTM operating margin；
-- 必须恰好四个明确季度，period 不得重复；
-- 输出 component IDs、component totals、最终值和 runtime result。
+### 检查器
 
-### B. Runtime `revenue-bridge`
+新增 `scripts/input_decision_consistency.py`，拦截：
 
-新增 JSON 输入命令：
-
-```bash
-python3 scripts/valuation_runtime.py revenue-bridge --input revenue.json
-```
-
-每个预测期间必须使用以下模式之一：
-
-- `guide_midpoint`：由 guide low/high 计算；
-- `yoy`：由明确 base value / base ID 和 YoY growth 计算；
-- `qoq`：由明确 base value / base ID 和 QoQ growth 计算；
-- `explicit`：引用有日期、来源和理由的显式预测；
-- `consensus`：引用有日期和来源的一致预期。
-
-Runtime 输出每期收入、四期合计、模式和输入；禁止只传最终收入并附加无法复算的增长标签。
-
-### C. Runtime `return-pair`
-
-新增共享输入命令，一次性输出：
-
-- 5-year Scenario IRR；
-- Reverse Expectations；
-- target-return-consistent current price；
-- 使用的 dividend assumption、exit PE、years、target return 和 starting Basis。
-
-IRR 与 Reverse 不得使用不同股息假设。旧 `irr` / `reverse` 保留兼容，但新完整报告必须使用 `return-pair`。
-
-### D. Canonical Value Registry
-
-模板将 Canonical Fact Registry 升级为：
-
-| Value ID | Kind | Metric | Value | Period/as-of | Source/Tier | Basis/Unit | Confidence | Inputs/Formula |
-
-规则：
-
-- `FACT-*`：外部可验证事实；
-- `DERIVED-*`：由 FACT / DERIVED 计算的值，必须写 Inputs/Formula 或 runtime ref；
-- `MODEL-*`：估值、IRR、目标价等模型输出；
-- 未来输入仍属于 Scenario Assumption Registry；
-- `FACT-*` 不得包含 fair value、IRR、target price 等模型语义。
-
-### E. Threshold Policy Registry 与 Action Evaluation v2
-
-新增：
-
-| Threshold ID | Metric | Value | Basis | Lookback | Confirmation | Tolerance | Minimum confidence | Rationale |
-
-`evaluate-action` 新输入支持：
-
-- `values`：包含 value、kind、confidence；
-- `thresholds`：包含 value、tolerance、minimum_confidence、confirmation；
-- condition 通过 `threshold` 引用，不得在新报告中直接传裸数值；
-- 容忍区间内返回 `indeterminate`；
-- 置信度低于门槛返回 `indeterminate`；
-- 确认期不足返回 `indeterminate`；
-- 任一可能影响当前最高优先级动作的 indeterminate 条件存在时，resolved action 为 `REVIEW`。
-
-### F. Runtime `robustness`
-
-新增：
-
-```bash
-python3 scripts/valuation_runtime.py robustness --input action-evaluation.json --shock 0.05
-```
-
-对指定敏感 Value ID 做 ±5%（可配置）扰动，重复 Action Evaluation：
-
-- 输出 baseline action；
-- 输出每个扰动场景的 resolved action；
-- 动作变化则 `stable=false`；
-- 新完整报告在 `stable=false` 时不得给出确定性 Buy/Add/Reduce/Sell，必须 REVIEW 或解释为组合外部约束。
-
-### G. Consistency Checker v1.5
-
-扩展 `valuation_consistency.py`，至少拦截：
-
-1. `FACT-*` 承载 fair value、IRR、target price 等模型输出；
-2. TTM DERIVED 值没有 component/runtime bridge；
-3. 同一 TTM 指标在 Registry 和其他结构化表中出现明显冲突；
-4. Revenue Bridge 的 YoY/QoQ/guide 算术不一致；
-5. Bull 预测低于 Base、或不同增长假设得到相同总收入但没有明确解释；
-6. IRR / Reverse 没有共享 `return-pair` 结果；
-7. Action 数值条件没有 Threshold ID；
-8. Threshold 缺 basis/lookback/confirmation/tolerance/minimum confidence/rationale；
-9. 当前价落在“买入区”，但首页写“不值得买入”或 current action 为 Reduce/Sell；
-10. Forward reference value 被直接当作目标回报公允价值，未列 target-return-consistent price；
-11. Verification 包含 TODO、FAIL、未运行、Unknown；
-12. 市值使用 weighted-average diluted shares 且无 reconciliation；
-13. Canonical Registry、Scenario Assumption、Threshold 和 Model 输出 ID 重复或跨类型前缀错误。
-
-### H. 模板与文档
-
-更新：
-
-- `SKILL.md` 至 v1.5.0；
-- `templates/full-report.md`；
-- `references/valuation-runtime.md`；
-- `references/report-contract.md` 或新增权威 addendum；
-- 测试与 README/方法论中受影响的执行顺序。
+- 模型输出注册为 FACT；
+- TTM DERIVED 无组件/runtime provenance；
+- YoY/QoQ/guide 收入算术不闭合；
+- 不同增长假设产生相同 Base/Bull 总额而无解释；
+- 裸数值 Action threshold；
+- Threshold Policy 字段缺失；
+- 新报告分别使用 `irr` / `reverse`；
+- robustness 不稳定但动作不是 REVIEW；
+- 当前价处于买入区但 verdict no-buy / Reduce / Sell；
+- weighted-average shares 直接用于 market cap；
+- 结构化 TTM margin 冲突；
+- Verification TODO / FAIL / 未运行 / Unknown。
 
 ## 不在范围内
 
 - 不自动抓取财报、价格、一致预期或投资组合；
-- 不自动决定哪一个增长率、利润率、退出倍数最合理；
-- 不实现完整 DCF 或概率加权 Monte Carlo；
-- 不自动解析全部自然语言事实；
+- 不自动选择经济上最合理的增长率、利润率、倍数或阈值；
+- 不实现完整 DCF、Monte Carlo 或组合优化；
 - 不改变九个顶层模块；
-- 不替代组合层面的集中度、税务或流动性判断；
-- 不强制所有公司都使用相同绝对阈值。
+- 不替代组合层面的税务、集中度或流动性判断。
 
-## 验证标准
+## 验证结果
 
-1. TTM EPS 输入 `1.05 + 8.88 + 10.44 + 6.18`，runtime 输出 `26.55`。
-2. TTM operating margin 输入四季 revenue / operating income，runtime 输出约 `38.08%`。
-3. Q1 2027 base revenue `563.11`、YoY growth `12%`，runtime 输出约 `630.68`，不得输出 `700`。
-4. Revenue Bridge 中 Bull 单季低于 Base 时 checker 至少 WARNING；无解释且场景总额/增长标签矛盾时 ERROR。
-5. `return-pair` 使用同一股息假设输出 IRR、Reverse 和 target-return price。
-6. `FACT-BULL-FAIR-VALUE` 或其他模型语义的 `FACT-*` 必须 FAIL。
-7. 裸数值 Action threshold 在新完整报告中必须 FAIL。
-8. 378.7 对 400、tolerance 5% 时应进入 indeterminate / REVIEW，而不是确定性 REDUCE。
-9. ±5% shock 改变 resolved action 时 robustness `stable=false`，报告 current action 必须 REVIEW。
-10. 当前价处于买入区且首页“不值得买入”或 action=REDUCE 时 checker FAIL。
-11. Verification 任一必需项为 TODO / FAIL / 未运行 / Unknown 时 checker FAIL。
-12. weighted-average diluted shares 直接用于 market cap 时 checker FAIL 或要求显式 reconciliation。
-13. `python3 -m py_compile scripts/*.py` PASS。
-14. `python3 -m unittest discover -s tests` PASS。
-15. `report_lint.py --self-test` 与 fixtures PASS。
-16. `git diff --check` PASS。
+GitHub Actions `Validate` run #69：PASS。
+
+- Python syntax：PASS。
+- financial rigor / report audit / report lint self-tests：PASS。
+- lint fixtures：PASS。
+- 全量 unittest：117 / 117 PASS。
+- TTM EPS：`1.05 + 8.88 + 10.44 + 6.18 = 26.5500` PASS。
+- TTM operating margin：约 `38.08%` PASS。
+- Revenue YoY：`563.11 × 1.12 = 630.6832` PASS。
+- Return Pair：Base IRR `6.54%`、Reverse required EPS CAGR `8.90%`、target-return price `479.7122` PASS。
+- `378.7` 对 threshold `400`，5% tolerance + 1% uncertainty：indeterminate / REVIEW PASS。
+- ±5% shock 改变动作：`stable=false`、recommended action `REVIEW` PASS。
+- model-as-FACT、naked threshold、buy-zone conflict、Verification TODO、weighted-average shares misuse：negative tests PASS。
+
+## 交付边界
+
+PR #5 尚未合并。最终合并前需将 `references/change-log-v1.5.md` 插入 `references/change-log.md` 顶部并删除 staging file，然后重新跑 CI。
