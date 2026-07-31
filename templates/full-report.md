@@ -41,7 +41,7 @@
 | TTM FCF/share | TODO | {{date}} | TODO | TODO | TODO |
 | FCF yield | TODO | {{date}} | TODO | TTM FCF/share ÷ 当前价格 | TODO |
 | 10Y Treasury | TODO | {{date}} | TODO | 实际可投资无风险基准 | TODO |
-| 股票最低目标回报 | TODO | {{date}} | 计算值 | 10Y ×2，仅 hurdle，不是资产 | TODO |
+| 10Y Treasury ×2 | TODO | {{date}} | 计算值 | 股票最低目标回报 hurdle，不是资产 | TODO |
 | 估算组合权重 | TODO | {{date}} | TODO | TODO | TODO |
 | 最新财报 / filing gap | TODO | TODO | TODO | TODO | TODO |
 
