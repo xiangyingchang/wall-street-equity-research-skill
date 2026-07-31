@@ -113,6 +113,14 @@ If `summary.business_model_flags.equity_method_holding_company` is true:
 - Emphasize EPS, dividend payout, investment-income durability, major investee quality, ownership percentages, and dividend pass-through.
 - Cap the rating at Watchlist unless Tier 1 filings have been checked for major investees and cash-distribution mechanics.
 
+## Valuation Consistency Contract
+
+`references/valuation-consistency.md` is authoritative for valuation semantics. Every valuation report must include a Valuation Basis Registry, One-off Adjustment Ledger, Scenario Valuation, and—when capital intensity is material—a Capex / Owner Earnings Bridge. Fair value, buy price, and stress price are distinct outputs. The price-zone summary must be derived from the Scenario Valuation table rather than introducing independent boundaries.
+
+Run `python3 scripts/valuation_consistency.py <report.md>` before structural lint and audit. Errors block delivery. Warnings require explicit human review.
+
+The 10-year payback remains mandatory as a pressure test, but a failed payback row is not a sole Buy/Reduce/Sell veto. Opportunity cost is judged on expected total shareholder return / IRR, not by mechanically requiring current FCF yield to exceed a bond yield or `10Y ×2`.
+
 ## Rating Caps
 
 - Missing latest annual report: do not rate Buy.
@@ -170,7 +178,7 @@ Do not replace the four-row test with only `r=8%` / `r=9%`, even when `10Y×2` i
 
 Use a dedicated heading such as `### 三原则扣问`. These answers must appear in the final verdict section, not only in the First-Page Verdict table.
 
-Buy should require all three to pass. If not, use Hold-Index, Watchlist, or Avoid unless a clearly justified super-compounder exception applies.
+A Buy rating requires an adequate Base-case expected IRR versus opportunity cost, no unresolved thesis break, and a valuation range with genuine safety margin. A failed 10-year payback test must be explained and lowers confidence, but it is not a sole veto when Scenario IRR, Reverse Expectations, and business evidence support the rating.
 
 ## Analysis Density Gates
 

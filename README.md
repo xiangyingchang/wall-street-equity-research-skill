@@ -28,6 +28,7 @@
 - [`scripts/a_share_prefetch.py`](scripts/a_share_prefetch.py)：A 股预抓取脚本
 - [`scripts/pdf_text_extract.py`](scripts/pdf_text_extract.py)：财报 PDF / earnings deck 文本抽取
 - [`scripts/report_lint.py`](scripts/report_lint.py)：报告交付前的硬约束检查
+- [`scripts/valuation_consistency.py`](scripts/valuation_consistency.py)：估值口径、情景数学与跨章节语义一致性检查
 - [`scripts/financial_rigor.py`](scripts/financial_rigor.py)：Decimal 计算与交叉验证
 - [`scripts/report_audit.py`](scripts/report_audit.py)：v4 manifest/results 与 pack-backed v5 派生值审计
 - [`scripts/research_pack.py`](scripts/research_pack.py)：可恢复的研究包与估值口径锁
@@ -59,6 +60,7 @@
 完整 Obsidian 报告交付前必须跑：
 
 ```bash
+python3 scripts/valuation_consistency.py "/path/to/report.md"
 python3 scripts/report_audit.py recognize --report "/path/to/report.md"
 python3 scripts/report_lint.py "/path/to/report.md"
 ```

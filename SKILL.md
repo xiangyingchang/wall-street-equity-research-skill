@@ -4,7 +4,7 @@ description: "Trigger: analyze a listed stock, 跑一下, 华尔街分析, 脱�
 license: MIT
 metadata:
   author: xiangyingchang
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 ## Activation Contract
@@ -22,6 +22,7 @@ Use for one listed equity when the user asks for valuation, buy/hold/sell judgme
 - Treat `research-pack-v1` as durable recovery state only; never add provider, model, token, timing, retry, or runtime telemetry.
 - **Network-effects moat = user metrics required.**
 - **Analysis density gates (lint-enforced):** Module 3 must include a 5+ row moat score table (dimension/score/evidence). Module 4 must include a multi-scenario valuation gate (3+ rows: peak/mid-cycle/normalized) for high-capex (≥$50B) or cyclical companies. Report must include a peer comparison table (2+ competitors, 2+ metrics) or state "无直接可比竞品". Variant View must be in module 9 only. Module 8 must include a price-zone summary table (at least 2 of safe-margin/observation/overvalued tiers). Module 8 or 9 must include a quantified target PE / target price (keyword + numeric value); pure qualitative wording does not satisfy. Absolute money amounts must use "亿" with original currency (e.g. $1,300亿 not $130B), no cross-currency conversion; per-share/multiple/ratio/KRW exempt. If the moat analysis claims network effects (社交网络、双边平台、用户飞轮), the Evidence Ledger must include at minimum multi-period DAU/MAU/DAP or equivalent engagement data with YoY trends, and module 3 must contain a dedicated user-metrics table that supports the claim. Common sources: company IR operating metrics, SEC 10-K/10-Q business section, earnings slides. Never substitute qualitative descriptions ("全球最大社交平台") for quantified user evidence.
+- **Valuation consistency is mandatory:** every valuation basis must have a Basis ID; adjusted/normalized metrics require an Adjustment Ledger; Scenario Valuation must separate fair value, buy price, and stress price. The 10-year payback is a pressure test, not a sole veto. Follow `references/valuation-consistency.md`.
 - In pack-backed v5, declare derived inputs by `fact_ref` or `derived_ref`; only payback `years` may be a literal. Never copy caller-supplied values, units, dates, or source IDs into reference inputs.
 
 ## Decision Gates
@@ -34,6 +35,7 @@ Use for one listed equity when the user asks for valuation, buy/hold/sell judgme
 | Latest earnings update | Add what changed and what did not inside module 1. |
 | Network-effects moat claim | Evidence Ledger must include multi-period user/engagement metrics; module 3 must contain a user-metrics table with YoY trends. |
 | Missing or conflicting critical evidence | Apply the rating caps in `references/report-contract.md`. |
+| Valuation report | Build the Basis Registry, Adjustment Ledger, Scenario Valuation, and Capex Bridge; run `valuation_consistency.py` before lint/audit. |
 | Resumable or multi-session report | Initialize `research-pack-v1` and resume from its first missing or stale checkpoint. |
 
 ## Execution Steps
@@ -42,12 +44,12 @@ Use for one listed equity when the user asks for valuation, buy/hold/sell judgme
 2. Create the canonical skeleton. `scripts/new_report.py` runs recognition automatically and fails closed; add `--research-pack [path]` for a durable recovery pack. For a manually created or copied skeleton, immediately run `python3 scripts/report_audit.py recognize --report <report.md>`. Fix missing, ambiguous, or unrecognized mandatory labels before populating values.
 3. Build the Evidence Ledger with atomic field labels, date, tier, basis, unit, and calculated input/output checks. If the company relies on network effects, add at minimum three-period DAU/MAU/DAP or equivalent engagement metrics with YoY trends. Apply `scripts/financial_rigor.py` thresholds.
 4. Add the compact Researchability Record under First-Page Verdict and follow `references/researchability.md`.
-5. Run the 10 modules using `references/full-methodology.md`; use its four-lens mapping without roleplay or a new section.
-6. Lint and rerun `report_audit.py recognize`. Without a research pack, use the unchanged v4 `extract --results-out ...` and `verdict --results ...` workflow. With a current pack containing bound derived records, use v5 `extract --pack ... --manifest-out ...` and `verdict --pack ... --manifest ...`; v5 resolves reference inputs from the pack snapshot, rejects symlinked artifacts, never accepts a results file, and only a successful verdict may write `audit_passed`.
+5. Run the 9 modules using `references/full-methodology.md`; use its four-lens mapping without roleplay or a new section.
+6. Run `python3 scripts/valuation_consistency.py <report.md>` and resolve every ERROR. Then lint and rerun `report_audit.py recognize`. Without a research pack, use the unchanged v4 `extract --results-out ...` and `verdict --results ...` workflow. With a current pack containing bound derived records, use v5 `extract --pack ... --manifest-out ...` and `verdict --pack ... --manifest ...`; v5 resolves reference inputs from the pack snapshot, rejects symlinked artifacts, never accepts a results file, and only a successful verdict may write `audit_passed`.
 
 ## Output Contract
 
-Return the report path, final rating/action, key uncertainty, and verification result. A full report is incomplete unless lint and audit verdict both pass.
+Return the report path, final rating/action, key uncertainty, and verification result. A full report is incomplete unless valuation consistency, lint, and audit verdict all pass.
 
 ## References
 
@@ -55,6 +57,7 @@ Return the report path, final rating/action, key uncertainty, and verification r
 - `references/data-validation.md` — sources, provenance, discrepancy, and executable audit workflow.
 - `references/research-pack-v1.md` — deterministic recovery pack, checkpoints, and valuation-basis lock.
 - `references/researchability.md` — authoritative A/B/C and confidence rules.
+- `references/valuation-consistency.md` — valuation basis, adjustment bridge, scenario math, and fair-value boundaries.
 - `references/full-methodology.md` — 9-module method and four-lens mapping.
 - `references/source-map.md` — Obsidian locations and prior-report continuity.
 - `templates/full-report.md` - required report skeleton.
