@@ -275,7 +275,7 @@ def canonical_matrix_table_lines(text: str) -> set[int]:
         index += 1
     # Also mask the Current Action Evaluation table (runtime facts, not executable trades).
     for eval_heading_idx, line in enumerate(lines):
-        if re.fullmatch(r"###\s+Current Action Evaluation\s*", line):
+        if re.search(r"###\s+Current Action Evaluation", line):
             eval_idx = eval_heading_idx + 1
             while eval_idx < len(lines) and not lines[eval_idx].strip():
                 eval_idx += 1
