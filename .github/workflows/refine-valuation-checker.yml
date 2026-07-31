@@ -1,0 +1,71 @@
+name: Refine valuation checker scope
+
+on:
+  push:
+    branches:
+      - feat/valuation-consistency
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/valuation-consistency
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Refine checker and template
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'anchor not found: {path}: {old[:80]}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace_once(
+              'scripts/valuation_consistency.py',
+              '    if capex_bridge is None:\n        findings.append(Finding("ERROR", "missing Capex / Owner Earnings Bridge table"))\n',
+              '''    high_capex = bool(re.search(r"(?:资本强度|capital\\s+intensity)\\s*[:=：]\\s*(?:高|high)", text, re.I))\n    for capex_match in re.finditer(r"(?:capex|资本开支)[^\\n|]{0,50}(?:[$¥€£]|USD|CNY|HKD|RMB)?\\s*([0-9,]+(?:\\.[0-9]+)?)\\s*亿", text, re.I):\n        amount = _decimal(capex_match.group(1))\n        if amount is not None and amount >= Decimal("500"):\n            high_capex = True\n            break\n    if high_capex and capex_bridge is None:\n        findings.append(Finding("ERROR", "high-capex report is missing Capex / Owner Earnings Bridge table"))\n    elif capex_bridge is None:\n        findings.append(Finding("WARNING", "Capex / Owner Earnings Bridge omitted; acceptable only when capital intensity is not material"))\n'''
+          )
+          replace_once(
+              'templates/full-report.md',
+              '### 公允价值、买入价与压力价格\n',
+              '### 公允价值、买入价、压力价格与目标价口径\n'
+          )
+          replace_once(
+              'templates/full-report.md',
+              '- Base fair value：TODO\n',
+              '- Base fair value / 目标价口径：TODO\n'
+          )
+          PY
+
+      - name: Compile and test
+        run: |
+          python3 -m py_compile scripts/*.py
+          python3 -m unittest discover -s tests
+          python3 scripts/report_lint.py --self-test
+          python3 scripts/report_lint.py --fixtures tests/fixtures
+          git diff --check
+
+      - name: Remove temporary workflow
+        run: rm .github/workflows/refine-valuation-checker.yml
+
+      - name: Commit refinement
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: scope capex bridge to material capital intensity"
+          git push origin HEAD:feat/valuation-consistency
