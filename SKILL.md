@@ -49,7 +49,7 @@ Use for one listed equity when the user asks for valuation, buy/hold/sell judgme
 
 ## Output Contract
 
-Return the report path, final rating/action, key uncertainty, and verification result. A full report is incomplete unless lint and audit verdict both pass.
+Return the report path, final rating/action, key uncertainty, and verification result. A full report is incomplete unless valuation consistency, lint, and audit verdict all pass.
 
 ## References
 

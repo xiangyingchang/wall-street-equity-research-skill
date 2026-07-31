@@ -178,7 +178,7 @@ Do not replace the four-row test with only `r=8%` / `r=9%`, even when `10Y×2` i
 
 Use a dedicated heading such as `### 三原则扣问`. These answers must appear in the final verdict section, not only in the First-Page Verdict table.
 
-Buy should require all three to pass. If not, use Hold-Index, Watchlist, or Avoid unless a clearly justified super-compounder exception applies.
+A Buy rating requires an adequate Base-case expected IRR versus opportunity cost, no unresolved thesis break, and a valuation range with genuine safety margin. A failed 10-year payback test must be explained and lowers confidence, but it is not a sole veto when Scenario IRR, Reverse Expectations, and business evidence support the rating.
 
 ## Analysis Density Gates
 
