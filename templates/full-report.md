@@ -156,11 +156,11 @@ TODO
 | Reduce | valuation | TODO explicit comparator/threshold | TODO |
 | Sell | thesis-break | TODO thesis-break condition | TODO |
 
-### 公允价值、买入价与压力价格
+### 公允价值、买入价、压力价格与目标价口径
 
 直接引用 Module 4 Scenario Valuation：
 
-- Base fair value：TODO
+- Base fair value / 目标价口径：TODO
 - Base buy price：TODO
 - Bear/Stress price：TODO
 - 不得再用另一套 EPS、倍数或折扣生成第二组价格边界。

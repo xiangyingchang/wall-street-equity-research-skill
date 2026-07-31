@@ -127,8 +127,16 @@ def validate_text(text: str) -> list[Finding]:
         findings.append(Finding("ERROR", "missing One-off Adjustment Ledger table"))
     if scenario is None:
         findings.append(Finding("ERROR", "missing Scenario Valuation table"))
-    if capex_bridge is None:
-        findings.append(Finding("ERROR", "missing Capex / Owner Earnings Bridge table"))
+    high_capex = bool(re.search(r"(?:资本强度|capital\s+intensity)\s*[:=：]\s*(?:高|high)", text, re.I))
+    for capex_match in re.finditer(r"(?:capex|资本开支)[^\n|]{0,50}(?:[$¥€£]|USD|CNY|HKD|RMB)?\s*([0-9,]+(?:\.[0-9]+)?)\s*亿", text, re.I):
+        amount = _decimal(capex_match.group(1))
+        if amount is not None and amount >= Decimal("500"):
+            high_capex = True
+            break
+    if high_capex and capex_bridge is None:
+        findings.append(Finding("ERROR", "high-capex report is missing Capex / Owner Earnings Bridge table"))
+    elif capex_bridge is None:
+        findings.append(Finding("WARNING", "Capex / Owner Earnings Bridge omitted; acceptable only when capital intensity is not material"))
 
     basis_ids: set[str] = set()
     adjustment_ids: set[str] = set()
