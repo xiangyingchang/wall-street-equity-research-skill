@@ -1,0 +1,107 @@
+name: Harden valuation consistency checks
+
+on:
+  push:
+    branches:
+      - feat/valuation-consistency
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/valuation-consistency
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Patch checker, methodology, and tests
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'anchor not found: {path}: {old[:120]!r}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          checker = Path('scripts/valuation_consistency.py')
+          text = checker.read_text(encoding='utf-8')
+
+          text = text.replace(
+              '    basis_ids: set[str] = set()\n    adjustment_ids: set[str] = set()\n',
+              '    basis_ids: set[str] = set()\n    basis_values: dict[str, Decimal] = {}\n    adjustment_ids: set[str] = set()\n'
+          )
+          text = text.replace(
+              '            basis_ids.add(basis_id)\n            refs = _get(row, "Adjustments").strip()\n',
+              '''            basis_ids.add(basis_id)\n            basis_value = _decimal(_get(row, "Value"))\n            if basis_value is not None:\n                basis_values[basis_id] = basis_value\n            refs = _get(row, "Adjustments").strip()\n            normalized_cue = " ".join(\n                [_get(row, "Basis ID"), _get(row, "Metric"), _get(row, "Period"), _get(row, "Use")]\n            )\n            if re.search(r"normalized|adjusted|core|中枢|调整后|正常化", normalized_cue, re.I) and _norm(refs) in {"", "none", "n/a", "na", "无"}:\n                findings.append(Finding("ERROR", f"normalized/adjusted Basis {basis_id} has no Adjustment ID bridge"))\n'''
+          )
+          text = text.replace(
+              '            if basis_id not in basis_ids:\n                findings.append(Finding("ERROR", f"Scenario {name} references unknown Basis ID: {basis_id}"))\n',
+              '''            if basis_id not in basis_ids:\n                findings.append(Finding("ERROR", f"Scenario {name} references unknown Basis ID: {basis_id}"))\n            elif metric is not None and basis_id in basis_values:\n                registered = basis_values[basis_id]\n                basis_error = abs(metric - registered) / max(abs(registered), Decimal("0.01"))\n                if basis_error > Decimal("0.02"):\n                    findings.append(Finding("ERROR", f"Scenario {name} Metric value does not match registered Basis {basis_id}"))\n'''
+          )
+          text = text.replace(
+              '        shown = fcf_yield if fcf_yield > Decimal(1) else fcf_yield * Decimal(100)\n',
+              '        shown = fcf_yield  # Ledger percentages are expressed in percentage points, including values below 1%.\n'
+          )
+          checker.write_text(text, encoding='utf-8')
+
+          # Reconcile methodology hierarchy and remaining payback-veto prose.
+          replace_once(
+              'references/full-methodology.md',
+              '10 年回本模型不通过时，通常不得 Buy。只有同时满足以下条件，才允许从 Avoid 上调为 Watchlist 或小仓位观察：',
+              '10 年回本模型不通过时，必须解释零终值压力测试为何与 Scenario IRR / Reverse Expectations 分歧。只有同时满足以下质量条件，才允许由其他估值模型支持 Buy 或 Hold-Index；否则评级最高为 Watchlist：'
+          )
+          replace_once(
+              'references/full-methodology.md',
+              '即便触发例外，也必须写明："这是超级复利机器例外，不是 10 年回本通过。"',
+              '即便由其他模型支持更高评级，也必须写明："10 年回本压力测试未通过；本结论依赖可验证的再投资回报与 Scenario IRR，不是把压力测试改写成通过。"'
+          )
+          replace_once(
+              'references/full-methodology.md',
+              '## 5. 致命风险排序 Risk Ranking（表格化）',
+              '### 5. 致命风险排序 Risk Ranking（表格化）'
+          )
+          replace_once(
+              'references/full-methodology.md',
+              '- **Variant View**：市场共识是什么？我们的不同判断是什么？市场错在哪里，证据链是什么？',
+              '- 本模块只提供增长边界与证据；`Variant View` 统一放在模块 9，避免同一分歧在多处重复。'
+          )
+
+          # Expand explicit regression coverage for the failures that motivated the PR.
+          test = Path('tests/test_valuation_consistency.py')
+          test_text = test.read_text(encoding='utf-8')
+          anchor = '''    def test_adjustment_reference_fails(self) -> None:\n        result = self.run_check(GOOD.replace("| EPS-BASE | EPS/share | $5 | FY+1 | ADJ-1 |", "| EPS-BASE | EPS/share | $5 | FY+1 | ADJ-X |"))\n        self.assertNotEqual(result.returncode, 0)\n        self.assertIn("unknown Adjustment ID", result.stdout)\n'''
+          addition = anchor + '''\n    def test_scenario_metric_must_match_registered_basis(self) -> None:\n        result = self.run_check(GOOD.replace("| Base | EPS-BASE | $5 | 20x | $100 |", "| Base | EPS-BASE | $50 | 2x | $100 |"))\n        self.assertNotEqual(result.returncode, 0)\n        self.assertIn("does not match registered Basis", result.stdout)\n\n    def test_bear_base_bull_ordering_fails(self) -> None:\n        result = self.run_check(GOOD.replace("| Bear | EPS-BEAR | $4 | 15x | $60 | 20% | $48 |", "| Bear | EPS-BEAR | $4 | 30x | $120 | 20% | $96 |"))\n        self.assertNotEqual(result.returncode, 0)\n        self.assertIn("Bear fair value exceeds Base", result.stdout)\n\n    def test_buy_price_above_fair_value_fails(self) -> None:\n        result = self.run_check(GOOD.replace("| Base | EPS-BASE | $5 | 20x | $100 | 15% | $85 |", "| Base | EPS-BASE | $5 | 20x | $100 | -10% | $110 |"))\n        self.assertNotEqual(result.returncode, 0)\n        self.assertIn("buy price exceeds fair value", result.stdout)\n\n    def test_sub_one_percent_fcf_yield_reconciles(self) -> None:\n        report = GOOD.replace("| 当前价格 | $100 |", "| 当前价格 | $1000 |").replace("| TTM PE | 20x |", "| TTM PE | 200x |").replace("| FCF yield | 4% |", "| FCF yield | 0.4% |")\n        result = self.run_check(report)\n        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)\n\n    def test_normalized_basis_requires_adjustment_bridge(self) -> None:\n        result = self.run_check(GOOD.replace("| EPS-BASE | EPS/share | $5 | FY+1 | ADJ-1 | Base |", "| EPS-BASE | normalized EPS/share | $5 | FY+1 | None | Base |"))\n        self.assertNotEqual(result.returncode, 0)\n        self.assertIn("has no Adjustment ID bridge", result.stdout)\n'''
+          if anchor not in test_text:
+              raise SystemExit('test insertion anchor not found')
+          test.write_text(test_text.replace(anchor, addition, 1), encoding='utf-8')
+          PY
+
+      - name: Compile and test
+        run: |
+          python3 -m py_compile scripts/*.py
+          python3 -m unittest discover -s tests
+          python3 scripts/report_lint.py --self-test
+          python3 scripts/report_lint.py --fixtures tests/fixtures
+          git diff --check
+
+      - name: Remove temporary workflow
+        run: rm .github/workflows/harden-valuation-consistency.yml
+
+      - name: Commit hardening
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: bind scenario metrics to registered valuation bases"
+          git push origin HEAD:feat/valuation-consistency
