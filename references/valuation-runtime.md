@@ -2,29 +2,47 @@
 
 ## Purpose
 
-`scripts/valuation_runtime.py` is the numeric authority for:
+`scripts/valuation_runtime.py` is the deterministic numeric authority for:
 
-1. Scenario EPS Bridge；
-2. 5-year Scenario IRR；
-3. Reverse Expectations；
-4. fact-based Action Matrix evaluation and resolution.
+1. four-quarter TTM derivations;
+2. forward Revenue bridges;
+3. Scenario EPS bridges;
+4. shared IRR / Reverse Expectations / target-return price;
+5. threshold-policy Action Evaluation;
+6. Action robustness under input shocks.
 
-Runtime never fetches data and never decides which assumptions are reasonable. It guarantees that declared inputs produce reproducible outputs and that Action conditions are evaluated from canonical facts rather than analyst-supplied booleans.
+Runtime never fetches data and never chooses economically reasonable assumptions. It guarantees only that declared, auditable inputs produce reproducible outputs. See `references/input-decision-robustness.md` for the complete v1.5 provenance and semantic contract.
 
-## Canonical Fact Registry
+## TTM Derivation
 
-Every full valuation report must contain:
+Use:
 
-| Fact ID | Metric | Value | Period/as-of | Source/Tier | Basis/Unit | Confidence |
-|---|---|---:|---|---|---|---|
+```bash
+python3 scripts/valuation_runtime.py ttm-derive --input ttm.json
+```
 
-Rules:
+- `sum` requires exactly four unique periods.
+- `ratio` requires four numerator and four denominator components covering the same periods.
+- TTM operating margin is the ratio of period totals, not the average of quarterly margins.
+- Every runtime output is copied into the TTM Derivation table and registered as `DERIVED-*`.
 
-- Fact ID must be unique and stable inside one report.
-- Single-quarter, TTM, FY and Forward values require different Fact IDs.
-- Action rules must reference Fact IDs, not restate prose values.
-- When the same decision metric appears elsewhere, the Canonical Fact Registry is authoritative.
-- A changed fact must trigger regeneration of all downstream runtime outputs.
+## Revenue Bridge
+
+Use:
+
+```bash
+python3 scripts/valuation_runtime.py revenue-bridge --input revenue.json
+```
+
+Each Scenario has exactly four periods and each row uses one mode:
+
+- `guide_midpoint`;
+- `yoy`;
+- `qoq`;
+- `explicit`;
+- `consensus`.
+
+YoY/QoQ outputs are calculated from base value × (1 + growth). Guide outputs are calculated from the stated range. The report may not hand-fill a different result.
 
 ## Scenario EPS Bridge
 
@@ -48,199 +66,151 @@ net income = pre-tax income × (1 - tax rate)
 EPS = net income ÷ diluted shares
 ```
 
-The report must copy runtime outputs exactly. For the example above, EPS is approximately `$30.71`; `$22` would fail consistency validation.
+The Revenue input must equal the matching `revenue-bridge` Scenario total.
 
-### Forward Revenue Bridge
+## Shared Return Pair
 
-A Forward 12M EPS Bridge must first establish revenue using one of these methods:
-
-1. Four explicit forward quarters/periods whose sum equals Scenario Revenue; or
-2. A dated FY/NTM estimate from a declared source with a single matching period.
-
-The default full-report template uses four periods. Undefined constructions such as `latest quarter ×4.5`, “4.5-quarter adjustment”, or an unexplained run-rate multiplier are forbidden.
-
-## Historical Adjustments vs Scenario Assumptions
-
-### One-off Adjustment Ledger
-
-Use only for events that have already occurred, such as:
-
-- historical non-cash tax charges or benefits;
-- legal settlements;
-- restructuring costs;
-- asset impairments.
-
-### Scenario Assumption Registry
-
-Use for future assumptions, including:
-
-- revenue growth;
-- operating margin;
-- other income;
-- tax rate;
-- diluted shares;
-- Capex normalization;
-- exit multiple;
-- EPS CAGR.
-
-A future Capex assumption is not a historical adjustment and Capex may never be labelled non-cash.
-
-## Scenario IRR
-
-Use:
+New full reports use:
 
 ```bash
-python3 scripts/valuation_runtime.py irr \
+python3 scripts/valuation_runtime.py return-pair \
   --current-price 549 \
-  --starting-eps 22 \
-  --eps-cagr 0.08 \
+  --starting-eps 30.7101 \
+  --eps-cagr 0.06 \
   --exit-pe 18 \
   --years 5 \
+  --target-return 0.094 \
   --annual-dividend-yield 0.005
 ```
 
-Required report fields:
+One command returns:
 
-- current price;
-- starting EPS Basis ID;
-- EPS CAGR;
-- exit multiple;
-- terminal EPS;
-- terminal price;
+- terminal EPS and terminal price;
 - cumulative dividends;
-- total return;
-- annualized IRR.
+- total return and annualized IRR;
+- Reverse Expectations terminal EPS and EPS CAGR;
+- target-return-consistent current price;
+- the shared assumptions used by both calculations.
+
+Legacy `irr` and `reverse` commands remain available for old artifacts. New full reports may not cite them separately.
 
 ### Buyback rule
 
-When the growth input is EPS CAGR, buybacks and dilution are already reflected in per-share growth. Do not add a separate buyback yield or share-count change. The runtime rejects this combination.
+When growth is EPS CAGR, buybacks and dilution are already embedded in per-share growth. Do not add a separate buyback yield or share-count return. Explicit share-count modeling remains available only through net-income mode in the legacy Scenario IRR API.
 
-To model share-count change explicitly, use `metric_mode=net_income`: start from net-income growth and provide share-count CAGR to derive terminal EPS.
+## Canonical Values
 
-## Reverse Expectations
+Action Evaluation v2 accepts a `values` object. Every entry declares:
 
-Use:
-
-```bash
-python3 scripts/valuation_runtime.py reverse \
-  --current-price 549 \
-  --starting-eps 22 \
-  --target-return 0.094 \
-  --exit-pe 18 \
-  --years 5
+```json
+{
+  "value": "378.7",
+  "kind": "DERIVED",
+  "confidence": "medium",
+  "uncertainty": "0.01"
+}
 ```
 
-Default question:
+Allowed kinds are `FACT`, `DERIVED`, and `MODEL`. IDs and registry Kind must agree.
 
-> What terminal EPS and EPS CAGR are required for the current price to earn the stated annual target return at the stated exit multiple?
+## Threshold Policy
 
-Do not confuse this with merely keeping the future share price equal to today's price.
+Each numeric condition references a threshold object with all fields:
 
-## Fact-Based Action Evaluation
+```json
+{
+  "value": "400",
+  "basis": "historical distribution",
+  "lookback": "12 quarters",
+  "confirmation": 2,
+  "tolerance": "0.05",
+  "minimum_confidence": "medium",
+  "rationale": "sustained FCF deterioration"
+}
+```
 
-Full reports must use:
+Naked literals are legacy-only.
+
+## Action Evaluation v2
+
+Use:
 
 ```bash
 python3 scripts/valuation_runtime.py evaluate-action --input action-evaluation.json
 ```
 
-Example:
+A v1.5 report records mode `v2-threshold-policy`.
+
+Conditions use:
 
 ```json
 {
-  "current_action": "Review",
-  "facts": {
-    "FACT-TTM-OP-MARGIN": 0.381,
-    "FACT-TTM-FCF": 378.7,
-    "FACT-CURRENT-PRICE": 549
-  },
-  "rules": [
-    {
-      "id": "hold-operating",
-      "action": "HOLD",
-      "logic": "all",
-      "conditions": [
-        {"fact": "FACT-TTM-OP-MARGIN", "operator": ">=", "value": 0.35},
-        {"fact": "FACT-TTM-FCF", "operator": ">", "value": 400}
-      ]
-    },
-    {
-      "id": "reduce-operating",
-      "action": "REDUCE",
-      "logic": "all",
-      "conditions": [
-        {"fact": "FACT-TTM-OP-MARGIN", "operator": "<", "value": 0.35}
-      ]
-    }
-  ]
+  "value_id": "DERIVED-TTM-FCF",
+  "operator": "<",
+  "threshold": "THR-FCF-REDUCE",
+  "confirmation_value": "DERIVED-CONSECUTIVE-FCF-BREACH"
 }
 ```
 
-Supported operators:
+Condition status is:
 
-- `<`
-- `<=`
-- `>`
-- `>=`
-- `==`
-- `!=`
+- `true`;
+- `false`;
+- `indeterminate`.
 
-Rules may use `logic=all` or `logic=any`. A condition can compare a fact with a literal `value`, or with another canonical fact through `value_fact`.
+Indeterminate applies when confidence is below policy minimum, the value is within tolerance plus declared uncertainty, or confirmation is insufficient. An indeterminate rule capable of matching or outranking the current highest-priority action makes the resolved action `REVIEW`.
 
-The runtime outputs:
+Default priority remains `SELL > REDUCE > ADD > BUY > HOLD`.
 
-- each condition's actual value, expected value, operator and boolean result;
-- each rule's calculated `triggered` value;
-- triggered rule IDs;
-- resolved action;
-- whether the reported action matches.
+### Legacy modes
 
-Fail-closed behavior:
+- scalar `facts` plus literal `value` / `value_fact` remain accepted for old artifacts;
+- `resolve-action` remains available for old artifacts;
+- neither legacy mode is acceptable in a new full report.
 
-- missing Fact ID: error;
-- missing comparison value: error;
-- unknown operator: error;
-- invalid numeric comparison: error;
-- duplicate or empty Rule ID: error;
-- no triggered rule: `REVIEW`;
-- same-priority conflicting actions: `REVIEW`.
+## Robustness
 
-Default priority is `SELL > REDUCE > ADD > BUY > HOLD`.
+Use:
 
-### Legacy resolver
+```bash
+python3 scripts/valuation_runtime.py robustness \
+  --input action-evaluation.json \
+  --shock 0.05
+```
 
-`resolve-action` remains available only for backward compatibility with old artifacts. It accepts precomputed booleans and therefore is not acceptable for a new full report. `valuation_consistency.py` blocks full reports that cite the legacy command.
+The Action payload declares `sensitivity_values`. Runtime applies ±5% shocks and reports every shocked resolved action.
 
-## Opportunity-Cost Types
+- `stable=true`: all shocked actions equal baseline.
+- `stable=false`: at least one action changes; recommended action is `REVIEW`.
 
-Reports must distinguish:
+## Price Semantics
 
-| Type | Example | Meaning |
-|---|---|---|
-| Investable risk-free benchmark | Actual 10Y government bond yield | A real asset/yield available to investors |
-| Required-return hurdle | 10Y yield ×2 | The user's equity return threshold; not an asset |
-| Investable equity alternative | Broad index or peer company | An alternative risky asset |
-| Target-company Scenario IRR | Base/Bear/Bull runtime IRR | Model output for the company |
+Reports keep four outputs separate:
 
-Never label `10Y ×2` as a low-risk or risk-free investable asset.
+| Output | Meaning |
+|---|---|
+| Forward reference value | Forward metric × reference multiple |
+| Target-return price | Current price consistent with the stated return hurdle and Return Pair assumptions |
+| Safety-margin buy price | Target-return price after an additional explicit uncertainty discount |
+| Stress price | Downside Scenario output; not automatically a buy threshold |
 
-## Source and Confidence Constraints
+Price zones should be anchored to target-return price. A price below forward reference value is not automatically a buy.
 
-- SEC, issuer IR, and exchange notices are Tier 1.
-- Yahoo Finance, StockAnalysis, Macrotrends, Koyfin, TIKR, Futu, and equivalent vendors are Tier 2.
-- A current price from only one Tier 2 source cannot be marked Tier 1 or High-confidence cross-validated evidence.
-- When the latest earnings release is newer than the latest filed 10-Q/annual report, or TTM/owner-earnings bases remain approximate, Information Richness is at most B and AI Research Confidence is at most Medium.
+## Point-in-Time Share Rule
+
+Weighted-average diluted shares are suitable for EPS, not for point-in-time market cap. Market cap must use period-end/current shares outstanding, or disclose an estimate and reconcile the difference.
 
 ## Delivery Order
 
-1. Populate Canonical Facts and Scenario Assumptions.
-2. Generate Forward Revenue Bridge.
-3. Run `eps-bridge` for every Bear/Base/Bull row.
-4. Register Basis IDs using the runtime EPS outputs.
-5. Run Scenario IRR and Reverse Expectations.
-6. Run fact-based `evaluate-action`.
-7. Run `valuation_consistency.py`.
-8. Run `report_lint.py`.
-9. Run recognition and audit verdict.
-
-A structural PASS does not override a runtime or bridge mismatch.
+1. Register quarterly source FACT values.
+2. Run `ttm-derive` and register DERIVED values.
+3. Register forward assumptions.
+4. Run `revenue-bridge` for each Scenario.
+5. Run `eps-bridge` using Revenue totals.
+6. Register Basis IDs and Scenario reference values.
+7. Run `return-pair` for each Scenario.
+8. Register Threshold policies.
+9. Run Action Evaluation v2 and robustness.
+10. Run `valuation_consistency.py` and `input_decision_consistency.py`.
+11. Run lint, recognition, and audit.
+12. Deliver only when every Verification row is PASS.
