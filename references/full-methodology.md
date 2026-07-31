@@ -86,7 +86,7 @@ agent_created: true
 
 ### 财报获取路径
 
-进入 10 个模块前，必须先完成以下步骤：
+进入 9 个模块前，必须先完成以下步骤：
 
 1. **识别市场与主体**
    - 美股本土公司:最近 5 年 10-K + 最近 8 季 10-Q；重大事件查 8-K；治理、SBC、回购授权查 DEF 14A。
@@ -280,7 +280,19 @@ TTM PE / Forward PE / EV/EBITDA / FCF Yield / 股息率 / 行业平均 / 公司�
 
 即便触发例外，也必须写明："这是超级复利机器例外，不是 10 年回本通过。"
 
-### 5. 致命风险排序 Risk Ranking（表格化）
+#### 估值口径一致性（强制）
+
+模块 4 必须执行 `references/valuation-consistency.md`：先建立 Valuation Basis Registry 和 One-off Adjustment Ledger，再输出 Bear/Base/Bull Scenario Valuation；高 Capex 公司增加 Capex / Owner Earnings Bridge。公允价值、买入价和压力价格必须分开，且模块 8 的价格区间只能引用这里的结果。
+
+估值判断采用三角验证：5 年 Scenario IRR 为主、Reverse Expectations 为辅、10 年回本为压力测试。10 年回本的零终值假设很严厉，不得单独一票否决。机会成本比较使用预期股东总回报 / IRR，不要求成长公司的当前 FCF yield 机械超过国债 ×2。
+
+交付前先运行：
+
+```bash
+python3 scripts/valuation_consistency.py <report.md>
+```
+
+## 5. 致命风险排序 Risk Ranking（表格化）
 
 按危险度从高到低，**写具体业务痛点不写套话**。至少覆盖 7 类：经济宏观 / 行业颠覆 / 竞争 / 监管 / 债务流动性 / 管理层资本配置 / 汇率地缘供应链。
 

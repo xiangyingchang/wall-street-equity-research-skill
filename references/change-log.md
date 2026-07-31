@@ -2,6 +2,23 @@
 
 ## 2026-07-31
 
+### Valuation-basis registry, scenario math, and semantic consistency audit
+
+**Change:**
+- Added `references/valuation-consistency.md` as the authoritative contract for Valuation Basis Registry, One-off Adjustment Ledger, Scenario Valuation, Capex / Owner Earnings Bridge, fair-value/buy-price/stress-price separation, and three-model valuation synthesis.
+- Added `scripts/valuation_consistency.py`, a blocking semantic checker for basis/adjustment references, scenario arithmetic and ordering, PE/FCF-yield reconciliation, and high-confidence prose contradictions.
+- Updated `templates/full-report.md` with the new registries/bridges, 5-year Scenario IRR, Reverse Expectations, and explicit separation of fair value, buy price, and stress price.
+- Updated `SKILL.md`, report contract, methodology, and README so the semantic checker runs before structural lint/audit. Fixed stale "10 modules" wording to 9 modules.
+- Added unit tests covering valid reports, bad scenario math, unknown Basis IDs, FCF-yield mismatch, and unknown Adjustment IDs.
+
+**Reason:** The Meta 2026-07-30 report passed existing lint/audit while containing valuation-scale drift, arithmetic contradictions, overlapping price zones, unsupported normalized EPS, and repeated conservative discounts. Structural completeness is not semantic correctness.
+
+**Scope boundary:** This batch does not fetch data, estimate maintenance capex, implement a full DCF engine, or automatically rewrite historical reports. The new checker validates declared report structure and arithmetic; accounting judgments and source truth remain human responsibilities.
+
+**Verification:** GitHub Actions runs py_compile, the full unittest suite, report-lint self-test, fixtures, the new checker tests, and diff-check before committing the migration. See the PR checks for the exact result.
+
+## 2026-07-31
+
 ### Gate 7 extension + B-level conversion rate fix
 
 **Change:**
