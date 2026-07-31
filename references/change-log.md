@@ -1,6 +1,34 @@
 # Wall Street Equity Research Skill Change Log
 
+## 2026-07-31
+
+### Analysis density gates - self-test fixture fix + methodology hardening
+
+**Change:**
+- Fixed `report_lint.py --self-test` regression: the built-in good report lacked the moat score table and peer comparison table required by the new gates. Added both tables to the inline fixture (moat 5-row score table in module 3; peer comparison table under a `### 竞品对比` subheading with 2 competitors x 3 metrics).
+- Strengthened `references/full-methodology.md`: upgraded the moat scoring, peer comparison, and multi-scenario valuation bullets from prose guidance to explicit lint-enforced requirements (referencing `report_lint.py` and the ≥$50B capex / cyclical keyword trigger).
+- Added the network-effects user-metrics requirement to methodology module 3 (DAU/MAU/DAP with YoY trends).
+- Marked `PRD-analysis-density.md` status as 完成.
+
+**Reason:** The self-test fixture was not updated when the new gates were added, so `report_lint.py --self-test` regressed. The methodology still described these as "should" rather than "must + lint-enforced", so LLMs could still treat them as optional. Both are now consistent with the lint gates.
+
+**Verification:** `python3 -m py_compile scripts/*.py` PASS; `python3 -m unittest discover -s tests` 76/76 PASS; `report_lint.py --self-test` PASS; `report_lint.py --fixtures tests/fixtures` PASS; `git diff --check` PASS. Live reports (SK海力士, MU, Meta) correctly FAIL on the new gates where structure is missing, confirming the gates are working as intended.
+
 ## 2026-07-30
+
+### Analysis density lint gates - moat score table, multi-scenario valuation, peer comparison, Variant View placement
+
+**Change:**
+
+- **Gate 1 (report_lint.py):** Module 3 must now contain a moat score table with 5+ scored dimensions (column named 'score' or '分数'), each with non-empty evidence. Prevents散文-only moat analysis.
+- **Gate 2 (report_lint.py):** Module 4 must contain a multi-scenario valuation gate table (3+ rows) when capex >= $50B or cyclical industry keywords are detected. Covers peak/mid-cycle/normalized/EV-FCF scenarios. Non-cyclical, low-capex companies are exempt.
+- **Gate 3 (report_lint.py):** Report must include a peer comparison table with 2+ competitors and 2+ metrics. An explicit "无直接可比竞品" claim with reason exempts the report.
+- **Gate 4 (report_lint.py):** Variant View must appear as `### Variant View` in module 9 only; module 6 placement is now a lint error.
+- Updated fixture, v4 manifest, and test expectations for the new table content.
+
+**Reason:** Meta 2026-07-30 report lacked moat scoring, multi-scenario valuation, and peer comparison despite methodology already requiring them. The rules existed as prose guidance but had no lint enforcement, allowing the LLM to skip them. These gates upgrade guidance to hard constraints.
+
+**Scope boundary:** No module structure change (still 9 modules). No Action Matrix, payback formula, or Evidence Ledger field changes. Non-cyclical companies are exempt from the multi-scenario valuation gate. Existing reports (SK海力士, MU) pass; Meta requires a rerun.
 
 ### Remove module 7 (Tax Drag & Net Yield); reduce from 10 to 9 modules
 

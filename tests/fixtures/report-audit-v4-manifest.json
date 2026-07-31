@@ -1,15 +1,21 @@
 {
   "version": 4,
-  "report_sha256": "2c285d9df0d2457cf6f0cd5feb3783508615be9cc425341b78cb0990df9760c4",
+  "report_sha256": "fa343a9d61f8ec149956843973d072d4e3319e48f58cfd5d6a3c1599b3aa667d",
   "requested_ratio": "0.15",
-  "actual_ratio": "1",
-  "eligible_numeric_table_cells": 5,
+  "actual_ratio": "0.4545454545454545454545454545",
+  "eligible_numeric_table_cells": 11,
   "eligible_universe_ids": [
-    "2142ec19d04d68b3afc0afe83605e2113a2c5e23189962414ab64a3243f7ac31",
-    "48c1e719e691770ad5bd4f6e811719207122c241271c8fbe272c2218a548a588",
-    "7dd9fb30f76772abb6b7de8b1800c8784a632412ce6fa8a81a137f4a28f91171",
-    "8b25f0b3201c7f186bc6956745b20b2b12b4dbaa155070a6b2d2bf6f679573a9",
-    "bf0a73cdc1828c92a62c2cc6c8da22a74b0f0188a0234d4359ea5ac4cac7534c"
+    "0c00c363c610cf3aeba96e42a71903a141446e4d6c3d78c418e9359f80956206",
+    "1b11aa8d571acb754025b797f54a41fe60c599e19cbed0a94452bcc86ebeb178",
+    "5c676e3de22965001af1cb464e0e73cb0e5885c3c9556b36f7ef083d5b829e77",
+    "62f0fad123ea1d1c4ecbec77c739dc5b25f6db9e24a06aaefa2fec5d512235fa",
+    "9918c5e55d4348f9524cb5bc5a2ec0655f543605093988cf46fb29f8a419a616",
+    "9af44b9d96ea3d0c9fed411995bc499ef1910792bbe3d818d9b0679f7d93c551",
+    "aa97b3cef3e34b77c4fc5ba24a4632547d72dea8de2dd0e58830ff3261d52bbc",
+    "b4c528e2fb157dd7f90430b3947ddce060238c81d437c750f314dbf0efa746e0",
+    "c04a62b6fbcaa298ff82e55d7edf1514e25d0a4b1617cfa8e76e4504ba52dafe",
+    "d727cc06842fb486391bd93ea82baa9d30536712b7c900aaae17eeaa52f582e3",
+    "e30af86ded1f58c745f5b4ad03cb13648577ffd0b5156e86acedca693d3dfdac"
   ],
   "items": [
     {
@@ -27,7 +33,7 @@
         ],
         "tier2_requires_secondary": true
       },
-      "id": "8b25f0b3201c7f186bc6956745b20b2b12b4dbaa155070a6b2d2bf6f679573a9"
+      "id": "aa97b3cef3e34b77c4fc5ba24a4632547d72dea8de2dd0e58830ff3261d52bbc"
     },
     {
       "field": "payback_eps",
@@ -35,7 +41,7 @@
       "column": "EPS 所需 g",
       "reported_value": "1",
       "unit": "%",
-      "line_number": 42,
+      "line_number": 57,
       "section": "## 4. 极限估值 + 10 年回本数学审判",
       "required_tier_policy": {
         "allowed_tiers": [
@@ -43,7 +49,7 @@
         ],
         "tier2_requires_secondary": false
       },
-      "id": "48c1e719e691770ad5bd4f6e811719207122c241271c8fbe272c2218a548a588"
+      "id": "c04a62b6fbcaa298ff82e55d7edf1514e25d0a4b1617cfa8e76e4504ba52dafe"
     },
     {
       "field": "payback_eps",
@@ -51,7 +57,7 @@
       "column": "EPS 所需 g",
       "reported_value": "5",
       "unit": "%",
-      "line_number": 43,
+      "line_number": 58,
       "section": "## 4. 极限估值 + 10 年回本数学审判",
       "required_tier_policy": {
         "allowed_tiers": [
@@ -59,7 +65,7 @@
         ],
         "tier2_requires_secondary": false
       },
-      "id": "7dd9fb30f76772abb6b7de8b1800c8784a632412ce6fa8a81a137f4a28f91171"
+      "id": "0c00c363c610cf3aeba96e42a71903a141446e4d6c3d78c418e9359f80956206"
     },
     {
       "field": "payback_eps",
@@ -67,7 +73,7 @@
       "column": "EPS 所需 g",
       "reported_value": "8",
       "unit": "%",
-      "line_number": 44,
+      "line_number": 59,
       "section": "## 4. 极限估值 + 10 年回本数学审判",
       "required_tier_policy": {
         "allowed_tiers": [
@@ -75,7 +81,7 @@
         ],
         "tier2_requires_secondary": false
       },
-      "id": "bf0a73cdc1828c92a62c2cc6c8da22a74b0f0188a0234d4359ea5ac4cac7534c"
+      "id": "9af44b9d96ea3d0c9fed411995bc499ef1910792bbe3d818d9b0679f7d93c551"
     },
     {
       "field": "payback_eps",
@@ -83,7 +89,7 @@
       "column": "EPS 所需 g",
       "reported_value": "10",
       "unit": "%",
-      "line_number": 45,
+      "line_number": 60,
       "section": "## 4. 极限估值 + 10 年回本数学审判",
       "required_tier_policy": {
         "allowed_tiers": [
@@ -91,8 +97,8 @@
         ],
         "tier2_requires_secondary": false
       },
-      "id": "2142ec19d04d68b3afc0afe83605e2113a2c5e23189962414ab64a3243f7ac31"
+      "id": "5c676e3de22965001af1cb464e0e73cb0e5885c3c9556b36f7ef083d5b829e77"
     }
   ],
-  "manifest_sha256": "c34b3c15a195571a48a4bc547471f56b3d0818401bf94ad1b95e33cef8e529f0"
+  "manifest_sha256": "08541b718ea2e8e6074ef4d16a36227df9e2aa4a401f1436c41393d6d8302b49"
 }

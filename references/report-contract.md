@@ -172,6 +172,15 @@ Use a dedicated heading such as `### 三原则扣问`. These answers must appear
 
 Buy should require all three to pass. If not, use Hold-Index, Watchlist, or Avoid unless a clearly justified super-compounder exception applies.
 
+## Analysis Density Gates
+
+These gates are lint-enforced and apply to every full report:
+
+1. **Moat score table (module 3):** Must contain a Markdown table with at least 5 scored dimensions. Columns must include a score column (named 'score' or '分数') and non-empty evidence per row.
+2. **Multi-scenario valuation gate (module 4):** Triggered for high-capex (≥$50B) or cyclical companies. Must contain a table with 3+ rows covering multiple valuation scenarios (peak, mid-cycle, normalized, EV/FCF). Non-cyclical, low-capex companies are exempt.
+3. **Peer comparison table:** Report must include a table comparing at least 2 competitors with 2+ metrics (PE, margin, growth, market share, market cap). If no direct competitors exist, state "无直接可比竞品" with a reason.
+4. **Variant View placement:** Must appear as `### Variant View` inside module 9 (Final Verdict) only. Must not appear in module 6.
+
 ## Variant View, Pre-Mortem, and Action Matrix
 
 Every full report must include these dedicated headings:

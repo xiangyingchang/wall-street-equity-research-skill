@@ -373,6 +373,114 @@ def previous_report_delta_errors(text: str) -> list[str]:
     return errors
 
 
+
+# --- Analysis Density Gates (PRD: analysis-density) ---
+
+CYCLICAL_KEYWORDS = re.compile(
+    r"存储|半导体|周期股|cyclical|semiconductor|memory|DRAM|NAND|航运|"
+    r"能源|石油|银行|券商|汽车|钢铁|化工|mining|oil|gas|shipping|bank",
+    re.I,
+)
+HIGH_CAPEX = re.compile(r"(?:capex|资本开支|capital\s+expenditure)[^\n]{0,30}(?:\$?\s*(\d{2,4})(?:\.\d+)?)\s*[Bb]", re.I)
+PEER_TABLE_METRICS = re.compile(r"PE|P/E|利润率|margin|增速|growth|市占率|share|市值|cap", re.I)
+NO_COMPETITOR_CLAIM = re.compile(r"无直接可比竞品|no\s+direct\s+competitor|无可比", re.I)
+
+
+def moat_score_table_errors(module3: str) -> list[str]:
+    """Gate 1: module 3 must contain a quantified moat score table.
+
+    Requires a Markdown table with at least 5 data rows, a column named
+    'score' or '分数', and non-empty evidence per row.
+    """
+    tables = list(iter_markdown_tables(module3))
+    for table in tables:
+        headers = [h.strip().lower() for h in table["headers"]]
+        score_col = None
+        for i, h in enumerate(headers):
+            if "score" in h or "分数" in h:
+                score_col = i
+                break
+        if score_col is None:
+            continue
+        data_rows = []
+        for r in table["rows"]:
+            cells = r.get("cells", []) if isinstance(r, dict) else r
+            if any(c.strip() for c in cells):
+                data_rows.append(r)
+        if len(data_rows) >= 5:
+            return []
+    return ["module 3 must include a moat score table with at least 5 scored dimensions (column named 'score' or '分数')"]
+
+
+def multi_valuation_gate_errors(text: str, module4: str) -> list[str]:
+    """Gate 2: high-capex or cyclical companies must have multi-scenario valuation.
+
+    Triggers when capex >= $50B or cyclical industry keywords are present.
+    Requires module 4 to have a table with 3+ rows covering multiple valuation
+    scenarios (peak/mid-cycle/normalized/EV-FCF).
+    """
+    triggered = False
+    for m in HIGH_CAPEX.finditer(text):
+        val = float(m.group(1))
+        if val >= 50:
+            triggered = True
+            break
+    if not triggered and CYCLICAL_KEYWORDS.search(text):
+        triggered = True
+    if not triggered:
+        return []
+
+    scenario_keywords = re.compile(r"峰值|新周期|中枢|旧周期|平准|normalized|peak|mid.?cycle|EV/FCF|EV.?FCF", re.I)
+    tables = list(iter_markdown_tables(module4))
+    for table in tables:
+        data_rows = []
+        for r in table["rows"]:
+            cells = r.get("cells", []) if isinstance(r, dict) else r
+            if any(c.strip() for c in cells):
+                data_rows.append(cells)
+        if len(data_rows) < 3:
+            continue
+        table_text = " ".join(" ".join(r) for r in [table["headers"]] + data_rows)
+        if scenario_keywords.search(table_text):
+            return []
+    return ["module 4 must include a multi-scenario valuation gate table (peak/mid-cycle/normalized) for high-capex or cyclical companies"]
+
+
+def peer_comparison_errors(text: str) -> list[str]:
+    """Gate 3: report must include a peer comparison table with 2+ competitors.
+
+    Looks for a table whose first column or headers reference at least 2
+    non-target company names and include at least 2 comparison metrics.
+    """
+    if NO_COMPETITOR_CLAIM.search(text):
+        return []
+    tables = list(iter_markdown_tables(text))
+    for table in tables:
+        header_text = " ".join(table["headers"])
+        all_text = header_text + " " + " ".join(" ".join(r) for r in table["rows"])
+        metric_count = len(PEER_TABLE_METRICS.findall(all_text))
+        if metric_count >= 2:
+            first_col = []
+            for r in table["rows"]:
+                cells = r.get("cells", []) if isinstance(r, dict) else r
+                if cells and cells[0].strip():
+                    first_col.append(cells[0].strip())
+            companies = [c for c in first_col if len(c) > 1 and not c.replace(".", "").replace("-", "").isdigit()]
+            if len(companies) >= 2:
+                return []
+    return ["report must include a peer comparison table with at least 2 competitors and 2+ metrics (or state '无直接可比竞品')"]
+
+
+def variant_view_placement_errors(module6: str, module9: str) -> list[str]:
+    """Gate 4: Variant View must be in module 9, not module 6."""
+    errors = []
+    if re.search(r"^###\s+Variant View\s*$", module6, re.M):
+        errors.append("Variant View must be in module 9 (Final Verdict), not module 6")
+    if not re.search(r"^###\s+Variant View\s*$", module9, re.M):
+        errors.append("module 9 must include '### Variant View'")
+    return errors
+
+
 def lint_text(text: str) -> list[str]:
     errors: list[str] = []
 
@@ -402,7 +510,9 @@ def lint_text(text: str) -> list[str]:
         errors.append("Key Forces must be a subsection inside module 1, not a top-level section")
 
     module1 = section_body(text, r"1\.")
+    module3 = section_body(text, r"3\.")
     module4 = section_body(text, r"4\.")
+    module6 = section_body(text, r"6\.")
     module8 = section_body(text, r"8\.")
     module9 = section_body(text, r"9\.")
     first_page = section_body(text, r"First-Page Verdict|首页结论|一页结论")
@@ -457,6 +567,10 @@ def lint_text(text: str) -> list[str]:
     errors.extend(tax_identity_errors(text))
     errors.extend(opportunity_cost_benchmark_errors(text))
     errors.extend(previous_report_delta_errors(text))
+    errors.extend(moat_score_table_errors(module3))
+    errors.extend(multi_valuation_gate_errors(text, module4))
+    errors.extend(peer_comparison_errors(text))
+    errors.extend(variant_view_placement_errors(module6, module9))
     if not re.search(r"###\s*三原则扣问", module9):
         errors.append("module 9 must include dedicated '### 三原则扣问'")
 
@@ -543,6 +657,19 @@ def self_test() -> int:
 CapEx +19.1%，主要由于产能建设提速。
 
 ## 3. 护城河 Moat Analysis
+| 维度 | 分数 | 证据 |
+|---|---|---|
+| 品牌 | 4 | 复购率高 |
+| 转换成本 | 3 | 续约率 90% |
+| 网络效应 | 2 | 用户基数有限 |
+| 成本优势 | 4 | 规模化生产 |
+| 监管壁垒 | 3 | 牌照壁垒 |
+
+### 竞品对比 Peer Comparison
+| 公司 | PE | 利润率 | 增速 |
+|---|---|---|---|
+| 公司A | 15 | 30% | 10% |
+| 公司B | 18 | 25% | 8% |
 
 ## 4. 极限估值 + 10 年回本数学审判
 

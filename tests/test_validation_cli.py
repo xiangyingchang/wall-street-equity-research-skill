@@ -388,7 +388,7 @@ class ValidationCliTests(unittest.TestCase):
         fixture = ROOT / "tests/fixtures/good-full-report.md"
         with tempfile.TemporaryDirectory() as raw:
             _, _, manifest = self.extract(Path(raw), fixture)
-            self.assertEqual(manifest["eligible_numeric_table_cells"], 5)
+            self.assertEqual(manifest["eligible_numeric_table_cells"], 11)
             self.assertEqual(len(manifest["items"]), 5)
             self.assertEqual(sum(item["field"] == "government_yield" for item in manifest["items"]), 1)
             self.assertEqual(sum(item["field"] == "payback_eps" for item in manifest["items"]), 4)
