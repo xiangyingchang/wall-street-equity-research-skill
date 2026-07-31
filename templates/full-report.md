@@ -110,6 +110,18 @@ TODO
 | Reduce | valuation | TODO explicit comparator/threshold | TODO |
 | Sell | thesis-break | TODO thesis-break condition | TODO |
 
+### 目标 PE 与价格线
+
+目标价格 = 保守目标 PE × 未来 12 个月 EPS × 安全边际折扣。输出目标 PE、目标 FCF 倍数、对应目标价格、当前价格距离目标的折价/溢价、永远到不了目标价时是否允许定投及理由。
+
+### 价格区间摘要
+
+| 价格区间 | 估值语境 | 执行来源 |
+|---|---|---|
+| TODO 以上 | 高估区 | 仅见 Action Matrix |
+| TODO-TODO | 观察区 | 仅见 Action Matrix |
+| TODO 以下 | 潜在安全边际区 | 仅见 Action Matrix |
+
 ## 9. 最终判决 Final Verdict
 
 ### Variant View

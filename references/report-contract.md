@@ -180,6 +180,8 @@ These gates are lint-enforced and apply to every full report:
 2. **Multi-scenario valuation gate (module 4):** Triggered for high-capex (≥$50B) or cyclical companies. Must contain a table with 3+ rows covering multiple valuation scenarios (peak, mid-cycle, normalized, EV/FCF). Non-cyclical, low-capex companies are exempt.
 3. **Peer comparison table:** Report must include a table comparing at least 2 competitors with 2+ metrics (PE, margin, growth, market share, market cap). If no direct competitors exist, state "无直接可比竞品" with a reason.
 4. **Variant View placement:** Must appear as `### Variant View` inside module 9 (Final Verdict) only. Must not appear in module 6.
+5. **Price-zone summary (module 8):** Must contain a Markdown table whose header or cells reference at least 2 of the three zone tiers (safe-margin / observation / overvalued). Pure-observation names may state "无价格区间" with a reason to skip; holding positions may not use this exemption.
+6. **Target PE / target price (module 8 or 9):** Must contain a target-price keyword (目标 PE / 目标价 / target PE / target price / 安全买入) near a numeric value. Pure qualitative wording does not satisfy the gate.
 
 ## Variant View, Pre-Mortem, and Action Matrix
 

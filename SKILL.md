@@ -21,7 +21,7 @@ Use for one listed equity when the user asks for valuation, buy/hold/sell judgme
 - Apply calculated-value checks and the manual audit; do not let automation fetch or resolve provenance.
 - Treat `research-pack-v1` as durable recovery state only; never add provider, model, token, timing, retry, or runtime telemetry.
 - **Network-effects moat = user metrics required.**
-- **Analysis density gates (lint-enforced):** Module 3 must include a 5+ row moat score table (dimension/score/evidence). Module 4 must include a multi-scenario valuation gate (3+ rows: peak/mid-cycle/normalized) for high-capex (≥$50B) or cyclical companies. Report must include a peer comparison table (2+ competitors, 2+ metrics) or state "无直接可比竞品". Variant View must be in module 9 only. If the moat analysis claims network effects (社交网络、双边平台、用户飞轮), the Evidence Ledger must include at minimum multi-period DAU/MAU/DAP or equivalent engagement data with YoY trends, and module 3 must contain a dedicated user-metrics table that supports the claim. Common sources: company IR operating metrics, SEC 10-K/10-Q business section, earnings slides. Never substitute qualitative descriptions ("全球最大社交平台") for quantified user evidence.
+- **Analysis density gates (lint-enforced):** Module 3 must include a 5+ row moat score table (dimension/score/evidence). Module 4 must include a multi-scenario valuation gate (3+ rows: peak/mid-cycle/normalized) for high-capex (≥$50B) or cyclical companies. Report must include a peer comparison table (2+ competitors, 2+ metrics) or state "无直接可比竞品". Variant View must be in module 9 only. Module 8 must include a price-zone summary table (at least 2 of safe-margin/observation/overvalued tiers). Module 8 or 9 must include a quantified target PE / target price (keyword + numeric value); pure qualitative wording does not satisfy. If the moat analysis claims network effects (社交网络、双边平台、用户飞轮), the Evidence Ledger must include at minimum multi-period DAU/MAU/DAP or equivalent engagement data with YoY trends, and module 3 must contain a dedicated user-metrics table that supports the claim. Common sources: company IR operating metrics, SEC 10-K/10-Q business section, earnings slides. Never substitute qualitative descriptions ("全球最大社交平台") for quantified user evidence.
 - In pack-backed v5, declare derived inputs by `fact_ref` or `derived_ref`; only payback `years` may be a literal. Never copy caller-supplied values, units, dates, or source IDs into reference inputs.
 
 ## Decision Gates
@@ -57,4 +57,14 @@ Return the report path, final rating/action, key uncertainty, and verification r
 - `references/researchability.md` — authoritative A/B/C and confidence rules.
 - `references/full-methodology.md` — 9-module method and four-lens mapping.
 - `references/source-map.md` — Obsidian locations and prior-report continuity.
-- `templates/full-report.md` — required report skeleton.
+- `templates/full-report.md` - required report skeleton.
+
+## Skill 维护纪律（强制）
+
+任何对本 skill 的行为改动（新增/修改 lint gate、调整模块结构、改变报告契约）必须按以下顺序执行，不得跳步：
+
+1. **先完善 PRD**：在 `PRD-*.md` 中写明背景、现状、目标、改动范围、不在范围内、验证标准。无 PRD 不得改代码。
+2. **记录变更**：改动落地后在 `references/change-log.md` 顶部新增条目，写明 Change / Reason / Scope boundary / Verification。
+3. **再执行**：代码、模板、methodology、contract、测试同步更新，跑完整验证套件（py_compile + unittest + self-test + fixtures + diff --check）。
+
+PRD 和 change-log 是仓库的一等公民，与代码同等重要，必须 commit 到仓库。

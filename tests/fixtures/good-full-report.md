@@ -76,6 +76,16 @@ EV/FCF 与中周期估值。
 | Reduce | valuation | Price >= $20 | Reduce to 3% |
 | Sell | thesis-break | Thesis broken | Exit position |
 
+### 目标 PE 与价格线
+目标 PE 12x，目标价 $9。
+
+### 价格区间摘要
+| 价格区间 | 估值语境 | 执行来源 |
+|---|---|---|
+| $12 以上 | 高估区 | 仅见 Action Matrix |
+| $8-12 | 观察区 | 仅见 Action Matrix |
+| $8 以下 | 安全区 | 仅见 Action Matrix |
+
 ## 9. 最终判决 Final Verdict
 
 ### Variant View

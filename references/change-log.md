@@ -2,6 +2,26 @@
 
 ## 2026-07-31
 
+### Price discipline lint gates - target PE/price + price-zone summary
+
+**Change:**
+- **Gate 5 (report_lint.py):** Module 8 must contain a price-zone summary table whose header or cells reference at least 2 of the three tiers (safe-margin / observation / overvalued). Pure-observation names may state "无价格区间" with a reason to skip; holding positions may not use this exemption.
+- **Gate 6 (report_lint.py):** Module 8 or 9 must contain a target-price keyword (目标 PE / 目标价 / target PE / target price / 安全买入) near a numeric value. Pure qualitative wording does not satisfy the gate.
+- Updated `templates/full-report.md`: added `### 目标 PE 与价格线` and `### 价格区间摘要` placeholders after the module 8 Action Matrix, aligning template with methodology.
+- Updated `references/full-methodology.md`: marked the target-PE and price-zone-summary sections as lint-enforced requirements (not just guidance).
+- Updated `references/report-contract.md` Analysis Density Gates: added entries 5 and 6.
+- Updated `SKILL.md` Hard Rules: added price-zone summary and quantified target PE to the analysis-density-gates bullet.
+- Updated fixture and self-test inline good report with price-zone table and target PE; regenerated v4 manifest.
+- Migrated the live Meta 2026-07-30 report: added target PE (18x x $22 = ~$396) and three-tier price-zone table to module 8.
+
+**Reason:** Meta 2026-07-30 module 8 had only discipline thresholds and Action Matrix; the target PE / price line and price-zone summary required by methodology were missing. SK海力士 report contained a price-zone table, confirming it was a historical convention that the Meta report dropped. Same root cause as the prior four gates: prose guidance without lint enforcement and no template placeholder, so the LLM skipped it.
+
+**Scope boundary:** No module structure change. Price zones still only explain valuation context; all executable trades remain defined solely by the Action Matrix. No payback formula or Evidence Ledger field changes.
+
+**Verification:** `python3 -m py_compile scripts/*.py` PASS; `python3 -m unittest discover -s tests` 76/76 PASS; `report_lint.py --self-test` PASS; `report_lint.py --fixtures tests/fixtures` PASS; `git diff --check` PASS. Meta report passes lint and audit after migration.
+
+## 2026-07-31
+
 ### Analysis density gates - self-test fixture fix + methodology hardening
 
 **Change:**

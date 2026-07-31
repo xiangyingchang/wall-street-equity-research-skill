@@ -71,3 +71,53 @@ Meta 2026-07-30 报告与同日 SK海力士报告对比后发现，尽管使用�
 3. 美光报告通过新 lint
 4. 76 个现有测试不 break
 5. 新增 lint 测试覆盖每个门禁
+
+
+## 增补条目 5：价格纪律强制门禁 - 2026-07-31
+
+### 背景
+
+Meta 2026-07-30 报告审查发现 module 8（仓位与风控）只有纪律门槛和 Action Matrix，缺了两块 methodology 已要求的价格纪律内容：目标 PE 与价格线、价格区间摘要。SK海力士报告实际包含了四档价格区间表，证明这是历史惯例。根因同前四项：methodology 写了 prose 指导，但 lint 无门禁、模板无占位，LLM 执行时跳过。
+
+### 现状
+
+- `references/full-methodology.md` 在 module 9 节点下用 `####` 列出"目标 PE 与价格线"和"⭐ 价格区间摘要（强制）"
+- `templates/full-report.md` 的 module 8 和 module 9 均无这两块占位
+- `scripts/report_lint.py` 无针对价格纪律的检查
+
+### 目标
+
+把价格纪律从"建议"升级为 lint 强制门禁，并补齐模板占位，确保每份报告都输出目标 PE、目标价、三档价格区间。
+
+### 改动范围
+
+**Gate 5（report_lint.py）：价格区间摘要强制**
+
+- module 8（仓位与风控）必须包含一个价格区间表，表头含"价格区间"或"区间"，且行名/单元格覆盖"安全边际区""观察区""高估区"三档中的至少两档（允许中英混排：safe/margin、observation、overvalued）。
+- 例外：如果报告明确声明该公司无价格区间意义（如已清仓且不打算重新建仓的纯观察标的），可声明"无价格区间"并说明理由跳过。但持仓标的不得使用此例外。
+
+**Gate 6（report_lint.py）：目标 PE 与价格线强制**
+
+- module 8 或 module 9 必须包含目标 PE 或目标价格的量化输出。判定条件：出现"目标 PE""目标价""target PE""target price""安全买入"等关键词，且附近有具体数值（数字 + 货币/倍数）。纯定性描述（如"需要更低价格"）不满足。
+
+**模板补全（templates/full-report.md）**
+
+- 在 module 8 的 Action Matrix 之后补"目标 PE 与价格线"和"价格区间摘要"两个 `###` 子标题占位，与 methodology 对齐。
+
+**methodology 强化（references/full-methodology.md）**
+
+- 把"目标 PE 与价格线"和"价格区间摘要"从 `####` 提升为明确标注 lint 强制要求，指向 `report_lint.py`。
+
+### 不在范围内
+
+- 不改变价格区间只解释估值、不定义交易的原则（交易仍由 Action Matrix 唯一定义）
+- 不改变 9 模块结构
+- 不新增模块
+
+### 验证标准
+
+1. Meta 2026-07-30 报告补齐价格纪律后通过新 lint
+2. SK海力士报告通过新 lint（已有价格区间表）
+3. 美光报告通过新 lint（如缺则补）
+4. 76+ 现有测试不 break
+5. self-test 和 fixtures 通过

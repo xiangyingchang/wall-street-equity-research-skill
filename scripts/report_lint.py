@@ -384,6 +384,10 @@ CYCLICAL_KEYWORDS = re.compile(
 HIGH_CAPEX = re.compile(r"(?:capex|资本开支|capital\s+expenditure)[^\n]{0,30}(?:\$?\s*(\d{2,4})(?:\.\d+)?)\s*[Bb]", re.I)
 PEER_TABLE_METRICS = re.compile(r"PE|P/E|利润率|margin|增速|growth|市占率|share|市值|cap", re.I)
 NO_COMPETITOR_CLAIM = re.compile(r"无直接可比竞品|no\s+direct\s+competitor|无可比", re.I)
+PRICE_ZONE_LABELS = re.compile(r"安全边际区|观察区|高估区|安全区|舒服区|可买区|potential.{0,4}safe|observation|overvalued", re.I)
+NO_PRICE_ZONE_CLAIM = re.compile(r"无价格区间|no\s+price\s+zone", re.I)
+TARGET_PRICE_KEYWORDS = re.compile(r"目标\s*PE|目标价|target\s+PE|target\s+price|安全买入|安全边际.{0,6}价格|buy.{0,6}zone.{0,6}price", re.I)
+NUMERIC_VALUE = re.compile(r"[\d,]+(?:\.\d+)?\s*(?:\$|¥|₩|€|£|x|倍|元|M|B|T|万亿|亿)", re.I)
 
 
 def moat_score_table_errors(module3: str) -> list[str]:
@@ -481,6 +485,41 @@ def variant_view_placement_errors(module6: str, module9: str) -> list[str]:
     return errors
 
 
+def price_zone_summary_errors(module8: str) -> list[str]:
+    """Gate 5: module 8 must contain a price-zone summary table.
+
+    Requires a table whose header or cells reference at least 2 of the
+    three zone tiers (safe-margin / observation / overvalued). A holding
+    position may not claim the no-price-zone exemption.
+    """
+    if NO_PRICE_ZONE_CLAIM.search(module8):
+        return []
+    tables = list(iter_markdown_tables(module8))
+    for table in tables:
+        all_text = " ".join(table["headers"])
+        for r in table["rows"]:
+            cells = r.get("cells", []) if isinstance(r, dict) else r
+            all_text += " " + " ".join(cells)
+        labels = PRICE_ZONE_LABELS.findall(all_text)
+        if len(set(l.lower() for l in labels)) >= 2:
+            return []
+    return ["module 8 must include a price-zone summary table with at least 2 tiers (safe-margin/observation/overvalued)"]
+
+
+def target_pe_price_errors(module8: str, module9: str) -> list[str]:
+    """Gate 6: module 8 or 9 must contain a quantified target PE / target price.
+
+    Requires a target-price keyword near a numeric value. Pure qualitative
+    wording (e.g. 'needs a lower price') does not satisfy the gate.
+    """
+    combined = module8 + "\n" + module9
+    for m in TARGET_PRICE_KEYWORDS.finditer(combined):
+        window = combined[max(0, m.start() - 120): m.end() + 120]
+        if NUMERIC_VALUE.search(window):
+            return []
+    return ["module 8 or 9 must include a quantified target PE / target price (keyword + numeric value)"]
+
+
 def lint_text(text: str) -> list[str]:
     errors: list[str] = []
 
@@ -571,6 +610,8 @@ def lint_text(text: str) -> list[str]:
     errors.extend(multi_valuation_gate_errors(text, module4))
     errors.extend(peer_comparison_errors(text))
     errors.extend(variant_view_placement_errors(module6, module9))
+    errors.extend(price_zone_summary_errors(module8))
+    errors.extend(target_pe_price_errors(module8, module9))
     if not re.search(r"###\s*三原则扣问", module9):
         errors.append("module 9 must include dedicated '### 三原则扣问'")
 
@@ -703,6 +744,16 @@ EV/FCF 与中周期估值。
 | Hold | operating | Revenue >= $10B | Hold current position |
 | Reduce | valuation | Price >= $20 | Reduce to 3% |
 | Sell | thesis-break | Thesis broken | Exit position |
+
+### 目标 PE 与价格线
+目标 PE 12x，目标价 $9。
+
+### 价格区间摘要
+| 价格区间 | 估值语境 | 执行来源 |
+|---|---|---|
+| $12 以上 | 高估区 | 仅见 Action Matrix |
+| $8-12 | 观察区 | 仅见 Action Matrix |
+| $8 以下 | 安全区 | 仅见 Action Matrix |
 
 ## 9. 最终判决 Final Verdict
 
