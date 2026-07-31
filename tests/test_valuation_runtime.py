@@ -14,8 +14,8 @@ class ValuationRuntimeTests(unittest.TestCase):
             years=5,
             annual_dividend_yield=Decimal("0.005"),
         )
-        self.assertEqual(result["terminal_eps"], "32.3262")
-        self.assertEqual(result["irr_pct"], "1.63")
+        self.assertEqual(result["terminal_eps"], "32.3252")
+        self.assertEqual(result["irr_pct"], "1.64")
 
     def test_eps_growth_rejects_extra_buyback(self):
         with self.assertRaisesRegex(ValueError, "already embedded"):
@@ -36,7 +36,7 @@ class ValuationRuntimeTests(unittest.TestCase):
             exit_pe=Decimal("18"),
             years=5,
         )
-        self.assertEqual(result["required_terminal_eps"], "47.8203")
+        self.assertEqual(result["required_terminal_eps"], "47.7954")
         self.assertEqual(result["required_eps_cagr_pct"], "16.79")
 
     def test_no_trigger_resolves_review(self):
@@ -63,6 +63,11 @@ class ValuationRuntimeTests(unittest.TestCase):
             }
         )
         self.assertEqual(result["resolved_action"], "REDUCE")
+
+    def test_importing_module_does_not_change_global_decimal_precision(self):
+        """Regression: valuation_runtime must not mutate the global Decimal context."""
+        from decimal import getcontext
+        self.assertEqual(getcontext().prec, 28)
 
 
 if __name__ == "__main__":

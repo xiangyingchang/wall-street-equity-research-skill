@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import argparse
 import json
-from decimal import Decimal, ROUND_HALF_UP, getcontext
+from decimal import Decimal, ROUND_HALF_UP
+
+from decimal import localcontext
 from typing import Any
 
-getcontext().prec = 50
+_VALUATION_PREC = 50
 
 D = Decimal
 
@@ -52,32 +54,34 @@ def scenario_irr(
             "share_count_cagr cannot be supplied with EPS CAGR; buybacks/dilution are already embedded in per-share growth"
         )
 
-    terminal_metric = starting_eps * (D(1) + eps_cagr) ** years
-    if metric_mode == "net_income":
-        if share_count_cagr is None:
-            raise ValueError("net_income mode requires share_count_cagr")
-        terminal_eps = terminal_metric / ((D(1) + share_count_cagr) ** years)
-    else:
-        terminal_eps = terminal_metric
+    with localcontext() as ctx:
+        ctx.prec = _VALUATION_PREC
+        terminal_metric = starting_eps * (D(1) + eps_cagr) ** years
+        if metric_mode == "net_income":
+            if share_count_cagr is None:
+                raise ValueError("net_income mode requires share_count_cagr")
+            terminal_eps = terminal_metric / ((D(1) + share_count_cagr) ** years)
+        else:
+            terminal_eps = terminal_metric
 
-    terminal_price = terminal_eps * exit_pe
-    if annual_dividend_yield is not None:
-        if annual_dividend_per_share != 0:
-            raise ValueError("use either dividend_per_share or dividend_yield, not both")
-        annual_dividend_per_share = current_price * annual_dividend_yield
-    cumulative_dividends = annual_dividend_per_share * years
-    ending_value = terminal_price + cumulative_dividends
-    total_multiple = ending_value / current_price
-    irr = annualized_return(total_multiple, years)
+        terminal_price = terminal_eps * exit_pe
+        if annual_dividend_yield is not None:
+            if annual_dividend_per_share != 0:
+                raise ValueError("use either dividend_per_share or dividend_yield, not both")
+            annual_dividend_per_share = current_price * annual_dividend_yield
+        cumulative_dividends = annual_dividend_per_share * years
+        ending_value = terminal_price + cumulative_dividends
+        total_multiple = ending_value / current_price
+        irr = annualized_return(total_multiple, years)
 
-    return {
-        "terminal_eps": q(terminal_eps),
-        "terminal_price": q(terminal_price),
-        "cumulative_dividends": q(cumulative_dividends),
-        "ending_value": q(ending_value),
-        "total_return_pct": q((total_multiple - D(1)) * D(100), "0.01"),
-        "irr_pct": q(irr * D(100), "0.01"),
-    }
+        return {
+            "terminal_eps": q(terminal_eps),
+            "terminal_price": q(terminal_price),
+            "cumulative_dividends": q(cumulative_dividends),
+            "ending_value": q(ending_value),
+            "total_return_pct": q((total_multiple - D(1)) * D(100), "0.01"),
+            "irr_pct": q(irr * D(100), "0.01"),
+        }
 
 
 def reverse_expectations(
@@ -91,20 +95,22 @@ def reverse_expectations(
 ) -> dict[str, str]:
     if min(current_price, starting_eps, exit_pe) <= 0 or years <= 0:
         raise ValueError("price, starting EPS, exit PE, and years must be positive")
-    required_ending_value = current_price * (D(1) + target_return) ** years
-    cumulative_dividends = annual_dividend_per_share * years
-    required_terminal_price = required_ending_value - cumulative_dividends
-    if required_terminal_price <= 0:
-        raise ValueError("dividends exceed required ending value")
-    required_terminal_eps = required_terminal_price / exit_pe
-    required_eps_cagr = (required_terminal_eps / starting_eps) ** (D(1) / D(years)) - D(1)
-    return {
-        "required_ending_value": q(required_ending_value),
-        "cumulative_dividends": q(cumulative_dividends),
-        "required_terminal_price": q(required_terminal_price),
-        "required_terminal_eps": q(required_terminal_eps),
-        "required_eps_cagr_pct": q(required_eps_cagr * D(100), "0.01"),
-    }
+    with localcontext() as ctx:
+        ctx.prec = _VALUATION_PREC
+        required_ending_value = current_price * (D(1) + target_return) ** years
+        cumulative_dividends = annual_dividend_per_share * years
+        required_terminal_price = required_ending_value - cumulative_dividends
+        if required_terminal_price <= 0:
+            raise ValueError("dividends exceed required ending value")
+        required_terminal_eps = required_terminal_price / exit_pe
+        required_eps_cagr = (required_terminal_eps / starting_eps) ** (D(1) / D(years)) - D(1)
+        return {
+            "required_ending_value": q(required_ending_value),
+            "cumulative_dividends": q(cumulative_dividends),
+            "required_terminal_price": q(required_terminal_price),
+            "required_terminal_eps": q(required_terminal_eps),
+            "required_eps_cagr_pct": q(required_eps_cagr * D(100), "0.01"),
+        }
 
 
 def resolve_action(payload: dict[str, Any]) -> dict[str, Any]:
