@@ -1,0 +1,76 @@
+name: Reconcile valuation contract
+
+on:
+  push:
+    branches:
+      - feat/valuation-consistency
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/valuation-consistency
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Reconcile contracts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'anchor not found: {path}: {old}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace_once(
+              'references/report-contract.md',
+              'Buy should require all three to pass. If not, use Hold-Index, Watchlist, or Avoid unless a clearly justified super-compounder exception applies.',
+              'A Buy rating requires an adequate Base-case expected IRR versus opportunity cost, no unresolved thesis break, and a valuation range with genuine safety margin. A failed 10-year payback test must be explained and lowers confidence, but it is not a sole veto when Scenario IRR, Reverse Expectations, and business evidence support the rating.'
+          )
+          replace_once(
+              'references/full-methodology.md',
+              '3. **十年回本测试**：未来 10 年累计利润倍数得能覆盖现在 PE，$M = \\frac{(1+g)^{10}-1}{g}$，算不出物理可达的 g 就不能买。',
+              '3. **十年回本压力测试**：未来 10 年累计利润倍数与当前估值做零终值压力测试，$M = \\frac{(1+g)^{10}-1}{g}$。若所需 g 不具物理可达性，必须提高回报门槛并解释；但不得脱离 Scenario IRR 与 Reverse Expectations 单独一票否决。'
+          )
+          replace_once(
+              'SKILL.md',
+              'Return the report path, final rating/action, key uncertainty, and verification result. A full report is incomplete unless lint and audit verdict both pass.',
+              'Return the report path, final rating/action, key uncertainty, and verification result. A full report is incomplete unless valuation consistency, lint, and audit verdict all pass.'
+          )
+          PY
+
+      - name: Ensure stale veto language is gone
+        run: |
+          ! grep -R "Buy should require all three to pass" references SKILL.md
+          ! grep -R "算不出物理可达的 g 就不能买" references SKILL.md
+
+      - name: Compile and test
+        run: |
+          python3 -m py_compile scripts/*.py
+          python3 -m unittest discover -s tests
+          python3 scripts/report_lint.py --self-test
+          python3 scripts/report_lint.py --fixtures tests/fixtures
+          git diff --check
+
+      - name: Remove temporary workflow
+        run: rm .github/workflows/reconcile-valuation-contract.yml
+
+      - name: Commit reconciliation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: reconcile payback pressure-test semantics"
+          git push origin HEAD:feat/valuation-consistency
