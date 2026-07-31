@@ -1,4 +1,3 @@
-\
 #!/usr/bin/env python3
 """Semantic valuation consistency checks for equity-research Markdown reports."""
 from __future__ import annotations

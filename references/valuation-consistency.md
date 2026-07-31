@@ -1,4 +1,3 @@
-\
 # Valuation Consistency
 
 This reference is authoritative for valuation-basis identity, adjustment bridges,
