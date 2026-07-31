@@ -21,6 +21,7 @@
   - `10Y ×2` presented as a low-risk investable asset.
 - Updated `SKILL.md` to v1.4.0 and updated `templates/full-report.md` and `references/valuation-runtime.md` to make the new flow mandatory.
 - Added focused regression tests reproducing the Meta 2026-08-01 failures.
+- Preserved the canonical `10Y Treasury ×2` Evidence Ledger label so field recognition and generated-report fail-closed behavior remain compatible.
 
 ### Reason
 
@@ -37,18 +38,17 @@ The v1.3 runtime guaranteed arithmetic after inputs were supplied, but did not g
 - Legacy `resolve-action` remains available for old artifacts but is blocked for new full reports.
 - The nine-module report structure is unchanged.
 
-### Verification target
+### Verification
 
-- `python3 -m py_compile scripts/*.py`
-- `python3 -m unittest tests.test_valuation_runtime`
-- `python3 -m unittest tests.test_valuation_consistency`
-- `python3 -m unittest discover -s tests`
-- `python3 scripts/report_lint.py --self-test`
-- `python3 scripts/report_lint.py --fixtures tests/fixtures`
-- `git diff --check`
-- Meta EPS Bridge vector: `2750 × 35% × (1-18%) ÷ 25.7 = 30.7101`
-- Meta action vector: TTM margin `38.1%`, Reduce threshold `<35%` → Reduce false; with no other triggered rule → `REVIEW`
+- GitHub Actions `Validate` run #49: PASS.
+- `python3 -m py_compile scripts/*.py`: PASS.
+- Financial rigor, report audit, and report lint self-tests: PASS.
+- `python3 scripts/report_lint.py --fixtures tests/fixtures`: PASS.
+- `python3 -m unittest discover -s tests`: 109/109 PASS.
+- Meta EPS Bridge vector: `2750 × 35% × (1-18%) ÷ 25.7 = 30.7101`: PASS.
+- Meta action vector: TTM margin `38.1%`, Reduce threshold `<35%` → Reduce false; with no other triggered rule → `REVIEW`: PASS.
+- Generated template recognition: PASS after restoring the atomic `10Y Treasury ×2` label.
 
 ### Integration
 
-After the full validation suite passes, prepend this entry to `references/change-log.md`, delete `references/change-log-v1.4.md`, and mark `PRD-deterministic-bridge-action-v1.4.md` as completed with the final test counts.
+Prepend this entry to `references/change-log.md` and delete `references/change-log-v1.4.md` during final merge integration. Historical entries must not be dropped.
