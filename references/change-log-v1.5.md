@@ -58,7 +58,7 @@ v1.5 moves the trust boundary upstream: values, forecast transformations, thresh
 
 ### Verification
 
-GitHub Actions `Validate` run #69: PASS.
+GitHub Actions `Validate` run #73: PASS.
 
 - `python -m py_compile scripts/*.py`: PASS.
 - financial rigor, report audit, and report lint self-tests: PASS.
