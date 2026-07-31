@@ -94,7 +94,7 @@ Meta 2026-08-01 v1.4 报告证明，正确公式仍会放大错误或脆弱输�
 
 ## 验证结果
 
-GitHub Actions `Validate` run #69：PASS。
+GitHub Actions `Validate` run #73：PASS。
 
 - Python syntax：PASS。
 - financial rigor / report audit / report lint self-tests：PASS。
