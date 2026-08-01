@@ -11,7 +11,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from scripts.report_compiler_v21 import compile_report_v21
-from scripts.report_renderer_readable_v212 import render_audit_markdown, render_reader_markdown
+from scripts.report_renderer_narrative_v22 import render_audit_markdown, render_reader_markdown
 from scripts.report_spec_v2 import SpecError, canonical_json, sha256
 
 
@@ -34,16 +34,9 @@ def artifact_paths(output: Path) -> tuple[Path, Path, Path]:
     )
 
 
-def _verification(
-    bundle: dict[str, Any],
-    spec_path: Path,
-    output: Path,
-    audit_path: Path,
-    bundle_path: Path,
-    reader_markdown: str,
-    audit_markdown: str,
-) -> dict[str, Any]:
+def _verification(bundle: dict[str, Any], spec_path: Path, output: Path, audit_path: Path, bundle_path: Path, reader_markdown: str, audit_markdown: str) -> dict[str, Any]:
     quality_checks = bundle["research_quality"]["checks"]
+    narrative_checks = bundle["narrative_quality"]["checks"]
     checks = {
         "spec_schema": "PASS",
         "source_closure": "PASS",
@@ -56,15 +49,17 @@ def _verification(
         "audit_layer_complete": "PASS",
     }
     checks.update({name: result["status"] for name, result in quality_checks.items()})
+    checks.update({name: result["status"] for name, result in narrative_checks.items()})
     return {
-        "schema_version": "report-verification-v2.1.2",
-        "compiler_version": "2.1.2",
+        "schema_version": "report-verification-v2.2",
+        "compiler_version": "2.2",
         "spec_file": str(spec_path),
         "report_file": str(output),
         "audit_file": str(audit_path),
         "bundle_file": str(bundle_path),
         "checks": checks,
         "research_quality": bundle["research_quality"],
+        "narrative_quality": bundle["narrative_quality"],
         "spec_hash": bundle["spec_hash"],
         "bundle_hash": bundle["bundle_hash"],
         "reader_markdown_hash": sha256(reader_markdown),
@@ -82,58 +77,40 @@ def build(spec_path: Path, output: Path) -> dict[str, Any]:
     output.write_text(reader_markdown, encoding="utf-8")
     audit_path.write_text(audit_markdown, encoding="utf-8")
     write_json(bundle_path, bundle)
-    verification = _verification(
-        bundle,
-        spec_path,
-        output,
-        audit_path,
-        bundle_path,
-        reader_markdown,
-        audit_markdown,
-    )
+    verification = _verification(bundle, spec_path, output, audit_path, bundle_path, reader_markdown, audit_markdown)
     write_json(verification_path, verification)
     return verification
 
 
 def _reader_errors(markdown: str) -> list[str]:
     errors: list[str] = []
-    forbidden = (
-        "## Source Registry",
-        "## Evidence Ledger",
-        "## Claim-Evidence Matrix",
-        "### Build Manifest",
-        "FACT-",
-        "BUNDLE:",
-        "[supports]",
-        "Spec hash",
-        "Bundle hash",
-    )
+    forbidden = ("## Source Registry", "## Evidence Ledger", "## Claim-Evidence Matrix", "### Build Manifest", "FACT-", "BUNDLE:", "[supports]", "Spec hash", "Bundle hash")
     for token in forbidden:
         if token in markdown:
             errors.append(f"reader report contains audit token: {token}")
     for heading in range(1, 10):
         if f"## {heading}." not in markdown:
             errors.append(f"reader research module {heading} missing")
-    required_text = ("Base 5年 IRR", "最低目标回报", "目标回报价格", "TTM EPS", "TTM 经营利润率", "TTM FCF")
+    required_text = (
+        "Base 5年 IRR", "最低目标回报", "目标回报价格", "TTM EPS", "TTM 经营利润率", "TTM FCF",
+        "## 核心投资叙事", "Bull / Base / Bear", "财务因果桥", "镜子测试",
+    )
     for token in required_text:
         if token not in markdown:
             errors.append(f"reader report missing key decision content: {token}")
+    if "### 三个核心矛盾" in markdown or "本次判断可以压缩成三条主线" in markdown:
+        errors.append("legacy repetitive summary block remains in reader report")
     line_count = len(markdown.splitlines())
-    if line_count < 120 or line_count > 300:
+    if line_count < 140 or line_count > 340:
         errors.append(f"reader report line count outside readability budget: {line_count}")
     return errors
 
 
 def _audit_errors(markdown: str) -> list[str]:
     required = (
-        "### Build Manifest",
-        "## Source Registry",
-        "## Evidence Ledger",
-        "## Quarterly TTM Bridge",
-        "## Scenario Assumptions and Valuation",
-        "## Decision Policy Evaluation",
-        "## Claim-Evidence Matrix",
-        "## Verification",
+        "### Build Manifest", "## Source Registry", "## Evidence Ledger", "## Quarterly TTM Bridge",
+        "## Scenario Assumptions and Valuation", "## Decision Policy Evaluation", "## Claim-Evidence Matrix",
+        "## Verification", "## Investment Narrative Layer v2.2",
     )
     errors = [f"audit section missing: {token}" for token in required if token not in markdown]
     if "Legacy Checker Compatibility" in markdown or "Legacy Compatibility" in markdown:
@@ -153,15 +130,7 @@ def verify(spec_path: Path, output: Path) -> dict[str, Any]:
     actual_audit = audit_path.read_text(encoding="utf-8")
     actual_bundle = load_json(bundle_path)
     actual_verification = load_json(verification_path)
-    expected_verification = _verification(
-        expected_bundle,
-        spec_path,
-        output,
-        audit_path,
-        bundle_path,
-        expected_reader,
-        expected_audit,
-    )
+    expected_verification = _verification(expected_bundle, spec_path, output, audit_path, bundle_path, expected_reader, expected_audit)
     errors: list[str] = []
     if actual_reader != expected_reader:
         errors.append("Reader Markdown differs from compiler output")
@@ -189,7 +158,7 @@ def verify(spec_path: Path, output: Path) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Single-source reader-first equity report compiler v2.1.2")
+    parser = argparse.ArgumentParser(description="Single-source narrative equity report compiler v2.2")
     sub = parser.add_subparsers(dest="command", required=True)
     for name in ("build", "verify"):
         cmd = sub.add_parser(name)
