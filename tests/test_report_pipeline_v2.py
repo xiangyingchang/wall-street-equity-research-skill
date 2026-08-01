@@ -7,8 +7,8 @@ import tempfile
 import unittest
 
 from scripts.report_compiler_v21 import compile_report_v21
-from scripts.report_pipeline_v2 import build, verify
-from scripts.report_renderer_v2 import render_markdown
+from scripts.report_pipeline_v2 import artifact_paths, build, verify
+from scripts.report_renderer_readable_v212 import render_audit_markdown, render_reader_markdown
 from scripts.report_spec_v2 import SpecError
 from tests.meta_v21_spec import make_spec
 
@@ -40,47 +40,71 @@ class ReportPipelineV21Tests(unittest.TestCase):
         }
         self.assertEqual(actual, expected)
 
-    def test_markdown_is_complete_research_report(self):
-        markdown = render_markdown(compile_report_v21(make_spec()))
-        self.assertIn("report-spec-v2.1", markdown)
-        self.assertIn("## Source Registry", markdown)
-        self.assertIn("## Evidence Ledger", markdown)
-        self.assertIn("## Quarterly TTM Bridge", markdown)
-        self.assertIn("## Scenario Assumptions and Valuation", markdown)
-        self.assertIn("## Claim-Evidence Matrix", markdown)
+    def test_reader_report_is_complete_and_readable(self):
+        markdown = render_reader_markdown(compile_report_v21(make_spec()))
         for number in range(1, 10):
             self.assertIn(f"## {number}.", markdown)
+        for token in ("Base 5年 IRR", "最低目标回报", "目标回报价格", "TTM EPS", "TTM 经营利润率", "TTM FCF"):
+            self.assertIn(token, markdown)
+        for forbidden in ("## Source Registry", "## Evidence Ledger", "## Claim-Evidence Matrix", "FACT-", "BUNDLE:", "[supports]", "Spec hash", "Bundle hash"):
+            self.assertNotIn(forbidden, markdown)
         self.assertNotIn("Legacy Compatibility", markdown)
         self.assertNotIn("未提供叙事内容", markdown)
-        self.assertGreater(len(markdown.splitlines()), 250)
+        self.assertGreaterEqual(len(markdown.splitlines()), 120)
+        self.assertLessEqual(len(markdown.splitlines()), 300)
+
+    def test_audit_appendix_keeps_full_traceability(self):
+        audit = render_audit_markdown(compile_report_v21(make_spec()))
+        for token in ("### Build Manifest", "## Source Registry", "## Evidence Ledger", "## Quarterly TTM Bridge", "## Scenario Assumptions and Valuation", "## Decision Policy Evaluation", "## Claim-Evidence Matrix", "## Verification"):
+            self.assertIn(token, audit)
+        self.assertIn("FACT-", audit)
+        self.assertIn("BUNDLE:", audit)
+        self.assertNotIn("Legacy Compatibility", audit)
 
     def _built_files(self, root: Path):
         spec_path = root / "spec.json"
         report_path = root / "report.md"
         spec_path.write_text(json.dumps(make_spec(), ensure_ascii=False), encoding="utf-8")
         build(spec_path, report_path)
-        return spec_path, report_path, report_path.with_suffix(".md.bundle.json")
+        bundle_path, verification_path, audit_path = artifact_paths(report_path)
+        return spec_path, report_path, audit_path, bundle_path, verification_path
 
-    def test_build_and_verify_detect_markdown_tampering(self):
+    def test_build_and_verify_detect_reader_markdown_tampering(self):
         with tempfile.TemporaryDirectory() as temp:
-            spec_path, report_path, _ = self._built_files(Path(temp))
+            spec_path, report_path, _, _, _ = self._built_files(Path(temp))
             self.assertEqual(verify(spec_path, report_path)["status"], "PASS")
             report_path.write_text(report_path.read_text(encoding="utf-8").replace("$456.67", "$999.99", 1), encoding="utf-8")
             with self.assertRaises(SpecError):
                 verify(spec_path, report_path)
 
+    def test_verify_detects_audit_markdown_tampering(self):
+        with tempfile.TemporaryDirectory() as temp:
+            spec_path, report_path, audit_path, _, _ = self._built_files(Path(temp))
+            audit_path.write_text(audit_path.read_text(encoding="utf-8").replace("PASS", "FAIL", 1), encoding="utf-8")
+            with self.assertRaises(SpecError):
+                verify(spec_path, report_path)
+
     def test_verify_detects_bundle_tampering(self):
         with tempfile.TemporaryDirectory() as temp:
-            spec_path, report_path, bundle_path = self._built_files(Path(temp))
+            spec_path, report_path, _, bundle_path, _ = self._built_files(Path(temp))
             bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
             bundle["decision"]["existing_position_action"] = "HOLD"
             bundle_path.write_text(json.dumps(bundle), encoding="utf-8")
             with self.assertRaises(SpecError):
                 verify(spec_path, report_path)
 
+    def test_verify_detects_verification_tampering(self):
+        with tempfile.TemporaryDirectory() as temp:
+            spec_path, report_path, _, _, verification_path = self._built_files(Path(temp))
+            verification = json.loads(verification_path.read_text(encoding="utf-8"))
+            verification["checks"]["reader_layer_clean"] = "FAIL"
+            verification_path.write_text(json.dumps(verification), encoding="utf-8")
+            with self.assertRaises(SpecError):
+                verify(spec_path, report_path)
+
     def test_verify_detects_spec_change_without_rebuild(self):
         with tempfile.TemporaryDirectory() as temp:
-            spec_path, report_path, _ = self._built_files(Path(temp))
+            spec_path, report_path, _, _, _ = self._built_files(Path(temp))
             spec = json.loads(spec_path.read_text(encoding="utf-8"))
             spec["facts"]["FACT-CURRENT-PRICE"]["value"] = "500"
             spec_path.write_text(json.dumps(spec), encoding="utf-8")
@@ -152,7 +176,8 @@ class ReportPipelineV21Tests(unittest.TestCase):
         a = compile_report_v21(spec)
         b = compile_report_v21(deepcopy(spec))
         self.assertEqual(a["bundle_hash"], b["bundle_hash"])
-        self.assertEqual(render_markdown(a), render_markdown(b))
+        self.assertEqual(render_reader_markdown(a), render_reader_markdown(b))
+        self.assertEqual(render_audit_markdown(a), render_audit_markdown(b))
 
 
 if __name__ == "__main__":
