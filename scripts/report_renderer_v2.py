@@ -17,8 +17,13 @@ def _pct_decimal(value: Any) -> str:
         return str(value)
 
 
+def _escape(value: Any) -> str:
+    return str(value).replace("|", "\\|").replace("\r", " ").replace("\n", "<br>")
+
+
 def _refs(item: dict[str, Any]) -> str:
-    return ", ".join(item.get("evidence_refs", []))
+    refs = item.get("evidence_refs", [])
+    return ", ".join(f"{ref['ref']}[{ref['role']}]" if isinstance(ref, dict) else str(ref) for ref in refs)
 
 
 def _claim_block(title: str, item: dict[str, Any], field: str = "text") -> list[str]:
@@ -32,8 +37,7 @@ def _claim_block(title: str, item: dict[str, Any], field: str = "text") -> list[
 
 
 def _fact_value(bundle: dict[str, Any], fact_id: str) -> str:
-    fact = bundle["facts"][fact_id]
-    return str(fact["value"])
+    return str(bundle["facts"][fact_id]["value"])
 
 
 def _quarter_rows(bundle: dict[str, Any]) -> list[tuple[str, str, str, str, str]]:
@@ -62,8 +66,8 @@ def _assumption_rows(bundle: dict[str, Any], scenario: str) -> Iterable[tuple[st
         yield role, assumption_id, value, str(item.get("rationale", "")), str(item.get("confidence", ""))
 
 
-def _all_claims(research: dict[str, Any]) -> list[tuple[str, str, list[str], str]]:
-    claims: list[tuple[str, str, list[str], str]] = []
+def _all_claims(research: dict[str, Any]) -> list[tuple[str, str, list[dict[str, str]], str]]:
+    claims: list[tuple[str, str, list[dict[str, str]], str]] = []
 
     def visit(path: str, value: Any) -> None:
         if isinstance(value, dict):
@@ -73,7 +77,7 @@ def _all_claims(research: dict[str, Any]) -> list[tuple[str, str, list[str], str
             if isinstance(text, str) and isinstance(refs, list):
                 claims.append((path, text, refs, str(confidence)))
             for key, child in value.items():
-                if key not in {"claim", "text", "evidence_refs", "confidence", "implication", "counter_evidence"}:
+                if key not in {"claim", "text", "evidence_refs", "confidence", "implication", "counter_evidence", "value_refs"}:
                     visit(f"{path}.{key}" if path else key, child)
         elif isinstance(value, list):
             for index, child in enumerate(value):
@@ -89,72 +93,52 @@ def render_markdown(bundle: dict[str, Any]) -> str:
     decision = bundle["decision"]
     base = scenarios["base"]
     research = bundle["research"]
+    quality = bundle["research_quality"]
     lines: list[str] = []
 
     lines.extend([
-        f"# {report['ticker']} {report['company']} — 华尔街式分析报告 v2.1",
-        "",
-        "> 本报告由 `report-spec-v2.1` 单一数据源编译生成。数值、动作与价格由 Compiler 控制；研究判断必须绑定 Fact、Source 或 Bundle 路径。禁止手工修改 Markdown。",
-        "",
-        "### Build Manifest",
-        "",
-        "| Field | Value |",
-        "|---|---|",
-        "| Schema | report-spec-v2.1 → report-bundle-v2.1 |",
-        f"| Compiler | {bundle['compiler_version']} |",
-        f"| As-of | {report['as_of']} |",
-        f"| Spec hash | `{bundle['spec_hash']}` |",
-        f"| Bundle hash | `{bundle['bundle_hash']}` |",
-        "",
-        "## First-Page Verdict",
-        "",
-        "| 项目 | 结论 |",
-        "|---|---|",
+        f"# {report['ticker']} {report['company']} — 华尔街式分析报告 v2.1.1", "",
+        "> 本报告由 `report-spec-v2.1.1` 单一数据源编译生成。数值、动作与价格由 Compiler 控制；研究判断通过 Evidence Role 和 Value Binding 连接到同一 Bundle。禁止手工修改 Markdown。", "",
+        "### Build Manifest", "", "| Field | Value |", "|---|---|",
+        "| Schema | report-spec-v2.1.1 → report-bundle-v2.1.1 |",
+        f"| Compiler | {bundle['compiler_version']} |", f"| As-of | {_escape(report['as_of'])} |",
+        f"| Spec hash | `{bundle['spec_hash']}` |", f"| Bundle hash | `{bundle['bundle_hash']}` |", "",
+        "## First-Page Verdict", "", "| 项目 | 结论 |", "|---|---|",
         f"| New money action | **{decision['new_money_action']}** |",
         f"| Existing position action | **{decision['existing_position_action']}** |",
-        f"| 动作原因 | {decision['reason']} |",
+        f"| 动作原因 | {_escape(decision['reason'])} |",
         f"| Base IRR | {_pct_decimal(decision['valuation']['base_irr'])} |",
         f"| 股票最低目标回报 | {_pct_decimal(decision['valuation']['target_return'])} |",
         f"| Base target-return price | {_money(base['prices']['target_return'])} |",
         f"| Base buy price | {_money(base['prices']['buy'])} |",
-        f"| Base forward reference | {_money(base['prices']['forward_reference'])} |",
-        "",
-        research["overview"]["thesis"]["text"],
-        "",
-        f"证据：`{_refs(research['overview']['thesis'])}` · 置信度：{research['overview']['thesis']['confidence']}",
-        "",
-        "## Source Registry",
-        "",
-        "| Source ID | Title | Publisher | Date | Tier | Type | Scope | Locator |",
-        "|---|---|---|---|---:|---|---|---|",
+        f"| Base forward reference | {_money(base['prices']['forward_reference'])} |", "",
+        research["overview"]["thesis"]["text"], "",
+        f"证据：`{_refs(research['overview']['thesis'])}` · 置信度：{research['overview']['thesis']['confidence']}", "",
+        "## Source Registry", "", "| Source ID | Title | Publisher | Date | Tier | Type | Scope | Locator |", "|---|---|---|---|---:|---|---|---|",
     ])
     for source_id, source in bundle["source_registry"].items():
-        lines.append(f"| {source_id} | {source['title']} | {source['publisher']} | {source['date']} | {source['tier']} | {source['document_type']} | {', '.join(source['scope'])} | {source['locator']} |")
+        cells = [source_id, source['title'], source['publisher'], source['date'], source['tier'], source['document_type'], ', '.join(source['scope']), source['locator']]
+        lines.append("| " + " | ".join(_escape(x) for x in cells) + " |")
 
     lines.extend(["", "## Evidence Ledger", "", "| Fact ID | Value | Unit | Period/as-of | Source IDs | Tier | Confidence |", "|---|---:|---|---|---|---|---|"])
     for fact_id, fact in bundle["facts"].items():
         source_ids = fact.get("source_ids", [])
         tiers = sorted({str(bundle['source_registry'][sid]['tier']) for sid in source_ids})
-        lines.append(f"| {fact_id} | {fact['value']} | {fact['unit']} | {fact.get('period', fact.get('as_of', ''))} | {', '.join(source_ids)} | {', '.join(tiers)} | {fact['confidence']} |")
+        cells = [fact_id, fact['value'], fact['unit'], fact.get('period', fact.get('as_of', '')), ', '.join(source_ids), ', '.join(tiers), fact['confidence']]
+        lines.append("| " + " | ".join(_escape(x) for x in cells) + " |")
 
     lines.extend(["", "## Quarterly TTM Bridge", "", "| Period | Revenue | Operating income | EPS | FCF |", "|---|---:|---:|---:|---:|"])
     for row in _quarter_rows(bundle):
-        lines.append(f"| {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} |")
-    lines.extend([
-        "",
-        "| TTM Metric | Value | Runtime source |",
-        "|---|---:|---|",
+        lines.append("| " + " | ".join(_escape(x) for x in row) + " |")
+    lines.extend(["", "| TTM Metric | Value | Runtime source |", "|---|---:|---|",
         f"| TTM EPS | {_money(bundle['derived']['ttm']['eps']['value'])} | ttm-derive |",
         f"| TTM operating margin | {bundle['derived']['ttm']['operating_margin']['value_pct']}% | ttm-derive |",
-        f"| TTM FCF | {bundle['derived']['ttm']['fcf']['value']} | ttm-derive |",
-        "",
-        "## Scenario Assumptions and Valuation",
-        "",
-    ])
+        f"| TTM FCF | {bundle['derived']['ttm']['fcf']['value']} | ttm-derive |", "",
+        "## Scenario Assumptions and Valuation", ""])
     for name in ("bear", "base", "bull"):
         lines.extend([f"### {name.title()} assumptions", "", "| Role | Assumption ID | Value/payload | Rationale | Confidence |", "|---|---|---|---|---|"])
         for row in _assumption_rows(bundle, name):
-            lines.append(f"| {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} |")
+            lines.append("| " + " | ".join(_escape(x) for x in row) + " |")
         lines.append("")
     lines.extend(["| Scenario | Forward revenue | EPS | 5Y IRR | Required EPS CAGR | Forward reference | Target-return price | Buy price |", "|---|---:|---:|---:|---:|---:|---:|---:|"])
     for name in ("bear", "base", "bull"):
@@ -167,11 +151,11 @@ def render_markdown(bundle: dict[str, Any]) -> str:
 
     lines.extend(["", "## Decision Policy Evaluation", "", "### Valuation", "", "| Field | Value |", "|---|---:|"])
     for key, value in decision["valuation"].items():
-        lines.append(f"| {key} | {_pct_decimal(value)} |")
+        lines.append(f"| {_escape(key)} | {_pct_decimal(value)} |")
     lines.extend(["", "### Operating", "", "| Field | Value |", "|---|---:|"])
     for key, value in decision["operating"].items():
         shown = _pct_decimal(value) if key in {"tolerance", "uncertainty"} else value
-        lines.append(f"| {key} | {shown} |")
+        lines.append(f"| {_escape(key)} | {_escape(shown)} |")
     lines.extend(["", "### Robustness", "", f"- Shock: {_pct_decimal(decision['robustness']['shock'])}", f"- Stable: {str(decision['robustness']['stable']).lower()}", f"- Shocked actions: {', '.join(decision['robustness']['shocked_actions'])}", "", "## Price Zones", "", "| Zone | Range | New-money meaning |", "|---|---|---|"])
     for zone in bundle["price_zones"]:
         if "min" not in zone:
@@ -180,7 +164,7 @@ def render_markdown(bundle: dict[str, Any]) -> str:
             price_range = f"> {_money(zone['min'])}"
         else:
             price_range = f"({_money(zone['min'])}, {_money(zone['max'])}]"
-        lines.append(f"| {zone['name']} | {price_range} | {zone['action']} |")
+        lines.append(f"| {_escape(zone['name'])} | {price_range} | {_escape(zone['action'])} |")
 
     overview = research["overview"]
     lines.extend(["", "## 1. 华尔街式全景扫描 Overview", ""])
@@ -198,7 +182,7 @@ def render_markdown(bundle: dict[str, Any]) -> str:
     moat = research["moat"]
     lines.extend(["## 3. 护城河 Moat Analysis", "", f"**护城河趋势：{moat['trajectory']}**", "", "| 维度 | 分数 | 判断 | 反向证据 | Evidence |", "|---|---:|---|---|---|"])
     for item in moat["dimensions"]:
-        lines.append(f"| {item['name']} | {item['score']}/5 | {item['claim']} | {item['counter_evidence']} | `{_refs(item)}` |")
+        lines.append("| " + " | ".join([_escape(item['name']), f"{item['score']}/5", _escape(item['claim']), _escape(item['counter_evidence']), f"`{_refs(item)}`"]) + " |")
 
     valuation = research["valuation"]
     lines.extend(["", "## 4. 极限估值 + 10 年回本数学审判", ""])
@@ -207,7 +191,8 @@ def render_markdown(bundle: dict[str, Any]) -> str:
 
     lines.extend(["## 5. 致命风险排序 Risk Ranking", "", "| 排名 | 风险 | 作用机制 | 领先指标 | 触发条件 | 缓释因素 | Evidence |", "|---:|---|---|---|---|---|---|"])
     for item in research["risks"]["items"]:
-        lines.append(f"| {item['rank']} | {item['risk']} | {item['mechanism']} | {'；'.join(item['leading_indicators'])} | {item['trigger']} | {item['mitigant']} | `{', '.join(item['evidence_refs'])}` |")
+        cells = [item['rank'], item['risk'], item['mechanism'], '；'.join(item['leading_indicators']), item['trigger'], item['mitigant'], f"`{_refs(item)}`"]
+        lines.append("| " + " | ".join(_escape(x) for x in cells) + " |")
 
     growth = research["growth_limits"]
     lines.extend(["", "## 6. 物理增长极限 Growth Potential", ""])
@@ -215,7 +200,7 @@ def render_markdown(bundle: dict[str, Any]) -> str:
     lines.extend(["### 关键约束", ""])
     for item in growth["constraints"]:
         lines.extend([f"- **{item['claim']}** — {item.get('implication', '')}  ", f"  Evidence: `{_refs(item)}` · Confidence: {item['confidence']}"])
-    lines.extend([""])
+    lines.append("")
     lines += _claim_block("增长上限判断", growth["ceiling"])
 
     opportunity = research["opportunity_cost"]
@@ -223,7 +208,7 @@ def render_markdown(bundle: dict[str, Any]) -> str:
     lines += _claim_block("机会成本解释", opportunity["interpretation"])
     lines.extend(["### Comparators", ""])
     for item in opportunity["comparators"]:
-        lines.extend([f"- {item['claim']} — {item.get('implication', '')} (`{_refs(item)}`)"])
+        lines.append(f"- {item['claim']} — {item.get('implication', '')} (`{_refs(item)}`)")
     lines.append("")
 
     positioning = research["positioning"]
@@ -238,7 +223,12 @@ def render_markdown(bundle: dict[str, Any]) -> str:
 
     lines.extend(["## Claim-Evidence Matrix", "", "| Claim path | Claim | Evidence refs | Confidence |", "|---|---|---|---|"])
     for path, text, refs, confidence in _all_claims(research):
-        lines.append(f"| {path} | {text} | `{', '.join(refs)}` | {confidence} |")
+        ref_text = ", ".join(f"{ref['ref']}[{ref['role']}]" for ref in refs)
+        lines.append("| " + " | ".join([_escape(path), _escape(text), f"`{_escape(ref_text)}`", _escape(confidence)]) + " |")
 
-    lines.extend(["", "## Verification", "", "> Verification 由 Compiler 写入独立 `.verification.json` 文件；本报告不接受人工填写 PASS。", "", "| Research check | Result |", "|---|---|", "| Nine modules complete | PASS |", "| Evidence closure | PASS |", "| Source registry complete | PASS |", "| Numeric-reference safety | PASS |", ""])
+    lines.extend(["", "## Verification", "", "> Verification 由 Compiler 写入独立 `.verification.json` 文件；本报告不接受人工填写 PASS。", "", "| Research check | Result | Details |", "|---|---|---|"])
+    for name, result in quality["checks"].items():
+        details = ", ".join(f"{k}={v}" for k, v in result.items() if k != "status")
+        lines.append(f"| {_escape(name)} | {_escape(result['status'])} | {_escape(details)} |")
+    lines.append("")
     return "\n".join(lines)
