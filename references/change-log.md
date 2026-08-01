@@ -1,5 +1,28 @@
 # Wall Street Equity Research Skill Change Log
 
+## a99-quality-hardening-v1 — 2026-08-01
+
+### Change
+
+- 以 `a99c4f6` 为历史结构基线，将报告契约、模板和方法论统一为 9 个模块。
+- 删除独立 `Tax Drag & Net Yield` 模块，保留必要的税务和汇率说明。
+- `report_lint.py` 增加精确顶层结构、真实 HTTPS 来源、Evidence Ledger 数据行、贴现表格、条件流动性、网络效应用户指标、Action Triggers 和占位符检查。
+- 新增 8 个 unittest，覆盖来源、模块、Evidence Ledger、贴现表格、流动性、网络效应和占位符失败路径。
+- 从全新模板生成 Meta 报告，包含 DAP 36亿（同比 +3%）、广告展示量 +14% 和平均广告价格 +12%。
+
+### Reason
+
+旧版 lint 只检查标题和关键词，空 Evidence Ledger、无真实 URL 来源、重复模块和非表格贴现说明都可以通过；流动性“按需分析”也没有退出天数阈值。Meta 等网络效应公司还需要强制记录用户规模和期间变化，才能让护城河判断可验证。
+
+### Verification
+
+- `python3 -m py_compile scripts/*.py tests/*.py`：PASS
+- `python3 -m unittest discover -s tests`：8/8 PASS
+- `python3 scripts/report_lint.py --self-test`：PASS
+- `python3 scripts/report_lint.py --fixtures tests/fixtures`：PASS
+- Meta 报告 lint：PASS
+- TTM 与估值计算独立复核：PASS
+
 ## 2026-06-30
 
 ### Change

@@ -12,6 +12,7 @@ Run a ruthless but evidence-bound single-stock investment review. The output mus
 - Treat "持有 = 买入", opportunity cost, and the 10-year payback test as the highest-priority investment disciplines.
 - Full reports must include a dedicated final "三原则扣问" section before the rating: 持有=买入, 沉没成本不是成本/机会成本才是真成本, and 10 年回本. Do not treat First-Page Verdict rows as a substitute.
 - Full reports must identify 1-3 `Key Forces` before module analysis, state a `Variant View` against market consensus, include a `Pre-Mortem` failure path, and finish with quantified `Action Triggers`.
+- If the moat thesis relies on network effects, include the current user base, period-over-period change, and at least one engagement or monetization metric.
 - For latest-earnings updates, explicitly state `本次财报改变了什么` and `本次财报没有改变什么`. Do not let a fresh report become a generic company profile.
 - Never invent current prices, valuation multiples, financials, filing facts, or bond yields from memory. Use current sources when the answer depends on live or recent data.
 - Prefer Tier 1 sources: SEC EDGAR, company IR, exchange filings, HKEXNews, 巨潮资讯, and official announcements. Use Tier 2 data vendors only for speed and cross-checking. Treat media and search snippets as leads, not proof.
@@ -29,18 +30,18 @@ Run a ruthless but evidence-bound single-stock investment review. The output mus
 7. Separate market prices when they materially differ: close price, latest regular-session price, pre-market/after-hours price, and FX date/rate. Do not mix them in valuation tables; show both valuation outcomes when the difference can change the verdict.
 8. Every full valuation section must include the four-row discounted 10-year payback test: relevant 10Y government yield ×1, relevant 10Y government yield ×2, 8%, and 10%. Do not substitute only `r=8%` / `r=9%`.
 9. For cyclical or capex-heavy companies, force a dual valuation table: peak/current-cycle EPS and FCF, normalized mid-cycle EPS and FCF, EV/FCF, and a short statement explaining which earnings base drives the final verdict. Memory, semiconductors, energy, shipping, commodities, banks, insurers, brokers, real estate, autos, airlines, and hardware supply-chain names default to this rule.
-10. If the current working context is the user's Obsidian stock vault or prior reports exist under `股票/`, treat "跑一下", "分析下", "看看", or a ticker/company name request as a full report request. Read `references/source-map.md`, inspect 1-2 prior reports for style continuity, run the 10-module review in `references/full-methodology.md`, and save the Markdown report under `股票/<公司名>/`.
+10. If the current working context is the user's Obsidian stock vault or prior reports exist under `股票/`, treat "跑一下", "分析下", "看看", or a ticker/company name request as a full report request. Read `references/source-map.md`, inspect 1-2 prior reports for style continuity, run the 9-module review in `references/full-methodology.md`, and save the Markdown report under `股票/<公司名>/`.
 11. For new full Obsidian reports, start from `templates/full-report.md` or run `python3 scripts/new_report.py --ticker <ticker> --company <company> --market <market> --out <path>`. Do not hand-roll the report skeleton.
 12. Before telling the user a full Obsidian report is complete, run `python3 scripts/report_lint.py <report.md>` from this skill. If lint fails, fix the report and rerun it until it passes. Report completion without a passing lint is a process failure.
 13. After changing this skill's report contract, template, or lint rules, run both `python3 scripts/report_lint.py --self-test` and `python3 scripts/report_lint.py --fixtures tests/fixtures`. Treat either failure as a blocker.
 14. Use the compact contract in `references/report-contract.md` only when the user explicitly asks for "快评", "简单说下", "不用建文档", or the task is clearly outside the Obsidian report workflow.
-15. When saving an Obsidian report, do not include visible YAML frontmatter. Include default-input statement, First-Page Verdict, Evidence Ledger, Key Forces inside module 1, Variant View, Pre-Mortem, Action Triggers, the 10 fixed modules, final verdict, source links, and file path confirmation. Do not include a standalone liquidity module unless the stock is small-cap, thinly traded, suspended-risk, or otherwise liquidity-constrained; put any necessary liquidity note inside Risk Ranking or Position Sizing. If the prefetch JSON flags `equity_method_holding_company`, explicitly deweight consolidated FCF in the verdict and analyze EPS, dividends, investment-income durability, and underlying investee quality.
+15. When saving an Obsidian report, do not include visible YAML frontmatter. Include default-input statement, First-Page Verdict, Evidence Ledger, Key Forces inside module 1, Variant View, Pre-Mortem, Action Triggers, the 9 fixed modules, final verdict, source links, and file path confirmation. Do not create a standalone tax module. Module 5 must state whether liquidity is a constraint; if it is, include stress exit-day math. If the moat uses network effects, include user-scale change and an engagement/monetization metric. If the prefetch JSON flags `equity_method_holding_company`, explicitly deweight consolidated FCF in the verdict and analyze EPS, dividends, investment-income durability, and underlying investee quality.
 
 ## Required Sources
 
 - `references/report-contract.md`: read for every task using this skill.
 - `references/source-map.md`: read when locating the user's Obsidian authority docs or prior reports.
-- `references/full-methodology.md`: read for full deep reports, template-faithful reports, or when the user explicitly asks for "完整", "11模块", "脱水质检", or "华尔街模板".
+- `references/full-methodology.md`: read for full deep reports, template-faithful reports, or when the user explicitly asks for "完整", "9模块", "脱水质检", or "华尔街模板".
 
 ## Helper Scripts
 
@@ -54,3 +55,5 @@ Run a ruthless but evidence-bound single-stock investment review. The output mus
 - `tests/fixtures/good-full-report.md`: canonical passing structure.
 - `tests/fixtures/bad-key-forces-top-level.md`: ensures Key Forces cannot become a top-level module.
 - `tests/fixtures/bad-frontmatter-visible.md`: ensures report bodies do not expose YAML frontmatter.
+
+Any change to this historical contract must follow `PRD-a99-quality-hardening-v1.md` and the staged change-log before implementation.

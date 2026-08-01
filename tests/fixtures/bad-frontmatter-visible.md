@@ -29,9 +29,8 @@ action: Wait
 ## 4. 极限估值 + 10 年回本数学审判
 ## 5. 致命风险排序 Risk Ranking
 ## 6. 物理增长极限 Growth Potential
-## 7. 真实到手收益 + 税收摩擦
-## 8. 机构视角 + 机会成本
-## 9. 仓位与风控
-## 10. 最终判决 Final Verdict
+## 7. 机构视角 + 机会成本
+## 8. 仓位与风控
+## 9. 最终判决 Final Verdict
 ## Sources
 - Company IR

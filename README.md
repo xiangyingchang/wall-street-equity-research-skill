@@ -20,7 +20,7 @@
 
 - [`SKILL.md`](SKILL.md)：完整 Prompt / Agent Skill 文档
 - [`references/report-contract.md`](references/report-contract.md)：报告输出契约
-- [`references/full-methodology.md`](references/full-methodology.md)：11 模块完整方法论
+- [`references/full-methodology.md`](references/full-methodology.md)：9 模块完整方法论
 - [`references/source-map.md`](references/source-map.md)：Obsidian 路径和历史报告定位
 - [`scripts/a_share_prefetch.py`](scripts/a_share_prefetch.py)：A 股预抓取脚本
 - [`scripts/pdf_text_extract.py`](scripts/pdf_text_extract.py)：财报 PDF / earnings deck 文本抽取
@@ -46,7 +46,7 @@
 
 1. First-Page Verdict
 2. Evidence Ledger
-3. 11 个固定分析模块
+3. 9 个固定分析模块
 4. 最终 Buy / Hold-Index / Watchlist / Avoid 判决
 
 完整 Obsidian 报告交付前必须跑：
@@ -175,6 +175,6 @@ python3 scripts/pdf_text_extract.py <pdf_or_url>
 - A 股预抓取脚本：`summary`、`peer_comparison`、权益法平台识别、中国 10Y 缓存
 - 非 A 股 preflight：IR + filing + PDF + 收盘/盘后价格分离
 - PDF 文本抽取脚本
-- 报告 lint：三原则、四档贴现、Evidence Ledger、11 模块、source links 等交付前检查
+- 报告 lint：三原则、四档贴现、Evidence Ledger、9 模块、source links 等交付前检查
 - 周期/高 Capex 双估值闸门
 - 四档贴现回本测试：10Y×1 / 10Y×2 / 8% / 10%

@@ -24,7 +24,7 @@ In the user's Obsidian stock vault, these phrases imply a full report saved as M
 
 Only use a chat-only quick take when the user explicitly asks for "快评", "简单说下", "不用建文档", "先别写文件", or equivalent.
 
-The saved report must not include visible YAML frontmatter. It must include a default-input statement, First-Page Verdict, Evidence Ledger, Key Forces, Variant View, Pre-Mortem, Action Triggers, 10 fixed modules, final verdict, and source links.
+The saved report must not include visible YAML frontmatter. It must include a default-input statement, First-Page Verdict, Evidence Ledger, Key Forces, Variant View, Pre-Mortem, Action Triggers, 9 fixed modules, final verdict, and source links.
 
 Metadata such as ticker, company, market, date, verdict, and action belongs in the filename, title, Evidence Ledger, or internal workflow notes. Do not expose YAML frontmatter in the final report body.
 
@@ -36,7 +36,7 @@ Start full reports in this order:
 
 1. First-Page Verdict
 2. Evidence Ledger
-3. 10 fixed modules
+3. 9 fixed modules
 
 The verdict table must include:
 
@@ -55,7 +55,7 @@ The verdict table must include:
 
 ## Key Forces
 
-Inside `## 1. 华尔街式全景扫描 Overview`, include a dedicated subsection named `### Key Forces` before the general business overview. Do not create an extra top-level `## Key Forces` section that interrupts the 11-module structure.
+Inside `## 1. 华尔街式全景扫描 Overview`, include a dedicated subsection named `### Key Forces` before the general business overview. Do not create an extra top-level `## Key Forces` section that interrupts the 9-module structure.
 
 Rules:
 
@@ -74,7 +74,7 @@ Include, when relevant:
 - PE, forward PE, EV/EBITDA, FCF yield, PB, dividend yield
 - Dividend DPS, total dividends, buybacks, SBC, share count trend
 - Segment revenue/profit, key operating metrics
-- Liquidity and average trading value only when liquidity is a real constraint; for large liquid names, do not create a standalone liquidity module.
+- Module 5 must state `流动性结论：不构成约束` or `流动性结论：构成约束`. When constrained, include 90-day average value traded, position value, stress participation rate, and stress exit days.
 - 2-3 direct competitor valuation references
 - Relevant 10Y government bond yield and opportunity-cost benchmark
 
@@ -107,7 +107,7 @@ If `summary.business_model_flags.equity_method_holding_company` is true:
 - Missing EPS or FCF/share: do not rate Buy.
 - Missing current price or valuation multiples: do not rate Buy.
 - Missing debt/cash data: maximum Watchlist.
-- Missing liquidity data: do not recommend more than 5% portfolio weight.
+- When liquidity is declared constrained but the required inputs are missing: do not recommend more than 5% portfolio weight.
 - Only Tier 2/3 data and no filing spot-check: confidence maximum Medium.
 - Conflicting data with unresolved source quality: show the conflict and use the conservative口径.
 
@@ -166,3 +166,5 @@ Every full report must include these dedicated headings:
 - `### Variant View`: state market consensus, the report's different view, and why the market may be wrong.
 - `### Pre-Mortem`: if the investment fails, name the most likely failure path and the earliest observable warning signal.
 - `### Action Triggers`: give quantified buy/add/hold/reduce/sell conditions where possible. At minimum, include price, valuation, operating, and thesis-break triggers.
+
+When the moat thesis uses network effects, module 3 must include current user scale, period-over-period change, and an engagement or monetization metric.

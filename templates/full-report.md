@@ -44,6 +44,11 @@ TODO
 
 ## 3. 护城河 Moat Analysis
 
+### 网络效应验证（如适用）
+
+用户规模及期间变化：TODO
+参与度 / 商业化指标：TODO
+
 TODO
 
 ## 4. 极限估值 + 10 年回本数学审判
@@ -67,21 +72,22 @@ TODO
 
 ## 5. 致命风险排序 Risk Ranking
 
+### 流动性判断
+
+流动性结论：TODO（不构成约束 / 构成约束）
+若构成约束，压力退出天数 = 仓位金额 /（90 日平均成交额 × 压力参与率）：TODO
+
 TODO
 
 ## 6. 物理增长极限 Growth Potential
 
 TODO
 
-## 7. 真实到手收益 + 税收摩擦 Tax Drag & Net Yield
+## 7. 机构视角 + 机会成本比对 Institutional & Opportunity Cost
 
 TODO
 
-## 8. 机构视角 + 机会成本比对 Institutional & Opportunity Cost
-
-TODO
-
-## 9. 仓位与风控 Position Sizing & Exit Rules
+## 8. 仓位与风控 Position Sizing & Exit Rules
 
 TODO
 
@@ -93,7 +99,7 @@ TODO
 
 TODO
 
-## 10. 最终判决 Final Verdict
+## 9. 最终判决 Final Verdict
 
 ### Variant View
 
@@ -109,4 +115,4 @@ TODO
 
 ## Sources
 
-- TODO
+- [Company IR](https://example.com/replace-with-source)
