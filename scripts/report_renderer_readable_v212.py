@@ -5,9 +5,14 @@ from typing import Any, Iterable
 from scripts.report_renderer_v2 import render_markdown as render_legacy_audit_markdown
 
 
-def _money(value: Any) -> str:
+def _currency_prefix(currency: Any) -> str:
+    code = str(currency or "").upper()
+    return {"USD": "$", "HKD": "HK$", "CNY": "CNY ", "RMB": "RMB ", "KRW": "KRW "}.get(code, f"{code} " if code else "")
+
+
+def _money(value: Any, currency: Any = "USD") -> str:
     try:
-        return f"${float(value):,.2f}"
+        return f"{_currency_prefix(currency)}{float(value):,.2f}"
     except Exception:
         return str(value)
 
@@ -33,6 +38,13 @@ def _number(value: Any, digits: int = 2) -> str:
         return str(value)
 
 
+def _absolute_money(value: Any, currency: Any) -> str:
+    try:
+        return f"{_currency_prefix(currency)}{float(value):,.2f}亿"
+    except Exception:
+        return str(value)
+
+
 def _escape(value: Any) -> str:
     return str(value).replace("|", "\\|").replace("\r", " ").replace("\n", "<br>")
 
@@ -52,6 +64,10 @@ def _paragraph(item: dict[str, Any], *, include_counter: bool = False) -> str:
     if counter:
         parts.append(f"需要同时看到的是：{counter}")
     return " ".join(part for part in parts if part)
+
+
+def _join_chinese(items: list[str]) -> str:
+    return "；".join(str(item).strip().rstrip("。；;") for item in items) + "。"
 
 
 def _evidence_objects(item: dict[str, Any]) -> Iterable[str]:
@@ -98,16 +114,17 @@ def _source_note(bundle: dict[str, Any], items: Iterable[dict[str, Any]]) -> lis
 
 def _quarter_rows(bundle: dict[str, Any]) -> list[tuple[str, str, str, str, str]]:
     series = bundle["quarterly_series"]
+    currency = bundle["report"].get("currency", "")
     rows: list[tuple[str, str, str, str, str]] = []
     for index in range(4):
         ids = {key: series[key][index] for key in ("revenue", "operating_income", "eps", "fcf")}
         period = str(bundle["facts"][ids["revenue"]].get("period", ""))
         rows.append((
             period,
-            str(bundle["facts"][ids["revenue"]]["value"]),
-            str(bundle["facts"][ids["operating_income"]]["value"]),
-            str(bundle["facts"][ids["eps"]]["value"]),
-            str(bundle["facts"][ids["fcf"]]["value"]),
+            _absolute_money(bundle["facts"][ids["revenue"]]["value"], currency),
+            _absolute_money(bundle["facts"][ids["operating_income"]]["value"], currency),
+            _money(bundle["facts"][ids["eps"]]["value"], currency),
+            _absolute_money(bundle["facts"][ids["fcf"]]["value"], currency),
         ))
     return rows
 
@@ -137,6 +154,10 @@ def _reason_label(reason: str) -> str:
 
 def render_reader_markdown(bundle: dict[str, Any]) -> str:
     report = bundle["report"]
+    currency = report.get("currency", "")
+    company = report["company"]
+    return_years = report["return_years"]
+    payback_years = report["payback_years"]
     scenarios = bundle["scenarios"]
     decision = bundle["decision"]
     base = scenarios["base"]
@@ -157,12 +178,12 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
         "| 项目 | 判断 |", "|---|---|",
         f"| 新资金 | **{_action_label(decision['new_money_action'])}** |",
         f"| 已有仓位 | **{_action_label(decision['existing_position_action'])}** |",
-        f"| 当前价格 | {_money(current_price)} |",
-        f"| Base 5年 IRR | {_pct_decimal(decision['valuation']['base_irr'])} |",
+        f"| 当前价格 | {_money(current_price, currency)} |",
+        f"| Base {return_years}年 IRR | {_pct_decimal(decision['valuation']['base_irr'])} |",
         f"| 最低目标回报 | {_pct_decimal(decision['valuation']['target_return'])} |",
-        f"| 目标回报价格 | {_money(base['prices']['target_return'])} |",
-        f"| 安全边际买入价 | {_money(base['prices']['buy'])} |",
-        f"| Forward reference | {_money(base['prices']['forward_reference'])} |", "",
+        f"| 目标回报价格 | {_money(base['prices']['target_return'], currency)} |",
+        f"| 安全边际买入价 | {_money(base['prices']['buy'], currency)} |",
+        f"| Forward reference | {_money(base['prices']['forward_reference'], currency)} |", "",
         f"**核心判断：** {_claim_text(thesis)}", "",
         f"现价下，新资金应选择**{_action_label(decision['new_money_action'])}**，已有仓位建议**{_action_label(decision['existing_position_action'])}**。直接原因是{_reason_label(str(decision['reason']))}：Base IRR 只有 {_pct_decimal(decision['valuation']['base_irr'])}，低于 {_pct_decimal(decision['valuation']['target_return'])} 的最低目标回报。", "",
         "### 三个核心矛盾", "",
@@ -183,7 +204,7 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
     ttm = derived["ttm"]
     lines.extend([
         "## 2. 财务剖析", "",
-        f"过去四个季度，Meta 的 TTM EPS 为 {_money(ttm['eps']['value'])}，TTM 经营利润率为 {_pct_number(ttm['operating_margin']['value_pct'])}，TTM FCF 为 {_number(ttm['fcf']['value'], 2)}。这组数据说明主业盈利能力仍强，但现金流已经被资本开支显著压缩。", "",
+        f"过去四个季度，{company} 的 TTM EPS 为 {_money(ttm['eps']['value'], currency)}，TTM 经营利润率为 {_pct_number(ttm['operating_margin']['value_pct'])}，TTM FCF 为 {_absolute_money(ttm['fcf']['value'], currency)}。", "",
         _paragraph(financial["revenue"]), "",
         _paragraph(financial["margin"]), "",
         _paragraph(financial["cash_flow"]), "",
@@ -197,26 +218,26 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
     lines += _source_note(bundle, financial.values())
 
     moat = research["moat"]
-    lines.extend(["## 3. 护城河", "", f"Meta 的护城河整体趋势为 **{moat['trajectory']}**。核心并不只是用户规模，而是关系链、广告主生态、数据反馈和产品分发形成的多边网络。", ""])
+    lines.extend(["## 3. 护城河", "", f"{company} 的护城河整体趋势为 **{moat['trajectory']}**。", ""])
     lines.extend(["| 维度 | 评分 | 判断 | 反向证据 |", "|---|---:|---|---|"])
     for item in moat["dimensions"]:
         lines.append("| " + " | ".join([
             _escape(item["name"]), f"{item['score']}/5", _escape(item["claim"]), _escape(item["counter_evidence"]),
         ]) + " |")
-    lines.extend(["", "真正需要担心的不是广告护城河突然消失，而是资本配置效率下降：如果高额投入不能转化为更高参与度、更强变现或新的收入来源，资本规模反而会从壁垒变成负担。", ""])
+    lines.extend([""])
     lines += _source_note(bundle, moat["dimensions"])
 
     valuation = research["valuation"]
     lines.extend([
-        "## 4. 极限估值与10年回本", "",
+        f"## 4. 极限估值与{payback_years}年回本", "",
         _paragraph(valuation["base_case"]), "",
-        "| 场景 | Forward revenue | EPS | 5年 IRR | 目标回报价格 | 安全边际买入价 |", "|---|---:|---:|---:|---:|---:|",
-        f"| Bear | {_number(bear['revenue']['forward_revenue'])} | {_money(bear['eps_bridge']['eps'])} | {_pct_number(bear['returns']['irr']['irr_pct'])} | {_money(bear['prices']['target_return'])} | {_money(bear['prices']['buy'])} |",
-        f"| Base | {_number(base['revenue']['forward_revenue'])} | {_money(base['eps_bridge']['eps'])} | {_pct_number(base['returns']['irr']['irr_pct'])} | {_money(base['prices']['target_return'])} | {_money(base['prices']['buy'])} |",
-        f"| Bull | {_number(bull['revenue']['forward_revenue'])} | {_money(bull['eps_bridge']['eps'])} | {_pct_number(bull['returns']['irr']['irr_pct'])} | {_money(bull['prices']['target_return'])} | {_money(bull['prices']['buy'])} |", "",
+        f"| 场景 | Forward revenue | EPS | {return_years}年 IRR | 目标回报价格 | 安全边际买入价 |", "|---|---:|---:|---:|---:|---:|",
+        f"| Bear | {_absolute_money(bear['revenue']['forward_revenue'], currency)} | {_money(bear['eps_bridge']['eps'], currency)} | {_pct_number(bear['returns']['irr']['irr_pct'])} | {_money(bear['prices']['target_return'], currency)} | {_money(bear['prices']['buy'], currency)} |",
+        f"| Base | {_absolute_money(base['revenue']['forward_revenue'], currency)} | {_money(base['eps_bridge']['eps'], currency)} | {_pct_number(base['returns']['irr']['irr_pct'])} | {_money(base['prices']['target_return'], currency)} | {_money(base['prices']['buy'], currency)} |",
+        f"| Bull | {_absolute_money(bull['revenue']['forward_revenue'], currency)} | {_money(bull['eps_bridge']['eps'], currency)} | {_pct_number(bull['returns']['irr']['irr_pct'])} | {_money(bull['prices']['target_return'], currency)} | {_money(bull['prices']['buy'], currency)} |", "",
         _paragraph(valuation["reverse_expectations"]), "",
         _paragraph(valuation["payback_interpretation"]), "",
-        "| 贴现率 | 十年回本所需 EPS 增长 |", "|---:|---:|",
+        f"| 贴现率 | {payback_years}年回本所需 EPS 增长 |", "|---:|---:|",
     ])
     for rate, growth in derived["payback_required_growth"].items():
         lines.append(f"| {_pct_decimal(rate)} | {_pct_decimal(growth)} |")
@@ -228,7 +249,7 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
     for item in risks:
         lines.append("| " + " | ".join([
             str(item["rank"]), _escape(item["risk"]), _escape(item["mechanism"]),
-            _escape("；".join(item["leading_indicators"])), _escape(item["trigger"]),
+            _escape(_join_chinese(item["leading_indicators"])), _escape(item["trigger"]),
         ]) + " |")
     lines.extend(["", "风险不是用来证明公司一定会失败，而是明确什么事实出现时，当前判断必须改变。", ""])
     lines += _source_note(bundle, risks)
@@ -244,7 +265,7 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
     lines.extend(["## 7. 机构视角与机会成本", "", _paragraph(opportunity["interpretation"]), ""])
     for item in opportunity["comparators"]:
         lines.append(f"- {_claim_text(item, 'claim')} {_claim_text(item, 'implication')}")
-    lines.extend(["", f"Base IRR 为 {_pct_decimal(decision['valuation']['base_irr'])}，而最低目标回报为 {_pct_decimal(decision['valuation']['target_return'])}。因此争议不是 Meta 是否是一家好公司，而是当前价格是否给出了足够的风险补偿。", ""])
+    lines.extend(["", f"Base IRR 为 {_pct_decimal(decision['valuation']['base_irr'])}，而最低目标回报为 {_pct_decimal(decision['valuation']['target_return'])}。因此争议不是 {company} 是否是一家好公司，而是当前价格是否给出了足够的风险补偿。", ""])
     lines += _source_note(bundle, [opportunity["interpretation"], *opportunity["comparators"]])
 
     positioning = research["positioning"]
@@ -259,11 +280,11 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
     ])
     for zone in bundle["price_zones"]:
         if "min" not in zone:
-            price_range = f"≤ {_money(zone['max'])}"
+            price_range = f"≤ {_money(zone['max'], currency)}"
         elif "max" not in zone:
-            price_range = f"> {_money(zone['min'])}"
+            price_range = f"> {_money(zone['min'], currency)}"
         else:
-            price_range = f"({_money(zone['min'])}, {_money(zone['max'])}]"
+            price_range = f"({_money(zone['min'], currency)}, {_money(zone['max'], currency)}]"
         lines.append(f"| {_escape(zone['name'])} | {price_range} | {_action_label(zone['action'])} |")
     lines.extend([""])
     lines += _source_note(bundle, positioning.values())
@@ -274,14 +295,14 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
         _paragraph(final["summary"]), "",
         f"**持有等于买入：** {_paragraph(final['hold_equals_buy'])}", "",
         f"**机会成本：** {_paragraph(final['opportunity_cost'])}", "",
-        f"**十年回本：** {_paragraph(final['payback'])}", "",
+        f"**{payback_years}年回本：** {_paragraph(final['payback'])}", "",
         f"**置信度边界：** {_paragraph(final['confidence_boundary'])}", "",
         f"**反证条件：** {_paragraph(final['falsification'])}", "",
         "## 主要来源", "",
     ])
     for source in list(bundle["source_registry"].values())[:8]:
         lines.append(f"- {_escape(source['title'])} — {_escape(source['publisher'])}，{_escape(source['date'])}")
-    lines.extend(["", "> 完整 Source Registry、Evidence Ledger、情景假设、Claim-Evidence Matrix 和 Verification 见同名 `.audit.md`。", ""])
+    lines.extend(["", "> 完整证据链、模型假设与验证结果见同名 `.audit.md`。", ""])
     return "\n".join(lines)
 
 

@@ -1,5 +1,93 @@
 # Wall Street Equity Research Skill Change Log
 
+## v3.0 - Research Graph and Investment Debate
+
+## 2026-08-01
+
+### Change
+
+- Added `report-spec-v3.0` and `report-bundle-v3.0`.
+- Added Research Graph: Source → Fact → Observation → Hypothesis → Challenge → Resolution → Theme → Narrative → Decision.
+- Added 3–5 company-specific `THEME-*` objects and `OBS-*` observations.
+- Required counter evidence in every challenge and evidence reconciliation in every resolution.
+- Required Theme links to cover all nine research modules.
+- Added Bull/Bear Investment Debate with at least three globally unique `ARG-*` arguments per side and Lead Adjudication.
+- Prevented overlap/unknown debate IDs; omitted arguments are conservatively auto-discounted and disclosed.
+- Added `DRV-*` Sensitivity Explanation with real Assumption Registry binding, canonical path normalization, direction, importance, mechanism, cases, and decision consequence.
+- Added multi-perspective workflow inspired by AI Berkshire without copying persona scores or requiring a specific agent runtime.
+- Reduced `SKILL.md` to a routing contract; detailed rules remain in local PRD/references.
+- Clarified that independent perspectives are required but parallel subagents are optional and cost-aware.
+- Restored report-currency-aware Reader formatting: absolute financial amounts use original currency plus `亿`, while per-share values remain per-share.
+- Bound company name, return horizon, and payback horizon to the Spec; removed Meta-specific business prose from the shared Renderer.
+- Added Theme-based Reader narrative, strongest challenge, falsification, Sensitivity Explanation, and Bull/Bear Debate.
+- Added complete Graph structures to Audit and escaped all Graph table cells.
+- Added independent v3 compiler, renderer, build, and verify pipeline.
+- Build now blocks before writing invalid Reader/Audit artifacts.
+- Verification statuses are derived from real graph and render checks rather than hard-coded PASS.
+- Reader gates explicitly reject `THEME-*`, `OBS-*`, `ARG-*`, and `DRV-*` leakage.
+- Reader Audit pointers use natural language and Chinese list joins avoid duplicated punctuation.
+- Audit always discloses accepted, discounted, and auto-discounted argument sets, including an empty auto-discounted set.
+- Sensitivity Assumption Pointers accept only the canonical Bundle form or the explicit Spec `scenario` form; arbitrary extra path components fail validation.
+- Upgraded `SKILL.md` to v3.0.0.
+- Added Meta v3 fixture, graph contract, focused tests, and CI validation.
+
+### Reason
+
+v2.1.2 was reliable and readable but still treated isolated Claims as the core research unit. It could state conclusions without consistently explaining causality, testing alternatives, adjudicating competing views, or identifying which assumptions control the decision.
+
+v3 adds the missing research-process layer while preserving numeric truth and audit boundaries.
+
+### What was learned from AI Berkshire
+
+Adopted: independent perspectives, adversarial analysis, anti-bias challenge, Lead Analyst adjudication, and separation of exact calculation from prose.
+
+Not adopted: persona-based master scores, fixed famous-investor roles, dependency on a specific subagent framework, or averaging conflicting opinions.
+
+### Code review fixes
+
+Independent review found and fixed:
+
+- Theme links did not guarantee all nine modules were covered;
+- Bull and Bear could reuse an Argument ID;
+- Adjudication sets could overlap or silently omit arguments;
+- concise Chinese implications were rejected by the old length gate;
+- Sensitivity paths were not resolved against the real registry;
+- fixture paths were invalid;
+- Graph Audit tables did not escape pipes/newlines;
+- build could write artifacts before validating render contracts;
+- Verification statuses were hard-coded;
+- v3 compiler did not reject legacy schema;
+- Reader validation did not explicitly reject v3 internal ID prefixes;
+- Audit omitted the auto-discounted field when the set was empty;
+- sensitivity pointers with extra path segments were silently normalized;
+- the Reader footer named internal Registry/Matrix structures;
+- Observation and risk-indicator joins emitted duplicated punctuation;
+- v3 tests did not directly cover all five tamper targets or Graph table escaping;
+- the runtime Skill duplicated long-form documentation and defaulted to costly subagent parallelism;
+- Reader tables and TTM prose dropped units from absolute financial amounts;
+- the shared Reader Renderer hard-coded Meta, advertising-network prose, and 5/10-year labels.
+
+### Verification
+
+Final local pre-merge validation after rebase and Agent review: PASS. Final GitHub Actions validation is recorded by PR #9.
+
+- Python syntax: PASS.
+- financial rigor / audit / lint: PASS.
+- full unittest suite: 177 / 177 PASS.
+- v2.1.2 regression: PASS.
+- v3 Meta build / verify: PASS.
+- 3 Themes, 6 Observations, 3 Bull, 3 Bear, 3 Drivers, 2 High.
+- Reader narrative / Sensitivity / Debate: PASS.
+- Reader internal-ID exclusion: PASS.
+- Audit Graph and escaping: PASS.
+- build-time Reader/Audit gates: PASS.
+- dynamic Verification: PASS.
+- Graph/Reader/Audit/Bundle/Verification tamper binding: PASS.
+
+### Integration
+
+PR #8 was merged first. PR #9 was rebased onto `main`; this entry was prepended without modifying historical records; the staged change-log file was deleted before final CI.
+
 ## v2.1.2 - Reader-First Dual-Layer Renderer
 
 ## 2026-08-01
