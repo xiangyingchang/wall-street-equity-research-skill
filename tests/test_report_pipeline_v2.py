@@ -51,16 +51,36 @@ class ReportPipelineV2Tests(unittest.TestCase):
         self.assertNotIn("Legacy Checker Compatibility", markdown)
         self.assertEqual(markdown.count("Base buy price"), 1)
 
-    def test_build_and_verify_detect_tampering(self):
+    def _built_files(self, root: Path):
+        spec_path = root / "spec.json"
+        report_path = root / "report.md"
+        spec_path.write_text(SPEC_FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
+        build(spec_path, report_path)
+        return spec_path, report_path, report_path.with_suffix(".md.bundle.json")
+
+    def test_build_and_verify_detect_markdown_tampering(self):
         with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            spec_path = root / "spec.json"
-            report_path = root / "report.md"
-            spec_path.write_text(SPEC_FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
-            result = build(spec_path, report_path)
-            self.assertEqual(result["checks"]["spec_schema"], "PASS")
+            spec_path, report_path, _ = self._built_files(Path(temp))
             self.assertEqual(verify(spec_path, report_path)["status"], "PASS")
             report_path.write_text(report_path.read_text(encoding="utf-8").replace("$456.67", "$999.99", 1), encoding="utf-8")
+            with self.assertRaises(SpecError):
+                verify(spec_path, report_path)
+
+    def test_verify_detects_bundle_tampering(self):
+        with tempfile.TemporaryDirectory() as temp:
+            spec_path, report_path, bundle_path = self._built_files(Path(temp))
+            bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
+            bundle["decision"]["existing_position_action"] = "HOLD"
+            bundle_path.write_text(json.dumps(bundle), encoding="utf-8")
+            with self.assertRaises(SpecError):
+                verify(spec_path, report_path)
+
+    def test_verify_detects_spec_change_without_rebuild(self):
+        with tempfile.TemporaryDirectory() as temp:
+            spec_path, report_path, _ = self._built_files(Path(temp))
+            spec = json.loads(spec_path.read_text(encoding="utf-8"))
+            spec["facts"]["FACT-CURRENT-PRICE"]["value"] = "500"
+            spec_path.write_text(json.dumps(spec), encoding="utf-8")
             with self.assertRaises(SpecError):
                 verify(spec_path, report_path)
 
@@ -82,6 +102,11 @@ class ReportPipelineV2Tests(unittest.TestCase):
         spec["narrative"]["final_verdict"] = "Use an extra 1% uncertainty not declared in policy."
         bundle = compile_spec(spec)
         self.assertEqual(bundle["decision"]["operating"]["uncertainty"], "0.0000")
+
+    def test_guide_high_is_not_midpoint(self):
+        bundle = compile_spec(load_spec())
+        self.assertEqual(bundle["scenarios"]["base"]["revenue"]["periods"][0]["revenue"], "625.0000")
+        self.assertEqual(bundle["scenarios"]["bull"]["revenue"]["periods"][0]["revenue"], "640.0000")
 
     def test_price_zones_match_new_money_actions(self):
         bundle = compile_spec(load_spec())
