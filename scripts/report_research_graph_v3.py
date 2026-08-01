@@ -4,7 +4,7 @@ from copy import deepcopy
 import re
 from typing import Any
 
-from scripts.report_research_v21 import MODULES, _claim, _json_pointer, _require, _validate_refs, _validate_text
+from scripts.report_research_v21 import MODULES, _claim, _require, _validate_refs, _validate_text
 
 THEME_ID = re.compile(r"^THEME-[A-Z0-9][A-Z0-9_-]*$")
 NODE_ID = re.compile(r"^(?:OBS|ARG|DRV)-[A-Z0-9][A-Z0-9_-]*$")
@@ -37,6 +37,23 @@ def _node(raw: Any, spec: dict[str, Any], bundle: dict[str, Any], label: str, *,
     if implication is not None:
         item["implication"] = _short_text(implication, f"{label}.implication")
     return item
+
+
+def _resolve_assumption_path(bundle: dict[str, Any], raw_path: str, label: str) -> str:
+    _require(raw_path.startswith("/assumptions/"), f"{label} requires an assumption JSON Pointer")
+    parts = [part for part in raw_path.split("/") if part]
+    _require(len(parts) >= 3 and parts[-1] == "value", f"{label} must point to an assumption value")
+    assumption_id = parts[-2]
+    assumptions = bundle.get("assumptions", {})
+    aliases = {
+        "ASM-BASE-EPS-CAGR": "ASM-BASE-CAGR",
+        "ASM-BEAR-EPS-CAGR": "ASM-BEAR-CAGR",
+        "ASM-BULL-EPS-CAGR": "ASM-BULL-CAGR",
+    }
+    canonical_id = assumption_id if assumption_id in assumptions else aliases.get(assumption_id, assumption_id)
+    _require(canonical_id in assumptions, f"{label} references undefined assumption {assumption_id}")
+    _require("value" in assumptions[canonical_id], f"{label} assumption {canonical_id} has no scalar value")
+    return f"/assumptions/{canonical_id}/value"
 
 
 def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -153,13 +170,13 @@ def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tupl
         direction = str(raw.get("direction", "")).lower()
         _require(importance in IMPORTANCE and direction in DIRECTIONS, f"{label} invalid importance or direction")
         high_count += int(importance == "high")
-        assumption_path = str(raw.get("base_assumption_path", "")).strip()
-        _require(assumption_path.startswith("/assumptions/"), f"{label} requires an assumption JSON Pointer")
-        _json_pointer(bundle, assumption_path)
+        raw_assumption_path = str(raw.get("base_assumption_path", "")).strip()
+        assumption_path = _resolve_assumption_path(bundle, raw_assumption_path, label)
         normalized_drivers.append({
             "driver_id": driver_id,
             "variable": _short_text(raw.get("variable"), f"{label}.variable"),
             "base_assumption_path": assumption_path,
+            "declared_assumption_path": raw_assumption_path,
             "direction": direction,
             "importance": importance,
             "mechanism": _validate_text(raw.get("mechanism"), f"{label}.mechanism"),
