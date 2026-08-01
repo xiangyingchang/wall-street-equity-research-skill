@@ -4,7 +4,7 @@ from copy import deepcopy
 import unittest
 
 from scripts.report_compiler_v21 import compile_report_v21
-from scripts.report_renderer_v2 import render_markdown
+from scripts.report_renderer_readable_v212 import render_audit_markdown, render_reader_markdown
 from scripts.report_spec_v2 import SpecError
 from tests.meta_v21_spec import make_spec
 
@@ -12,10 +12,11 @@ from tests.meta_v21_spec import make_spec
 class ResearchQualityV211Tests(unittest.TestCase):
     def test_value_refs_render_bound_numbers(self):
         bundle = compile_report_v21(make_spec())
-        markdown = render_markdown(bundle)
-        self.assertIn("Base IRR 为 5.51%", markdown)
-        self.assertIn("目标回报 9.40%", markdown)
-        self.assertIn("Base target-return price $456.67", markdown)
+        markdown = render_reader_markdown(bundle)
+        self.assertIn("Base IRR", markdown)
+        self.assertIn("5.51%", markdown)
+        self.assertIn("9.40%", markdown)
+        self.assertIn("$456.67", markdown)
         self.assertGreaterEqual(bundle["research_quality"]["checks"]["value_binding"]["bound_values"], 3)
 
     def test_missing_value_ref_fails(self):
@@ -80,17 +81,26 @@ class ResearchQualityV211Tests(unittest.TestCase):
         self.assertGreater(quality["checks"]["evidence_closure"]["supporting_refs"], 0)
         self.assertGreater(quality["checks"]["source_registry"]["sources"], 0)
 
-    def test_markdown_table_escaping(self):
+    def test_markdown_table_escaping_is_preserved_in_audit(self):
         spec = make_spec()
         spec["sources"]["SRC-INDEX"]["title"] = "Index | Reference\nFactsheet"
-        markdown = render_markdown(compile_report_v21(spec))
+        markdown = render_audit_markdown(compile_report_v21(spec))
         self.assertIn("Index \\| Reference<br>Factsheet", markdown)
+
+    def test_reader_hides_internal_evidence_ids(self):
+        markdown = render_reader_markdown(compile_report_v21(make_spec()))
+        self.assertNotIn("FACT-", markdown)
+        self.assertNotIn("BUNDLE:", markdown)
+        self.assertNotIn("[supports]", markdown)
+        self.assertIn("主要依据：", markdown)
 
     def test_same_input_remains_deterministic(self):
         spec = make_spec()
         a = compile_report_v21(spec)
         b = compile_report_v21(deepcopy(spec))
         self.assertEqual(a["bundle_hash"], b["bundle_hash"])
+        self.assertEqual(render_reader_markdown(a), render_reader_markdown(b))
+        self.assertEqual(render_audit_markdown(a), render_audit_markdown(b))
 
 
 if __name__ == "__main__":
