@@ -1,0 +1,14 @@
+{
+  "ttm_eps": "26.5500",
+  "ttm_operating_margin_pct": "38.08",
+  "ttm_fcf": "378.7000",
+  "base_forward_revenue": "2617.9044",
+  "base_eps": "29.2350",
+  "base_irr_pct": "5.51",
+  "base_target_return_price": "456.6702",
+  "base_buy_price": "319.6691",
+  "bull_q3_revenue": "640.0000",
+  "new_money_action": "DO_NOT_BUY",
+  "existing_position_action": "REDUCE",
+  "robustness_stable": true
+}
