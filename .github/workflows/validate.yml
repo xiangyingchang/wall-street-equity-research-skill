@@ -29,7 +29,7 @@ jobs:
       - name: Run v2.1 compiler end-to-end
         run: |
           mkdir -p /tmp/report-v21
-          python tests/meta_v21_factory.py /tmp/report-v21/meta.spec.json
+          python tests/meta_v21_spec.py /tmp/report-v21/meta.spec.json
           python scripts/report_pipeline_v2.py build \
             --spec /tmp/report-v21/meta.spec.json \
             --output /tmp/report-v21/meta.md
