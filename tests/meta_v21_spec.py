@@ -34,6 +34,11 @@ def make_spec() -> dict[str, Any]:
     ]
     for item, name in zip(spec["research"]["moat"]["dimensions"], names):
         item["name"] = name
+    for risk in spec["research"]["risks"]["items"]:
+        risk["leading_indicators"] = [
+            text if len(text) >= 12 else f"{text}并形成持续趋势。"
+            for text in risk["leading_indicators"]
+        ]
     _normalize_bundle_refs(spec["research"])
     return spec
 
