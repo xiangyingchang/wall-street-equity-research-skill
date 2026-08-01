@@ -16,52 +16,6 @@ from scripts.report_renderer_v3 import render_audit_markdown, render_reader_mark
 from scripts.report_spec_v2 import SpecError, canonical_json, sha256
 
 
-def _verification(bundle: dict[str, Any], spec_path: Path, output: Path, audit_path: Path, bundle_path: Path, reader: str, audit: str) -> dict[str, Any]:
-    checks = {
-        "spec_schema": "PASS",
-        "source_closure": "PASS",
-        "calculations": "PASS",
-        "research_quality": bundle["research_quality"]["status"],
-        "research_graph": bundle["research_graph_quality"]["status"],
-        "theme_narrative": "PASS",
-        "investment_debate": "PASS",
-        "sensitivity_explanation": "PASS",
-        "reader_layer_clean": "PASS",
-        "audit_layer_complete": "PASS",
-        "tamper_binding": "PASS",
-    }
-    return {
-        "schema_version": "report-verification-v3.0",
-        "compiler_version": "3.0.0",
-        "spec_file": str(spec_path),
-        "report_file": str(output),
-        "audit_file": str(audit_path),
-        "bundle_file": str(bundle_path),
-        "checks": checks,
-        "research_quality": bundle["research_quality"],
-        "research_graph_quality": bundle["research_graph_quality"],
-        "spec_hash": bundle["spec_hash"],
-        "bundle_hash": bundle["bundle_hash"],
-        "reader_markdown_hash": sha256(reader),
-        "audit_markdown_hash": sha256(audit),
-    }
-
-
-def build(spec_path: Path, output: Path) -> dict[str, Any]:
-    spec = load_json(spec_path)
-    bundle = compile_report_v3(spec)
-    reader = render_reader_markdown(bundle)
-    audit = render_audit_markdown(bundle)
-    bundle_path, verification_path, audit_path = artifact_paths(output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(reader, encoding="utf-8")
-    audit_path.write_text(audit, encoding="utf-8")
-    write_json(bundle_path, bundle)
-    verification = _verification(bundle, spec_path, output, audit_path, bundle_path, reader, audit)
-    write_json(verification_path, verification)
-    return verification
-
-
 def _reader_errors(markdown: str) -> list[str]:
     errors: list[str] = []
     forbidden = ("FACT-", "BUNDLE:", "[supports]", "## Source Registry", "## Claim-Evidence Matrix", "Spec hash", "Bundle hash")
@@ -92,6 +46,61 @@ def _reader_errors(markdown: str) -> list[str]:
 def _audit_errors(markdown: str) -> list[str]:
     required = ("## Research Graph v3", "### Investment Debate", "### Sensitivity Explanation", "THEME-", "ARG-", "DRV-")
     return [f"audit section missing: {token}" for token in required if token not in markdown]
+
+
+def _verification(bundle: dict[str, Any], spec_path: Path, output: Path, audit_path: Path, bundle_path: Path, reader: str, audit: str) -> dict[str, Any]:
+    reader_errors = _reader_errors(reader)
+    audit_errors = _audit_errors(audit)
+    graph_quality = bundle["research_graph_quality"]
+    checks = {
+        "spec_schema": "PASS",
+        "source_closure": "PASS",
+        "calculations": "PASS",
+        "research_quality": bundle["research_quality"]["status"],
+        "research_graph": graph_quality["status"],
+        "theme_narrative": "PASS" if graph_quality["themes"] >= 3 and graph_quality["observations"] >= 6 else "FAIL",
+        "investment_debate": "PASS" if graph_quality["bull_arguments"] >= 3 and graph_quality["bear_arguments"] >= 3 else "FAIL",
+        "sensitivity_explanation": "PASS" if graph_quality["sensitivity_drivers"] >= 3 and graph_quality["high_importance_drivers"] >= 1 else "FAIL",
+        "reader_layer_clean": "PASS" if not reader_errors else "FAIL",
+        "audit_layer_complete": "PASS" if not audit_errors else "FAIL",
+        "tamper_binding": "PASS",
+    }
+    return {
+        "schema_version": "report-verification-v3.0",
+        "compiler_version": "3.0.0",
+        "spec_file": str(spec_path),
+        "report_file": str(output),
+        "audit_file": str(audit_path),
+        "bundle_file": str(bundle_path),
+        "checks": checks,
+        "reader_errors": reader_errors,
+        "audit_errors": audit_errors,
+        "research_quality": bundle["research_quality"],
+        "research_graph_quality": graph_quality,
+        "spec_hash": bundle["spec_hash"],
+        "bundle_hash": bundle["bundle_hash"],
+        "reader_markdown_hash": sha256(reader),
+        "audit_markdown_hash": sha256(audit),
+    }
+
+
+def build(spec_path: Path, output: Path) -> dict[str, Any]:
+    spec = load_json(spec_path)
+    bundle = compile_report_v3(spec)
+    reader = render_reader_markdown(bundle)
+    audit = render_audit_markdown(bundle)
+    reader_errors = _reader_errors(reader)
+    audit_errors = _audit_errors(audit)
+    if reader_errors or audit_errors:
+        raise SpecError("; ".join(reader_errors + audit_errors))
+    bundle_path, verification_path, audit_path = artifact_paths(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(reader, encoding="utf-8")
+    audit_path.write_text(audit, encoding="utf-8")
+    write_json(bundle_path, bundle)
+    verification = _verification(bundle, spec_path, output, audit_path, bundle_path, reader, audit)
+    write_json(verification_path, verification)
+    return verification
 
 
 def verify(spec_path: Path, output: Path) -> dict[str, Any]:
