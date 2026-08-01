@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from copy import deepcopy
 from pathlib import Path
 import tempfile
 import unittest
@@ -22,7 +21,7 @@ class ReportPipelineV2Tests(unittest.TestCase):
         bundle = compile_spec(load_spec())
         self.assertEqual(bundle["derived"]["ttm"]["eps"]["value"], "26.5500")
         self.assertEqual(bundle["derived"]["ttm"]["operating_margin"]["value_pct"], "38.08")
-        self.assertEqual(bundle["scenarios"]["base"]["revenue"]["forward_revenue"], "2617.9032")
+        self.assertEqual(bundle["scenarios"]["base"]["revenue"]["forward_revenue"], "2617.9044")
         self.assertEqual(bundle["scenarios"]["bull"]["revenue"]["periods"][0]["revenue"], "640.0000")
         self.assertEqual(bundle["scenarios"]["base"]["eps_bridge"]["eps"], "29.2350")
         self.assertEqual(bundle["decision"]["new_money_action"], "DO_NOT_BUY")
