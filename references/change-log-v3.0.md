@@ -2,50 +2,95 @@
 
 ## 2026-08-01
 
-### Planned change
+### Change
 
-- Add a structured Research Graph between Claims and Narrative.
-- Add company-specific Investment Themes with observations, hypothesis, challenge, resolution, decision impact, and falsification.
-- Add a formal Bull/Bear Investment Debate and Lead Adjudication.
-- Add Sensitivity Explanation for the variables that dominate Base IRR and target-return price.
-- Add a tool-agnostic multi-perspective research adapter inspired by AI Berkshire's independent analyst/team-lead workflow.
-- Render Theme-based narrative in the Reader Report and full Research Graph in the Audit Appendix.
-- Add quality gates for counter-evidence, positive/negative evidence reconciliation, debate completeness, adjudication references, and high-importance sensitivity drivers.
-- Preserve the v2.1.2 single-source compiler, deterministic calculations, dual-layer renderer, and tamper detection.
+- Added `report-spec-v3.0` and `report-bundle-v3.0`.
+- Added a structured Research Graph:
+  - Source → Fact → Observation → Hypothesis → Challenge → Resolution → Theme → Narrative → Decision.
+- Added 3–5 company-specific `THEME-*` Investment Themes.
+- Added `OBS-*` observations, evidence-bound hypotheses, strongest challenges, resolutions, decision impacts, and falsification conditions.
+- Required counter-evidence in every challenge and positive/negative evidence reconciliation in every resolution.
+- Added formal Bull/Bear Investment Debate:
+  - at least three `ARG-*` arguments per side;
+  - globally unique argument IDs;
+  - Lead Adjudication with accepted and discounted IDs from both sides;
+  - remaining uncertainty.
+- Added `DRV-*` Sensitivity Explanation for the variables that dominate Base IRR and target-return price.
+- Added a tool-agnostic multi-perspective workflow inspired by AI Berkshire:
+  - business analyst;
+  - financial analyst;
+  - industry challenger;
+  - risk assessor;
+  - lead analyst.
+- Added v3 Reader narrative:
+  - Theme-based module 1;
+  - strongest challenge and falsification for every Theme;
+  - sensitivity explanation in valuation;
+  - Bull vs Bear debate before final verdict.
+- Added full Research Graph, Debate, and Sensitivity structures to Audit Appendix.
+- Added independent v3 compiler, renderer, build, and verify pipeline.
+- Upgraded `SKILL.md` to v3.0.0.
+- Added Meta v3 fixture, graph contract, focused tests, and CI end-to-end validation.
 
 ### Reason
 
-v2.1.2 is reliable and readable, but the report still behaves like a well-formatted sequence of Claims. It does not consistently explain causality, challenge its own thesis, adjudicate competing views, or identify which assumptions truly drive the decision. The missing layer is not another report template; it is a structured research process.
+v2.1.2 was reliable and readable but still treated isolated Claims as the core research unit. It could state conclusions without consistently explaining causality, testing alternative explanations, adjudicating competing views, or identifying the model variables that control the decision.
 
-AI Berkshire demonstrates the value of independent perspectives, adversarial analysis, and a lead analyst who resolves conflicts. v3 adopts these process ideas without copying persona-based scoring or introducing runtime dependence on a specific multi-agent tool.
+v3 adds the missing research process layer while preserving the existing numeric truth and audit boundaries.
 
-### Scope boundary
+### What was learned from AI Berkshire
 
-- No change to valuation formulas or decision policy.
-- No return to Markdown-first editing.
-- No requirement for a specific Agent framework.
-- No automatic averaging of analyst views.
-- No claim that structured debate guarantees economically correct assumptions.
+Adopted:
 
-### Verification target
+- independent analytical perspectives;
+- adversarial Bull/Bear analysis;
+- explicit anti-bias challenge;
+- Lead Analyst adjudication rather than mechanical averaging;
+- exact calculations remain separated from prose.
 
-- Meta fixture contains 3–5 company-specific Themes.
-- Every Theme has observations, hypothesis, challenge, resolution, decision impact, and falsification.
-- Challenges contain counter-evidence; resolutions reconcile both sides.
-- Bull and Bear each contain at least three arguments.
-- Adjudication references both Bull and Bear argument IDs.
-- At least one high-importance sensitivity driver exists.
-- Reader contains Theme narrative and Investment Debate without internal IDs.
-- Audit contains full Research Graph.
-- Graph/Reader/Audit/Bundle/Verification tampering fails.
-- Full test suite and end-to-end build/verify pass.
+Not adopted:
+
+- persona-based “master” scores;
+- fixed famous-investor roles;
+- dependency on a specific subagent framework;
+- averaging conflicting opinions.
+
+### Code review fixes
+
+Independent review found and fixed:
+
+- invalid Theme module links were not blocked;
+- Bull and Bear could reuse the same Argument ID;
+- Adjudication accepted and discounted sets could overlap;
+- concise but valid graph implications were rejected by the older Claim length gate;
+- Meta fixture referenced an undefined Bundle path;
+- v3 compiler did not explicitly reject legacy schema input.
+
+### Verification
+
+GitHub Actions Validate run #271: PASS.
+
+- Python syntax: PASS.
+- financial rigor / report audit / report lint self-tests: PASS.
+- lint fixtures: PASS.
+- full unittest suite: **168 / 168 PASS**.
+- v2.1.2 end-to-end regression: PASS.
+- v3 Meta build and verify: PASS.
+- Research Graph: 3 Themes, 6 Observations.
+- Debate: 3 Bull arguments, 3 Bear arguments.
+- Sensitivity: 3 Drivers, 2 High importance.
+- Reader Theme narrative, Sensitivity, and Bull/Bear sections: PASS.
+- Reader internal-ID exclusion: PASS.
+- Audit full graph inclusion: PASS.
+- Graph/Reader/Audit/Bundle/Verification tamper binding: PASS.
 
 ### Integration
 
-After implementation and independent code review:
+PR #9 is stacked on the v2.1.2 branch. Before merge:
 
-1. replace this planned entry with actual changes and exact test results;
-2. prepend the finalized v3.0 entry to `references/change-log.md`;
-3. delete `references/change-log-v3.0.md`;
-4. mark `PRD-research-graph-investment-debate-v3.md` completed;
-5. rerun CI before merge.
+1. merge PR #8;
+2. rebase or retarget PR #9 to main;
+3. rerun complete CI;
+4. prepend this entry to `references/change-log.md`;
+5. delete `references/change-log-v3.0.md`;
+6. preserve all historical entries.
