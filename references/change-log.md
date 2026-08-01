@@ -1,5 +1,31 @@
 # Wall Street Equity Research Skill Change Log
 
+## price-discipline-v2 — 2026-08-01
+
+### Change
+
+- 吸收海力士报告的中周期估值、价格区间和经营确认结构。
+- 新增 Earnings reference price、Target-return price、Cash-confirmation price、Joint new-money price 和 Safety price 五类价格线。
+- 新增 `price-zones` 运行时，所有 PE 和 FCF yield 价格由输入计算，禁止把海力士阈值写死成全市场规则。
+- 要求价格纪律披露情景、输入、公式、置信度、适用边界和动作映射。
+- 修正周期股 Forward / TTM 十年回本口径混淆，并要求低置信度现金流只能产生 Review。
+- 基于新 Skill 从干净模板重跑 Meta，旧报告保留不覆盖。
+
+### Reason
+
+海力士报告的价格纪律很适合周期股，但原始区间由未充分桥接的中周期假设和未解释的阈值组成，且没有把估值参考价、目标回报价和现金收益率价分开。新模块保留其决策价值，同时把价格线绑定到正常化数据和确定性运行时。
+
+### Verification
+
+- `python3 -m py_compile scripts/*.py tests/*.py`：PASS
+- `python3 -m unittest discover -s tests`：19/19 PASS
+- `python3 scripts/report_lint.py --self-test`：PASS
+- `python3 scripts/report_lint.py --fixtures tests/fixtures`：PASS
+- Meta 新报告 lint：PASS
+- 海力士 price-zones 示例：PASS
+- Meta Base Price Discipline：目标回报 `$461.90`、现金确认 `$405.68`、联合价格 `$405.68`、现金状态 `REVIEW_CASH_CONFIDENCE`：PASS
+- `git diff --check`：PASS
+
 ## normalized-financials-cashflow-discipline-v1 — 2026-08-01
 
 ### Change

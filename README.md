@@ -9,6 +9,7 @@
 - Evidence Ledger：关键数字必须标注日期、来源、口径、可信度
 - 正常化桥：强制区分 Reported / Adjusted / Normalized，利润正常化与现金流正常化分开
 - CapEx 制度检查：把季度资本开支、全年指引和经营现金流运行率放在一起判断
+- 价格纪律：分开盈利参考价、目标回报价、现金流确认价、联合新资金价和安全边际价
 - 10 年回本测试：名义与贴现双口径，EPS 与 FCF/share 双口径
 - A 股预抓取脚本：公告链接、行情、三表、分红、FCF、EV/FCF、同业比较、权益法平台识别、中国 10Y 缓存
 - 非 A 股 preflight：公司 IR、SEC/HKEX filing、PDF deck、收盘/盘后价格、10Y 收益率和同业估值
@@ -61,6 +62,8 @@ python3 scripts/report_lint.py "/path/to/report.md"
 没通过就修报告，不能说“跑完了”。
 
 高 CapEx 或存在明显一次性项目的公司，还必须通过正常化桥和现金流制度检查；目标回报价格必须记录股息处理方式，并由 `scripts/valuation_math.py` 复算。
+
+周期股还必须通过 Price Discipline 检查。PE 和 FCF yield 阈值要有公司特定依据，不能把单一股票的价格区间直接复制给其他股票。
 
 ## A 股预抓取脚本
 

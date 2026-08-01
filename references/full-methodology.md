@@ -156,6 +156,12 @@ First-Page Verdict 后必须给 Evidence Ledger，至少覆盖：
 
 对所有存在明显 CapEx、税务或重组波动的公司，模块 2 必须增加“正常化桥”和“现金流制度检查”。至少展示 Reported、Adjusted、Normalized 三种口径，并写明哪些调整已被财报证明、哪些只是情景假设。模块 4 的价格线必须调用 `scripts/valuation_math.py`，同时披露 starting EPS、EPS CAGR、exit PE、years、target return、dividend yield 和 dividend treatment。
 
+### Price Discipline
+
+对强周期或高 CapEx 公司，模块 4 还必须给出五条分开的价格线：盈利参考价、目标回报价、现金流确认价、联合新资金价和安全边际价。参考价用于观察估值，目标回报价用于回报纪律，现金流确认价用于验证现金回报，联合新资金价取所有有效执行门槛中更严格的一条。若现金流正常化仍是条件假设，价格可以计算，但动作只能写 Review。
+
+PE 区间和 FCF yield 阈值必须由公司特征解释，包括增长、周期性、ROIC、杠杆、竞争和同业估值；不得把单一公司的 12x/15x/18x 或 6% 直接变成所有公司的默认值。
+
 如果收盘价、最新价、盘前/盘后价差足以改变估值或结论，必须拆成两列展示，不能混用一个价格。
 
 ### 首页结论输出合同

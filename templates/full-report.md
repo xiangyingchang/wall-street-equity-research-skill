@@ -75,6 +75,20 @@ TODO
 
 目标回报价格由 `scripts/valuation_math.py` 计算，必须披露 starting EPS、EPS CAGR、exit PE、years、target return、dividend yield 和 dividend treatment。
 
+### Price Discipline 价格纪律
+
+| 价格线 | 公式 | 数值 | 情景 / 置信度 | 动作含义 |
+|---|---|---:|---|---|
+| Earnings reference price | normalized EPS × reference PE | TODO | TODO | 估值参考，不自动买入 |
+| Target-return price | valuation runtime | TODO | TODO | 满足目标回报的价格 |
+| Cash-confirmation price | normalized FCF/share ÷ cash hurdle | TODO | TODO | 现金流确认线 |
+| Joint new-money price | min(active executable gates) | TODO | TODO | Buy/Add 的最高价格 |
+| Safety price | target-return price × (1 - safety margin) | TODO | TODO | 更高安全边际价格 |
+
+Price Discipline 输入：情景 TODO；Normalized EPS TODO；reference PE 及理由 TODO；Normalized FCF/share TODO；cash hurdle 及理由 TODO；现金流置信度 TODO；joint action status TODO。
+
+所有价格线必须由 `scripts/valuation_math.py` 计算。PE 区间和 FCF yield 阈值属于公司特定假设，不得直接复制其他公司的数字。
+
 ### 名义 10 年回本测试
 
 TODO

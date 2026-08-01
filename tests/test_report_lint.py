@@ -73,6 +73,14 @@ class ReportLintContractTests(unittest.TestCase):
         report = self.good.replace("股息处理为 reinvested_yield。", "股息率已考虑。")
         self.assert_fails(report, "dividend treatment must be explicit")
 
+    def test_price_discipline_is_required(self):
+        report = self.good.replace("### Price Discipline 价格纪律", "### 价格参考")
+        self.assert_fails(report, "price discipline must be explicit")
+
+    def test_joint_price_requires_cash_confidence(self):
+        report = self.good.replace("现金流置信度 medium", "现金流情况已考虑")
+        self.assert_fails(report, "price discipline must disclose cash confidence")
+
 
 if __name__ == "__main__":
     unittest.main()

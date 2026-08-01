@@ -148,6 +148,20 @@ target_price = terminal_price / (1 + target_return)^years * dividend_factor
 
 With `dividend treatment = reinvested_yield`, `dividend_factor = (1 + dividend_yield)^years`; with `none`, it equals 1. IRR must use the same starting EPS, EPS CAGR, exit PE, years, dividend yield, and treatment. A price line without this vector is not auditable.
 
+### Price Discipline
+
+For cyclical or high-CapEx companies, add a dedicated `### Price Discipline 价格纪律` subsection. It must separate:
+
+| Price line | Formula | Meaning |
+|---|---|---|
+| Earnings reference price | normalized EPS × reference PE | Valuation context, not automatically an entry price |
+| Target-return price | valuation runtime | Price compatible with the stated return hurdle |
+| Cash-confirmation price | normalized FCF/share ÷ cash hurdle | Cash-return confirmation |
+| Joint new-money price | min(active executable gates) | Highest price at which new money can pass all enabled gates |
+| Safety price | target-return price × (1 - safety margin) | Additional margin below the target-return line |
+
+The subsection must disclose scenario labels, normalized EPS/FCF inputs, reference PE and cash-hurdle rationale, confidence and action mapping. Reference PE bands may be company-specific; never turn a single company's PE or FCF-yield thresholds into global constants. A conditional, low-confidence, or unconfirmed cash case may produce a calculated cash price but must keep the new-money action at `Review`.
+
 Run EPS and FCF/share where possible. For cyclical companies, add normalized mid-cycle earnings and do not rely on peak-cycle PE.
 
 For cyclical or capex-heavy companies, the valuation section must include a dual-base table:
@@ -155,6 +169,7 @@ For cyclical or capex-heavy companies, the valuation section must include a dual
 - Peak/current-cycle EPS and FCF multiples.
 - Normalized mid-cycle EPS and FCF multiples.
 - EV/FCF, especially when capex is structurally high.
+- Price Discipline with reference, target-return, cash-confirmation, joint-entry, and safety lines.
 - A verdict sentence naming which earnings base drives the rating.
 
 Default to this stricter treatment for memory, semiconductors, energy, shipping, commodities, banks, insurers, brokers, real estate, autos, airlines, and hardware supply-chain companies.

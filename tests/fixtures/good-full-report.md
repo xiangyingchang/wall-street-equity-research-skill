@@ -41,6 +41,16 @@ EV/FCF 与中周期估值。
 
 目标回报价格：$9。起始 EPS $10，EPS CAGR 8%，退出 PE 18x，持有 5 年，目标回报 9.5%，股息处理为 reinvested_yield。股数口径为加权平均稀释股数。由 `scripts/valuation_math.py` 的 terminal_price / target_price 公式计算。
 
+### Price Discipline 价格纪律
+| 价格线 | 公式 | 数值 | 情景 / 置信度 | 动作含义 |
+|---|---|---:|---|---|
+| Earnings reference price | normalized EPS × reference PE | $10 | Base / 中 | 估值参考，不自动买入 |
+| Target-return price | valuation runtime | $9 | Base / 中 | 目标回报 |
+| Cash-confirmation price | normalized FCF/share ÷ cash hurdle | $8 | Base / 中 | 现金确认 |
+| Joint new-money price | min(active executable gates) | $8 | Base / 中 | Review / Buy gate |
+| Safety price | target-return price × (1 - safety margin) | $6 | Base / 中 | 安全边际 |
+Price Discipline 输入：Base 情景；Normalized EPS $10；reference PE 18x；Normalized FCF/share $2；cash hurdle 6%，现金流置信度 medium；joint action Review。公式由 `scripts/valuation_math.py` 计算，动作映射为 Review。
+
 ### 名义 10 年回本测试
 通过。
 

@@ -216,6 +216,28 @@ def lint_text(text: str) -> list[str]:
     if not re.search(r"公式|scripts/valuation_math\.py|terminal_price|target_price", module4, re.I):
         errors.append("module 4 must identify the reproducible valuation formula")
 
+    price_discipline = subsection_body(module4, r"Price Discipline|价格纪律")
+    if not price_discipline:
+        errors.append("module 4 must include a Price Discipline subsection")
+    else:
+        for label, pattern in [
+            ("earnings reference price", r"Earnings reference price|盈利参考价|参考价值"),
+            ("target-return price", r"Target.?return price|目标回报价格|目标回报价"),
+            ("cash-confirmation price", r"Cash.?confirmation price|现金流确认价|现金确认价"),
+            ("joint new-money price", r"Joint new.?money price|联合新资金价|联合价格"),
+            ("safety price", r"Safety price|安全边际价|安全价格"),
+            ("scenario and confidence", r"情景|scenario"),
+            ("price action mapping", r"动作|Action|Buy|Add|Review|观察|可买"),
+        ]:
+            if not re.search(pattern, price_discipline, re.I):
+                errors.append(f"Price Discipline missing {label}")
+        if not re.search(r"公式|formula|\*|×|/|÷|min\(", price_discipline, re.I):
+            errors.append("Price Discipline must disclose formulas")
+        if not re.search(r"reference\s*PE|reference\s*pe|参考\s*PE|cash\s*hurdle|现金.*门槛|FCF.*yield", price_discipline, re.I):
+            errors.append("Price Discipline must disclose PE and cash-hurdle inputs")
+        if not re.search(r"(?:现金|cash)[^\n]{0,40}(?:confidence|置信度|条件|conditional|unconfirmed|未证实)", price_discipline, re.I):
+            errors.append("Price Discipline must disclose cash-flow confidence or condition")
+
     liquidity_match = re.search(r"流动性结论\s*[:：]\s*(不构成约束|构成约束)", module5)
     if not liquidity_match:
         errors.append("module 5 must state whether liquidity is a constraint")
@@ -345,6 +367,16 @@ def self_test() -> int:
 EV/FCF 与中周期估值。
 
 目标回报价格：$9。起始 EPS $10，EPS CAGR 8%，退出 PE 18x，持有 5 年，目标回报 9.5%，股息处理为 reinvested_yield。股数口径为加权平均稀释股数。由 `scripts/valuation_math.py` 的 terminal_price / target_price 公式计算。
+
+### Price Discipline 价格纪律
+| 价格线 | 公式 | 数值 | 情景 / 置信度 | 动作含义 |
+|---|---|---:|---|---|
+| Earnings reference price | normalized EPS × reference PE | $10 | Base / 中 | 估值参考，不自动买入 |
+| Target-return price | valuation runtime | $9 | Base / 中 | 目标回报 |
+| Cash-confirmation price | normalized FCF/share ÷ cash hurdle | $8 | Base / 中 | 现金确认 |
+| Joint new-money price | min(active executable gates) | $8 | Base / 中 | Review / Buy gate |
+| Safety price | target-return price × (1 - safety margin) | $6 | Base / 中 | 安全边际 |
+Price Discipline 输入：Base 情景；Normalized EPS $10；reference PE 18x；Normalized FCF/share $2；cash hurdle 6%，现金流置信度 medium；joint action Review。公式由 `scripts/valuation_math.py` 计算，动作映射为 Review。
 
 ### 名义 10 年回本测试
 名义 10 年回本通过。
