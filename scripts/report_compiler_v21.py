@@ -11,12 +11,8 @@ def compile_report_v21(spec: dict[str, Any]) -> dict[str, Any]:
     bundle = compile_spec_v21(spec)
     bundle["assumptions"] = deepcopy(spec["assumptions"])
     bundle["quarterly_series"] = deepcopy(spec["quarterly_series"])
-    bundle["research_quality"] = {
-        "modules_complete": True,
-        "evidence_closure": True,
-        "source_registry_complete": True,
-        "numeric_reference_safety": True,
-    }
+    if bundle.get("research_quality", {}).get("status") != "PASS":
+        raise ValueError("research quality validation did not pass")
     unhashed = deepcopy(bundle)
     unhashed.pop("bundle_hash", None)
     bundle["bundle_hash"] = sha256(unhashed)
