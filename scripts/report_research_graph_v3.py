@@ -30,7 +30,13 @@ def _has_role(item: dict[str, Any], role: str) -> bool:
 
 
 def _node(raw: Any, spec: dict[str, Any], bundle: dict[str, Any], label: str, *, field: str = "text") -> dict[str, Any]:
-    return _claim(raw, spec, bundle, label, text_field=field)
+    _require(isinstance(raw, dict), f"{label} must be object")
+    prepared = deepcopy(raw)
+    implication = prepared.pop("implication", None)
+    item = _claim(prepared, spec, bundle, label, text_field=field)
+    if implication is not None:
+        item["implication"] = _short_text(implication, f"{label}.implication")
+    return item
 
 
 def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
