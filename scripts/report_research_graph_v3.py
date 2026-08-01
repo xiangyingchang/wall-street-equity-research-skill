@@ -30,7 +30,13 @@ def _has_role(item: dict[str, Any], role: str) -> bool:
 
 
 def _node(raw: Any, spec: dict[str, Any], bundle: dict[str, Any], label: str, *, field: str = "text") -> dict[str, Any]:
-    return _claim(raw, spec, bundle, label, text_field=field)
+    _require(isinstance(raw, dict), f"{label} must be object")
+    prepared = deepcopy(raw)
+    implication = prepared.pop("implication", None)
+    item = _claim(prepared, spec, bundle, label, text_field=field)
+    if implication is not None:
+        item["implication"] = _short_text(implication, f"{label}.implication")
+    return item
 
 
 def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -121,11 +127,13 @@ def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tupl
     discounted = {str(x).upper() for x in raw_adjudication.get("discounted_argument_ids", [])}
     _require(accepted and discounted and not (accepted & discounted), "adjudication IDs must be non-empty and disjoint")
     _require((accepted | discounted) <= global_argument_ids, "adjudication references undefined argument IDs")
-    _require((accepted | discounted) == global_argument_ids, "adjudication must classify every debate argument")
+    auto_discounted = global_argument_ids - accepted - discounted
+    discounted.update(auto_discounted)
     _require(accepted & side_ids["bull"] and accepted & side_ids["bear"], "adjudication must accept points from both sides")
     adjudication.update({
         "accepted_argument_ids": sorted(accepted),
         "discounted_argument_ids": sorted(discounted),
+        "auto_discounted_argument_ids": sorted(auto_discounted),
         "remaining_uncertainty": _validate_text(raw_adjudication.get("remaining_uncertainty"), "debate.adjudication.remaining_uncertainty"),
     })
 
@@ -174,6 +182,7 @@ def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tupl
         "bull_arguments": len(normalized_sides["bull"]),
         "bear_arguments": len(normalized_sides["bear"]),
         "classified_arguments": len(accepted | discounted),
+        "auto_discounted_arguments": sorted(auto_discounted),
         "sensitivity_drivers": len(normalized_drivers),
         "high_importance_drivers": high_count,
         "module_links": sorted(linked_modules),
