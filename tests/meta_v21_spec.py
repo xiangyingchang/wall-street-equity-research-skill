@@ -7,6 +7,23 @@ from typing import Any
 from tests.meta_v21_factory import make_spec as _base_spec
 
 
+def _normalize_bundle_refs(value: Any) -> None:
+    if isinstance(value, dict):
+        refs = value.get("evidence_refs")
+        if isinstance(refs, list):
+            value["evidence_refs"] = [
+                "BUNDLE:derived.payback_required_growth"
+                if str(ref).startswith("BUNDLE:derived.payback_required_growth.")
+                else ref
+                for ref in refs
+            ]
+        for child in value.values():
+            _normalize_bundle_refs(child)
+    elif isinstance(value, list):
+        for child in value:
+            _normalize_bundle_refs(child)
+
+
 def make_spec() -> dict[str, Any]:
     spec = _base_spec()
     names = [
@@ -17,6 +34,7 @@ def make_spec() -> dict[str, Any]:
     ]
     for item, name in zip(spec["research"]["moat"]["dimensions"], names):
         item["name"] = name
+    _normalize_bundle_refs(spec["research"])
     return spec
 
 
