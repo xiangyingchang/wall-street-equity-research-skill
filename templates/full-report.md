@@ -44,7 +44,7 @@
 | 数据项 | 数值 | 日期 | 来源/层级 | 口径 | 可信度 |
 |---|---:|---|---|---|---|
 | 当前价格 | TODO | {{date}} | TODO（数据商只能 Tier 2） | TODO | TODO |
-| Point-in-time shares | TODO | {{date}} | TODO | 期末/当前流通股，不是 weighted-average diluted shares | TODO |
+| 总股本 | TODO | {{date}} | TODO | point-in-time shares outstanding；不得直接用 weighted-average diluted shares | TODO |
 | Weighted-average diluted shares | TODO | TODO | TODO | 仅供 EPS 等期间平均每股计算 | TODO |
 | 市值 | TODO | {{date}} | 计算值 | 当前价格 × point-in-time shares | TODO |
 | 现金及等价物 | TODO | {{date}} | TODO | TODO | TODO |
