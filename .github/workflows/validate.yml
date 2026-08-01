@@ -26,30 +26,35 @@ jobs:
           python scripts/report_lint.py --fixtures tests/fixtures
           python -m unittest discover -s tests
 
-      - name: Run v2.1.2 compiler end-to-end
+      - name: Run v2.2 compiler end-to-end
         run: |
-          mkdir -p /tmp/report-v212
-          python tests/meta_v21_spec.py /tmp/report-v212/meta.spec.json
+          mkdir -p /tmp/report-v22
+          python tests/meta_v21_spec.py /tmp/report-v22/meta.spec.json
           python scripts/report_pipeline_v2.py build \
-            --spec /tmp/report-v212/meta.spec.json \
-            --output /tmp/report-v212/meta.md
+            --spec /tmp/report-v22/meta.spec.json \
+            --output /tmp/report-v22/meta.md
           python scripts/report_pipeline_v2.py verify \
-            --spec /tmp/report-v212/meta.spec.json \
-            --output /tmp/report-v212/meta.md
-          test -f /tmp/report-v212/meta.md
-          test -f /tmp/report-v212/meta.audit.md
-          test -f /tmp/report-v212/meta.md.bundle.json
-          test -f /tmp/report-v212/meta.md.verification.json
-          grep -q "## 4. 极限估值" /tmp/report-v212/meta.md
-          grep -q "Base 5年 IRR" /tmp/report-v212/meta.md
-          grep -q "最低目标回报" /tmp/report-v212/meta.md
-          grep -q "目标回报价格" /tmp/report-v212/meta.md
-          grep -q "## Source Registry" /tmp/report-v212/meta.audit.md
-          grep -q "## Claim-Evidence Matrix" /tmp/report-v212/meta.audit.md
-          grep -q "supports" /tmp/report-v212/meta.audit.md
-          ! grep -q "## Source Registry" /tmp/report-v212/meta.md
-          ! grep -q "## Claim-Evidence Matrix" /tmp/report-v212/meta.md
-          ! grep -q "FACT-" /tmp/report-v212/meta.md
-          ! grep -q "BUNDLE:" /tmp/report-v212/meta.md
-          ! grep -q "Legacy Compatibility" /tmp/report-v212/meta.md
-          ! grep -q "未提供叙事内容" /tmp/report-v212/meta.md
+            --spec /tmp/report-v22/meta.spec.json \
+            --output /tmp/report-v22/meta.md
+          test -f /tmp/report-v22/meta.md
+          test -f /tmp/report-v22/meta.audit.md
+          test -f /tmp/report-v22/meta.md.bundle.json
+          test -f /tmp/report-v22/meta.md.verification.json
+          grep -q "## 核心投资叙事" /tmp/report-v22/meta.md
+          grep -q "Bull / Base / Bear" /tmp/report-v22/meta.md
+          grep -q "### 财务因果桥" /tmp/report-v22/meta.md
+          grep -q "### 镜子测试" /tmp/report-v22/meta.md
+          grep -q "Meta 的广告机器仍强" /tmp/report-v22/meta.md
+          grep -q "Base 5年 IRR" /tmp/report-v22/meta.md
+          grep -q "最低目标回报" /tmp/report-v22/meta.md
+          grep -q "## Investment Narrative Layer v2.2" /tmp/report-v22/meta.audit.md
+          grep -q "## Source Registry" /tmp/report-v22/meta.audit.md
+          grep -q "## Claim-Evidence Matrix" /tmp/report-v22/meta.audit.md
+          ! grep -q "### 三个核心矛盾" /tmp/report-v22/meta.md
+          ! grep -q "本次判断可以压缩成三条主线" /tmp/report-v22/meta.md
+          ! grep -q "## Source Registry" /tmp/report-v22/meta.md
+          ! grep -q "## Claim-Evidence Matrix" /tmp/report-v22/meta.md
+          ! grep -q "FACT-" /tmp/report-v22/meta.md
+          ! grep -q "BUNDLE:" /tmp/report-v22/meta.md
+          ! grep -q "Legacy Compatibility" /tmp/report-v22/meta.md
+          ! grep -q "未提供叙事内容" /tmp/report-v22/meta.md
