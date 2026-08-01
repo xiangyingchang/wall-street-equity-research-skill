@@ -80,6 +80,16 @@ Include, when relevant:
 
 Each row should include value, date, source/tier,口径, and confidence.
 
+## Normalization and data integrity
+
+For any company with meaningful CapEx, cyclicality, tax volatility, legal charges, restructuring, or other non-recurring items, module 2 must include a `Reported / Adjusted / Normalized` bridge covering at least EPS, operating margin, and FCF/share. The bridge must state the source of each adjustment and its confidence.
+
+Profit normalization and cash-flow normalization must be separate. A one-time tax, legal, or severance expense may adjust EPS or operating income only when the filing supports it. It must not be added back to FCF unless the cash-flow treatment or management's FCF reconciliation supports that adjustment.
+
+The report must include a CapEx regime check: quarterly CapEx, annual CapEx guidance or long-run CapEx assumption, operating-cash-flow run rate, and a conclusion on whether the current cash-flow pressure is structural, planned, temporary, or unresolved. Calling a quarter "extreme" without this comparison is invalid.
+
+TTM EPS and FCF/share must state the denominator: quarterly weighted-average diluted shares, period-weighted diluted shares, or period-end shares. Cash, debt, and lease liabilities must be shown separately before using "net cash".
+
 For A-share reports, the Evidence Ledger should be seeded from `scripts/a_share_prefetch.py` when possible. Use `summary` first, `peer_comparison` second, and raw `financials` only for drill-down. Do not blindly paste the JSON: convert it into the report table, keep Tier 1/Tier 2 labels explicit, and preserve `summary.manual_verification_notes`.
 
 For US, HK, and other non-A-share reports, complete and disclose this preflight before the verdict:
@@ -126,6 +136,17 @@ TTM PE:
 ```text
 M = sum_{t=1}^{10}(1+g)^t
 ```
+
+Use `scripts/valuation_math.py` to compute the growth rate. Do not hand-enter a growth rate that cannot be reproduced from the displayed multiple, years, and discount rate.
+
+For a five-year target-return price, disclose all inputs and dividend treatment:
+
+```text
+terminal_price = starting_eps * (1 + eps_cagr)^years * exit_pe
+target_price = terminal_price / (1 + target_return)^years * dividend_factor
+```
+
+With `dividend treatment = reinvested_yield`, `dividend_factor = (1 + dividend_yield)^years`; with `none`, it equals 1. IRR must use the same starting EPS, EPS CAGR, exit PE, years, dividend yield, and treatment. A price line without this vector is not auditable.
 
 Run EPS and FCF/share where possible. For cyclical companies, add normalized mid-cycle earnings and do not rely on peak-cycle PE.
 

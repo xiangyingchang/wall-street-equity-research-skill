@@ -102,6 +102,9 @@ agent_created: true
 3. **关键数字交叉验证**
    - 净利润、EPS、FCF、股本、SBC、债务、现金、股息、回购、分部利润必须尽量用 Tier 1 + Tier 2 双来源核对。
    - 如果来源冲突，必须列出冲突，解释可能原因，并用更保守口径进入估值。
+   - 对财报调整必须建立 Reported / Adjusted / Normalized 三层桥；利润正常化和现金流正常化分开，未经现金流或管理层口径支持不得把利润表一次性项目加回 FCF。
+   - 对高 CapEx 公司比较季度 CapEx、全年指引和经营现金流运行率，先判断资本开支制度，再判断单季度 FCF 是否异常。
+   - 记录 TTM EPS 和 FCF/share 的股数分母，并把债务和租赁负债分开后再使用净现金。
 4. **完整性降级**
    - 最近年报缺失:不得给 Buy。
    - 最近季报/中报缺失:最高只能给 Watchlist。
@@ -150,6 +153,8 @@ First-Page Verdict 后必须给 Evidence Ledger，至少覆盖：
 - 数据冲突且无法判断来源质量:必须列出冲突，用更保守口径计算。
 
 对**强周期或高 Capex 行业**（存储、半导体硬件链、航运、能源、煤炭、化工、面板、银行、保险、券商、地产、汽车、航空），必须额外估算"中周期利润 / 中周期估值"，**不得只看景气峰值 PE**。
+
+对所有存在明显 CapEx、税务或重组波动的公司，模块 2 必须增加“正常化桥”和“现金流制度检查”。至少展示 Reported、Adjusted、Normalized 三种口径，并写明哪些调整已被财报证明、哪些只是情景假设。模块 4 的价格线必须调用 `scripts/valuation_math.py`，同时披露 starting EPS、EPS CAGR、exit PE、years、target return、dividend yield 和 dividend treatment。
 
 如果收盘价、最新价、盘前/盘后价差足以改变估值或结论，必须拆成两列展示，不能混用一个价格。
 

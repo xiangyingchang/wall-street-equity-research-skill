@@ -1,5 +1,30 @@
 # Wall Street Equity Research Skill Change Log
 
+## normalized-financials-cashflow-discipline-v1 — 2026-08-01
+
+### Change
+
+- 新增 Reported / Adjusted / Normalized 三层正常化桥，强制区分利润正常化与现金流正常化。
+- 新增高 CapEx 制度检查，要求把季度 CapEx、全年指引和经营现金流运行率放在同一判断中。
+- 新增股数、债务、租赁负债和“净现金”口径披露要求。
+- 新增确定性的十年回本、目标回报价格和 IRR 计算脚本，避免手工数学漂移。
+- 扩展 report lint 和 unittest，阻止无正常化桥、无现金流分离、无股数口径的报告通过。
+- 基于新 Skill 从干净模板重跑 Meta 报告，保留旧报告作为对照，不覆盖历史文件。
+
+### Reason
+
+Meta 复核显示，原报告把 Q2 低 FCF 近似视为极端情况，却没有与 2026 CapEx 指引比较；同时 `$22` Normalized EPS 没有计算桥，`$25` Normalized FCF/share 也没有现金流依据。名义十年回本和目标回报价格还存在无法复现的手工计算。新规则把数据事实、一次性调整、模型假设和现金回报分别锁定。
+
+### Verification
+
+- `python3 -m py_compile scripts/*.py tests/*.py`：PASS
+- `python3 -m unittest discover -s tests`：15/15 PASS
+- `python3 scripts/report_lint.py --self-test`：PASS
+- `python3 scripts/report_lint.py --fixtures tests/fixtures`：PASS
+- Meta 新报告 lint：PASS
+- `valuation_math.py`：名义 EPS 13.13%、名义 FCF 23.31%、Base target-return price $461.90、Base IRR 5.49%：PASS
+- `git diff --check`：PASS
+
 ## a99-quality-hardening-v1 — 2026-08-01
 
 ### Change

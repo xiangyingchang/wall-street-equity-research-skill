@@ -19,6 +19,18 @@
 ## 2. 财务剖析 Financial Autopsy
 收入和利润保持增长，CapEx +19.1%，主要由于产能建设提速。
 
+### Reported / Adjusted / Normalized 正常化桥
+| 口径 | EPS | 经营利润率 | FCF/share | 证据与限制 |
+|---|---:|---:|---:|---|
+| Reported 财报值 | $10 | 30% | $1 | 财报原始值 |
+| Adjusted 调整值 | $11 | 32% | $1 | 一次性项目有官方依据 |
+| Normalized 常态值 | $12 | 33% | $2 | 模型假设，置信度中 |
+
+利润正常化与现金流正常化分开；一次性项目不会自动加回 FCF。
+
+### CapEx 制度与现金流检查
+季度 CapEx、全年 CapEx 指引和经营现金流运行率均已核对，当前压力属于计划内结构性变化。
+
 ## 3. 护城河 Moat Analysis
 网络效应：用户规模 10 亿，较上年增长 8%；参与度和 ARPU 继续提升。
 
@@ -26,6 +38,8 @@
 
 ### 周期/高 CapEx 双估值闸门
 EV/FCF 与中周期估值。
+
+目标回报价格：$9。起始 EPS $10，EPS CAGR 8%，退出 PE 18x，持有 5 年，目标回报 9.5%，股息处理为 reinvested_yield。股数口径为加权平均稀释股数。由 `scripts/valuation_math.py` 的 terminal_price / target_price 公式计算。
 
 ### 名义 10 年回本测试
 通过。

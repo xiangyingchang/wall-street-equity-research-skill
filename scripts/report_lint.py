@@ -148,6 +148,7 @@ def lint_text(text: str) -> list[str]:
         errors.append("Key Forces must be a subsection inside module 1, not a top-level section")
 
     module1 = section_body(text, r"1\.")
+    module2 = section_body(text, r"2\.")
     module3 = section_body(text, r"3\.")
     module4 = section_body(text, r"4\.")
     module5 = section_body(text, r"5\.")
@@ -157,6 +158,20 @@ def lint_text(text: str) -> list[str]:
     for number, body in ((str(i), section_body(text, rf"{i}\.")) for i in range(1, 10)):
         if not body.strip():
             errors.append(f"module {number} must contain report content")
+
+    normalization_terms = r"Reported|Adjusted|Normalized|财报值|调整值|常态值|正常化"
+    if not re.search(r"^###\s+(?:Reported|财报值|正常化)[^\n]*(?:Adjusted|调整值|Normalized|常态值)", module2, re.I | re.M):
+        errors.append("module 2 must include a Reported / Adjusted / Normalized bridge heading")
+    if not re.search(normalization_terms, module2, re.I):
+        errors.append("module 2 must include Reported / Adjusted / Normalized values")
+    if not re.search(r"利润正常化", module2, re.I) or not re.search(r"现金流正常化", module2, re.I):
+        errors.append("module 2 must separate profit normalization from cash-flow normalization")
+    if not re.search(r"一次性|非经常|调整依据|证据与限制|confidence|置信度", module2, re.I):
+        errors.append("normalization bridge must disclose adjustment evidence or confidence")
+    if not re.search(r"CapEx|资本开支", module2, re.I) or not re.search(r"指引|guidance|运行率|年化|结构性|计划内|暂时性|未解决", module2, re.I):
+        errors.append("module 2 must include a CapEx regime and cash-flow run-rate check")
+    if not re.search(r"股数口径|加权平均.*稀释股数|期末.*流通股|share count|denominator", text, re.I):
+        errors.append("report must disclose the EPS/FCF per-share denominator")
 
     evidence = section_body(text, r"Evidence Ledger")
     if len(table_data_rows(evidence)) < 2:
@@ -190,6 +205,16 @@ def lint_text(text: str) -> list[str]:
     ]:
         if not re.search(pattern, module4, re.I):
             errors.append(f"missing {label}")
+    if not re.search(r"目标回报价格|target.?return price", module4, re.I):
+        errors.append("module 4 must disclose a target-return price")
+    if not re.search(r"starting\s*eps|起始\s*EPS|Normalized\s*EPS", module4, re.I):
+        errors.append("module 4 must disclose starting/normalized EPS input")
+    if not re.search(r"EPS\s*CAGR|每股收益.*增长|exit\s*PE|退出\s*PE", module4, re.I):
+        errors.append("module 4 must disclose EPS CAGR and exit PE inputs")
+    if not re.search(r"股息处理|dividend\s*treatment|reinvested|不计股息", module4, re.I):
+        errors.append("module 4 must disclose dividend treatment")
+    if not re.search(r"公式|scripts/valuation_math\.py|terminal_price|target_price", module4, re.I):
+        errors.append("module 4 must identify the reproducible valuation formula")
 
     liquidity_match = re.search(r"流动性结论\s*[:：]\s*(不构成约束|构成约束)", module5)
     if not liquidity_match:
@@ -299,6 +324,18 @@ def self_test() -> int:
 ## 2. 财务剖析 Financial Autopsy
 收入和利润保持增长，CapEx +19.1%，主要由于产能建设提速。
 
+### Reported / Adjusted / Normalized 正常化桥
+| 口径 | EPS | 经营利润率 | FCF/share | 证据与限制 |
+|---|---:|---:|---:|---|
+| Reported 财报值 | $10 | 30% | $1 | 财报原始值 |
+| Adjusted 调整值 | $11 | 32% | $1 | 一次性项目有官方依据 |
+| Normalized 常态值 | $12 | 33% | $2 | 模型假设，置信度中 |
+
+利润正常化与现金流正常化分开；一次性项目不会自动加回 FCF。
+
+### CapEx 制度与现金流检查
+季度 CapEx、全年 CapEx 指引和经营现金流运行率均已核对，当前压力属于计划内结构性变化。
+
 ## 3. 护城河 Moat Analysis
 网络效应：用户规模 10 亿，较上年增长 8%；参与度和 ARPU 继续提升。
 
@@ -306,6 +343,8 @@ def self_test() -> int:
 
 ### 周期/高 CapEx 双估值闸门
 EV/FCF 与中周期估值。
+
+目标回报价格：$9。起始 EPS $10，EPS CAGR 8%，退出 PE 18x，持有 5 年，目标回报 9.5%，股息处理为 reinvested_yield。股数口径为加权平均稀释股数。由 `scripts/valuation_math.py` 的 terminal_price / target_price 公式计算。
 
 ### 名义 10 年回本测试
 名义 10 年回本通过。

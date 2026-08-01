@@ -61,6 +61,18 @@ class ReportLintContractTests(unittest.TestCase):
         report = self.good.replace("业务判断：广告商业化仍是主要价值驱动。", "业务判断：TODO")
         self.assert_fails(report, "placeholder report must fail")
 
+    def test_normalization_bridge_is_required(self):
+        report = self.good.replace("### Reported / Adjusted / Normalized 正常化桥", "### 财务桥")
+        self.assert_fails(report, "normalization bridge must be explicit")
+
+    def test_profit_and_cash_normalization_must_be_separate(self):
+        report = self.good.replace("利润正常化与现金流正常化分开；", "利润和现金流一起正常化；")
+        self.assert_fails(report, "profit and cash normalization must be separated")
+
+    def test_valuation_inputs_and_dividend_treatment_are_required(self):
+        report = self.good.replace("股息处理为 reinvested_yield。", "股息率已考虑。")
+        self.assert_fails(report, "dividend treatment must be explicit")
+
 
 if __name__ == "__main__":
     unittest.main()

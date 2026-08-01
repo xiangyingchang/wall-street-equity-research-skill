@@ -17,6 +17,10 @@ Run a ruthless but evidence-bound single-stock investment review. The output mus
 - Never invent current prices, valuation multiples, financials, filing facts, or bond yields from memory. Use current sources when the answer depends on live or recent data.
 - Prefer Tier 1 sources: SEC EDGAR, company IR, exchange filings, HKEXNews, 巨潮资讯, and official announcements. Use Tier 2 data vendors only for speed and cross-checking. Treat media and search snippets as leads, not proof.
 - If key data is missing or only second-hand, downgrade confidence and cap the rating according to `references/report-contract.md`.
+- Every full report must separate `Reported`, `Adjusted`, and `Normalized` values. Profit normalization and cash-flow normalization are different claims: never add a one-time income-statement charge back to FCF without a cash-flow or management-source basis.
+- For capex-heavy companies, compare quarterly CapEx with full-year guidance and the operating-cash-flow run rate before calling a quarter's FCF "extreme". If the evidence does not resolve the regime, label the normalization as unconfirmed rather than choosing a convenient base.
+- State the share-count denominator for TTM EPS and FCF/share, and keep cash, debt, and lease liabilities separate before using "net cash".
+- Use `scripts/valuation_math.py` for payback, target-return price, and IRR. Record the input vector and dividend treatment in the report; do not hand-fill a price line that cannot be reproduced.
 - Be candid. A famous company at a bad price is still a bad buy.
 
 ## Workflow
@@ -33,9 +37,10 @@ Run a ruthless but evidence-bound single-stock investment review. The output mus
 10. If the current working context is the user's Obsidian stock vault or prior reports exist under `股票/`, treat "跑一下", "分析下", "看看", or a ticker/company name request as a full report request. Read `references/source-map.md`, inspect 1-2 prior reports for style continuity, run the 9-module review in `references/full-methodology.md`, and save the Markdown report under `股票/<公司名>/`.
 11. For new full Obsidian reports, start from `templates/full-report.md` or run `python3 scripts/new_report.py --ticker <ticker> --company <company> --market <market> --out <path>`. Do not hand-roll the report skeleton.
 12. Before telling the user a full Obsidian report is complete, run `python3 scripts/report_lint.py <report.md>` from this skill. If lint fails, fix the report and rerun it until it passes. Report completion without a passing lint is a process failure.
-13. After changing this skill's report contract, template, or lint rules, run both `python3 scripts/report_lint.py --self-test` and `python3 scripts/report_lint.py --fixtures tests/fixtures`. Treat either failure as a blocker.
-14. Use the compact contract in `references/report-contract.md` only when the user explicitly asks for "快评", "简单说下", "不用建文档", or the task is clearly outside the Obsidian report workflow.
-15. When saving an Obsidian report, do not include visible YAML frontmatter. Include default-input statement, First-Page Verdict, Evidence Ledger, Key Forces inside module 1, Variant View, Pre-Mortem, Action Triggers, the 9 fixed modules, final verdict, source links, and file path confirmation. Do not create a standalone tax module. Module 5 must state whether liquidity is a constraint; if it is, include stress exit-day math. If the moat uses network effects, include user-scale change and an engagement/monetization metric. If the prefetch JSON flags `equity_method_holding_company`, explicitly deweight consolidated FCF in the verdict and analyze EPS, dividends, investment-income durability, and underlying investee quality.
+13. After changing this skill's report contract, template, or lint rules, run `python3 scripts/report_lint.py --self-test`, `python3 scripts/report_lint.py --fixtures tests/fixtures`, and the full unittest suite. Treat any failure as a blocker.
+14. Run the deterministic math tests before using a new valuation vector. The report must disclose whether the target-return price includes reinvested dividends or excludes them.
+15. Use the compact contract in `references/report-contract.md` only when the user explicitly asks for "快评", "简单说下", "不用建文档", or the task is clearly outside the Obsidian report workflow.
+16. When saving an Obsidian report, do not include visible YAML frontmatter. Include default-input statement, First-Page Verdict, Evidence Ledger, Key Forces inside module 1, Variant View, Pre-Mortem, Action Triggers, the 9 fixed modules, final verdict, source links, and file path confirmation. Do not create a standalone tax module. Module 2 must include the normalization bridge and CapEx regime check; module 4 must disclose valuation inputs, share-count denominator, and dividend treatment. Module 5 must state whether liquidity is a constraint; if it is, include stress exit-day math. If the moat uses network effects, include user-scale change and an engagement/monetization metric. If the prefetch JSON flags `equity_method_holding_company`, explicitly deweight consolidated FCF in the verdict and analyze EPS, dividends, investment-income durability, and underlying investee quality.
 
 ## Required Sources
 
@@ -49,6 +54,7 @@ Run a ruthless but evidence-bound single-stock investment review. The output mus
 - `scripts/pdf_text_extract.py`: earnings PDF/deck text extractor. It accepts a local PDF path or HTTP(S) URL, tries `pypdf` first and `pdfplumber` second, and prints extracted text plus dependency/failure notes. Use it for prepared remarks, earnings decks, HKEX PDFs, and annual-report PDFs when HTML/XBRL is not enough.
 - `scripts/new_report.py`: canonical report skeleton generator backed by `templates/full-report.md`. Use it for new full Obsidian reports to avoid structure drift.
 - `scripts/report_lint.py`: Markdown report contract checker. Run it before final delivery for every full Obsidian report; it rejects visible YAML frontmatter and checks strict top-level section order, Key Forces placement, module-specific required subsections, source links, 三原则扣问, current data markers, 10Y yield, and the four discount rows.
+- `scripts/valuation_math.py`: deterministic payback, target-return price, and total-return IRR calculator. Use it to generate and independently reproduce price-line inputs.
 
 ## Regression Fixtures
 
@@ -56,4 +62,4 @@ Run a ruthless but evidence-bound single-stock investment review. The output mus
 - `tests/fixtures/bad-key-forces-top-level.md`: ensures Key Forces cannot become a top-level module.
 - `tests/fixtures/bad-frontmatter-visible.md`: ensures report bodies do not expose YAML frontmatter.
 
-Any change to this historical contract must follow `PRD-a99-quality-hardening-v1.md` and the staged change-log before implementation.
+Any change to this historical contract must follow the active PRD and staged change-log before implementation. The current iteration is `PRD-normalized-financials-cashflow-discipline-v1.md`.

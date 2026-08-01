@@ -42,6 +42,20 @@ TODO
 
 TODO
 
+### Reported / Adjusted / Normalized 正常化桥
+
+| 口径 | EPS | 经营利润率 | FCF/share | 证据与限制 |
+|---|---:|---:|---:|---|
+| Reported 财报值 | TODO | TODO | TODO | 财报原始值 |
+| Adjusted 调整值 | TODO | TODO | TODO | 仅纳入有官方依据的一次性项目 |
+| Normalized 常态值 | TODO | TODO | TODO | 模型假设、置信度和适用边界 |
+
+利润正常化与现金流正常化必须分开。一次性税项、法务或裁员项目不得自动加回 FCF。
+
+### CapEx 制度与现金流检查
+
+季度 CapEx：TODO；全年 CapEx 指引 / 长期假设：TODO；经营现金流运行率：TODO。结论：当前 FCF 压力属于结构性、计划内、暂时性还是未解决：TODO。
+
 ## 3. 护城河 Moat Analysis
 
 ### 网络效应验证（如适用）
@@ -56,6 +70,10 @@ TODO
 ### 周期/高 CapEx 双估值闸门
 
 TODO
+
+估值输入与口径：当前价格 TODO；Normalized EPS TODO；Normalized FCF/share TODO；股数分母 TODO；目标回报价格股息处理 TODO。
+
+目标回报价格由 `scripts/valuation_math.py` 计算，必须披露 starting EPS、EPS CAGR、exit PE、years、target return、dividend yield 和 dividend treatment。
 
 ### 名义 10 年回本测试
 
