@@ -1,0 +1,75 @@
+{
+  "schema_version": "report-spec-v2",
+  "report": {
+    "ticker": "TICKER",
+    "company": "Company",
+    "as_of": "YYYY-MM-DD",
+    "currency": "USD",
+    "current_price_fact_id": "FACT-CURRENT-PRICE",
+    "target_return_assumption_id": "ASM-GLOBAL-TARGET-RETURN",
+    "return_years": 5,
+    "payback_years": 10,
+    "payback_discount_rates": ["0", "0.05", "0.10"]
+  },
+  "facts": {
+    "FACT-CURRENT-PRICE": {
+      "value": "0",
+      "unit": "USD/share",
+      "as_of": "YYYY-MM-DD",
+      "source": "source",
+      "tier": "Tier 2",
+      "confidence": "medium",
+      "uncertainty": "0.01"
+    }
+  },
+  "quarterly_series": {
+    "revenue": ["FACT-Q1-REV", "FACT-Q2-REV", "FACT-Q3-REV", "FACT-Q4-REV"],
+    "operating_income": ["FACT-Q1-OI", "FACT-Q2-OI", "FACT-Q3-OI", "FACT-Q4-OI"],
+    "eps": ["FACT-Q1-EPS", "FACT-Q2-EPS", "FACT-Q3-EPS", "FACT-Q4-EPS"],
+    "fcf": ["FACT-Q1-FCF", "FACT-Q2-FCF", "FACT-Q3-FCF", "FACT-Q4-FCF"]
+  },
+  "assumptions": {
+    "ASM-GLOBAL-TARGET-RETURN": {
+      "scope": "global",
+      "role": "target_return",
+      "value": "0.10",
+      "period": "5Y",
+      "rationale": "required equity return",
+      "confidence": "high"
+    }
+  },
+  "scenarios": {
+    "bear": {"revenue_periods": [], "assumptions": {}},
+    "base": {"revenue_periods": [], "assumptions": {}},
+    "bull": {"revenue_periods": [], "assumptions": {}}
+  },
+  "decision_policy": {
+    "valuation": {
+      "reduce_gap": "0.02",
+      "review_band": "0.01",
+      "buy_below": "base.buy_price",
+      "add_below": "base.buy_price"
+    },
+    "operating": {
+      "metric": "ttm_fcf",
+      "hold_threshold": "0",
+      "reduce_threshold": "0",
+      "tolerance": "0.05",
+      "uncertainty": "0.00",
+      "confirmation": 1
+    },
+    "thesis_break": {"logic": "all", "conditions": []},
+    "robustness_shock": "0.05"
+  },
+  "narrative": {
+    "overview": "",
+    "financial_autopsy": "",
+    "moat": "",
+    "risks": "",
+    "growth_limits": "",
+    "opportunity_cost": "",
+    "positioning": "",
+    "final_verdict": ""
+  },
+  "sources": []
+}
