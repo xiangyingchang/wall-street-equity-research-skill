@@ -10,10 +10,10 @@ from tests.meta_v21_factory import make_spec as _base_spec
 def make_spec() -> dict[str, Any]:
     spec = _base_spec()
     names = [
-        "网络效应与关系链护城河",
-        "数据与广告技术基础设施",
-        "多边生态与产品分发能力",
-        "资本实力与长期执行能力",
+        "网络效应与关系链核心护城河能力",
+        "数据资产与广告技术基础设施能力",
+        "多边生态网络与产品分发协同能力",
+        "资本实力与长期组织执行竞争能力",
     ]
     for item, name in zip(spec["research"]["moat"]["dimensions"], names):
         item["name"] = name
