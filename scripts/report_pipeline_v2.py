@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import sys
 from typing import Any
 
@@ -98,13 +99,16 @@ def build(spec_path: Path, output: Path) -> dict[str, Any]:
 def _reader_errors(markdown: str) -> list[str]:
     errors: list[str] = []
     forbidden = (
-        "## Source Registry",
-        "## Evidence Ledger",
-        "## Claim-Evidence Matrix",
+        "Source Registry",
+        "Evidence Ledger",
+        "Claim-Evidence Matrix",
         "### Build Manifest",
         "FACT-",
         "BUNDLE:",
+        "SRC-",
         "[supports]",
+        "[context]",
+        "[counter_evidence]",
         "Spec hash",
         "Bundle hash",
     )
@@ -114,10 +118,12 @@ def _reader_errors(markdown: str) -> list[str]:
     for heading in range(1, 10):
         if f"## {heading}." not in markdown:
             errors.append(f"reader research module {heading} missing")
-    required_text = ("Base 5年 IRR", "最低目标回报", "目标回报价格", "TTM EPS", "TTM 经营利润率", "TTM FCF")
+    required_text = ("最低目标回报", "目标回报价格", "TTM EPS", "TTM 经营利润率", "TTM FCF")
     for token in required_text:
         if token not in markdown:
             errors.append(f"reader report missing key decision content: {token}")
+    if not re.search(r"Base \d+年 IRR", markdown):
+        errors.append("reader report missing dynamic Base IRR horizon")
     line_count = len(markdown.splitlines())
     if line_count < 120 or line_count > 300:
         errors.append(f"reader report line count outside readability budget: {line_count}")

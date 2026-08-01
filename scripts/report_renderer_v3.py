@@ -5,6 +5,7 @@ from typing import Any
 from scripts.report_renderer_readable_v212 import (
     _claim_text,
     _escape,
+    _join_chinese,
     _paragraph,
     _source_note,
     render_audit_markdown as render_audit_v212,
@@ -26,7 +27,7 @@ def _theme_reader(bundle: dict[str, Any]) -> str:
             f"### {index}. {theme['title']}", "",
             f"**核心问题：** {theme['core_question']}", "",
         ])
-        observation_text = "；".join(_claim_text(item) for item in theme["observations"])
+        observation_text = _join_chinese([_claim_text(item) for item in theme["observations"]])
         lines.extend([
             f"**发生了什么：** {observation_text}", "",
             f"**基础判断：** {_paragraph(theme['hypothesis'])}", "",
@@ -97,8 +98,8 @@ def _graph_audit(bundle: dict[str, Any]) -> str:
         f"| Sensitivity drivers | {quality['sensitivity_drivers']} |",
         f"| High-importance drivers | {quality['high_importance_drivers']} |", "",
     ]
-    if quality.get("auto_discounted_arguments"):
-        lines.extend([f"> Auto-discounted unclassified arguments: {', '.join(quality['auto_discounted_arguments'])}", ""])
+    auto_discounted = quality.get("auto_discounted_arguments", [])
+    lines.extend([f"> Auto-discounted: {', '.join(auto_discounted) if auto_discounted else 'none'}", ""])
     for theme in graph["themes"]:
         lines.extend([
             f"### {theme['theme_id']} — {theme['title']}", "",
@@ -122,6 +123,7 @@ def _graph_audit(bundle: dict[str, Any]) -> str:
         "", f"**Adjudication:** {_claim_text(adjudication)}", "",
         f"- Accepted: {', '.join(adjudication['accepted_argument_ids'])}",
         f"- Discounted: {', '.join(adjudication['discounted_argument_ids'])}",
+        f"- Auto-discounted: {', '.join(adjudication['auto_discounted_argument_ids']) if adjudication['auto_discounted_argument_ids'] else 'none'}",
         f"- Remaining uncertainty: {adjudication['remaining_uncertainty']}", "",
         "### Sensitivity Explanation", "",
         "| Driver ID | Variable | Assumption | Direction | Importance | Mechanism | Decision consequence | Evidence |", "|---|---|---|---|---|---|---|---|",

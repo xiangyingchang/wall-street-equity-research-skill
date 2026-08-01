@@ -64,7 +64,7 @@ Adjudication must:
 
 ## Sensitivity Explanation
 
-`DRV-*` drivers identify the model assumptions that control the decision. At least one driver is high importance. Each driver explains mechanism, upside, downside, and decision consequence.
+`DRV-*` drivers identify the model assumptions that control the decision. At least one driver is high importance. Each driver explains mechanism, upside, downside, and decision consequence. Assumption pointers accept `/assumptions/<ASM-ID>/value` or the Spec form `/assumptions/scenario/<ASM-ID>/value`; compiled output is canonical.
 
 ## Multi-Perspective Workflow
 
@@ -91,6 +91,9 @@ Build fails when:
 - Bull or Bear has fewer than three arguments;
 - adjudication references unknown IDs or ignores one side;
 - no high-importance sensitivity driver exists.
+- Reader exposes `THEME-*`, `OBS-*`, `ARG-*`, or `DRV-*` IDs;
+- Audit omits accepted, discounted, or auto-discounted disclosure;
+- a sensitivity pointer contains extra path segments or an unknown Assumption ID.
 
 ## Rendering
 

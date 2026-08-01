@@ -18,7 +18,12 @@ from scripts.report_spec_v2 import SpecError, canonical_json, sha256
 
 def _reader_errors(markdown: str) -> list[str]:
     errors: list[str] = []
-    forbidden = ("FACT-", "BUNDLE:", "[supports]", "## Source Registry", "## Claim-Evidence Matrix", "Spec hash", "Bundle hash")
+    forbidden = (
+        "THEME-", "OBS-", "ARG-", "DRV-", "FACT-", "SRC-", "BUNDLE:",
+        "[supports]", "[context]", "[counter_evidence]",
+        "Source Registry", "Evidence Ledger", "Claim-Evidence Matrix",
+        "Spec hash", "Bundle hash", "hash", "Hash",
+    )
     for token in forbidden:
         if token in markdown:
             errors.append(f"reader report contains audit token: {token}")
@@ -27,9 +32,12 @@ def _reader_errors(markdown: str) -> list[str]:
         "### Bull vs Bear 投资辩论",
         "### 哪些假设真正决定估值",
         "**发生了什么：**",
+        "**基础判断：**",
         "**最强反方：**",
         "**综合裁决：**",
+        "**对决策的影响：**",
         "**什么会推翻判断：**",
+        "#### 研究负责人裁决",
     )
     for token in required:
         if token not in markdown:
@@ -44,7 +52,11 @@ def _reader_errors(markdown: str) -> list[str]:
 
 
 def _audit_errors(markdown: str) -> list[str]:
-    required = ("## Research Graph v3", "### Investment Debate", "### Sensitivity Explanation", "THEME-", "ARG-", "DRV-")
+    required = (
+        "## Research Graph v3", "### Investment Debate", "### Sensitivity Explanation",
+        "THEME-", "OBS-", "ARG-", "DRV-", "Accepted:", "Discounted:", "Auto-discounted:",
+        "[supports]", "/assumptions/",
+    )
     return [f"audit section missing: {token}" for token in required if token not in markdown]
 
 

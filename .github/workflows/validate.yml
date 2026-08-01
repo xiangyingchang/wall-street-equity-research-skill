@@ -35,6 +35,8 @@ jobs:
           test -f /tmp/report-v212/meta.md
           test -f /tmp/report-v212/meta.audit.md
           ! grep -q "FACT-" /tmp/report-v212/meta.md
+          ! grep -q "Source Registry" /tmp/report-v212/meta.md
+          ! grep -q "Claim-Evidence Matrix" /tmp/report-v212/meta.md
           grep -q "## Claim-Evidence Matrix" /tmp/report-v212/meta.audit.md
 
       - name: Run v3 research graph end-to-end
@@ -52,5 +54,5 @@ jobs:
           grep -q "### 哪些假设真正决定估值" /tmp/report-v3/meta.md
           grep -q "## Research Graph v3" /tmp/report-v3/meta.audit.md
           grep -q "THEME-CAPITAL-RETURNS" /tmp/report-v3/meta.audit.md
-          ! grep -q "THEME-" /tmp/report-v3/meta.md
-          ! grep -q "ARG-" /tmp/report-v3/meta.md
+          grep -q "Auto-discounted:" /tmp/report-v3/meta.audit.md
+          ! grep -Eq "THEME-|OBS-|ARG-|DRV-|FACT-|SRC-|BUNDLE:|Source Registry|Evidence Ledger|Claim-Evidence Matrix|hash" /tmp/report-v3/meta.md

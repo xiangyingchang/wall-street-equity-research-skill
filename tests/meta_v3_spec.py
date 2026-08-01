@@ -103,8 +103,8 @@ def make_spec() -> dict[str, Any]:
     return spec
 
 
-def write_spec(path: Path) -> None:
-    path.write_text(json.dumps(make_spec(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+def write_spec(path: Path, spec: dict[str, Any] | None = None) -> None:
+    path.write_text(json.dumps(make_spec() if spec is None else spec, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

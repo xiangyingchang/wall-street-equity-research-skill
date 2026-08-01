@@ -46,12 +46,23 @@ class ReportPipelineV21Tests(unittest.TestCase):
             self.assertIn(f"## {number}.", markdown)
         for token in ("Base 5年 IRR", "最低目标回报", "目标回报价格", "TTM EPS", "TTM 经营利润率", "TTM FCF"):
             self.assertIn(token, markdown)
+        for token in ("TTM FCF 为 $378.70亿", "| Q3 2025 | $512.42亿 |", "| Base | $2,617.90亿 | $29.23 |"):
+            self.assertIn(token, markdown)
         for forbidden in ("## Source Registry", "## Evidence Ledger", "## Claim-Evidence Matrix", "FACT-", "BUNDLE:", "[supports]", "Spec hash", "Bundle hash"):
             self.assertNotIn(forbidden, markdown)
         self.assertNotIn("Legacy Compatibility", markdown)
         self.assertNotIn("未提供叙事内容", markdown)
         self.assertGreaterEqual(len(markdown.splitlines()), 120)
         self.assertLessEqual(len(markdown.splitlines()), 300)
+
+    def test_reader_binds_company_currency_and_horizons(self):
+        spec = make_spec()
+        spec["report"]["company"] = "ExampleCo"
+        spec["report"]["return_years"] = 7
+        spec["report"]["payback_years"] = 12
+        markdown = render_reader_markdown(compile_report_v21(spec))
+        for token in ("过去四个季度，ExampleCo", "ExampleCo 的护城河", "争议不是 ExampleCo", "Base 7年 IRR", "极限估值与12年回本", "12年回本所需 EPS 增长"):
+            self.assertIn(token, markdown)
 
     def test_audit_appendix_keeps_full_traceability(self):
         audit = render_audit_markdown(compile_report_v21(make_spec()))

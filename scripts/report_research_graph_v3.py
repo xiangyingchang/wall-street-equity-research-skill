@@ -42,7 +42,9 @@ def _node(raw: Any, spec: dict[str, Any], bundle: dict[str, Any], label: str, *,
 def _resolve_assumption_path(bundle: dict[str, Any], raw_path: str, label: str) -> str:
     _require(raw_path.startswith("/assumptions/"), f"{label} requires an assumption JSON Pointer")
     parts = [part for part in raw_path.split("/") if part]
-    _require(len(parts) >= 3 and parts[-1] == "value", f"{label} must point to an assumption value")
+    canonical_shape = len(parts) == 3 and parts[0] == "assumptions" and parts[-1] == "value"
+    spec_shape = len(parts) == 4 and parts[:2] == ["assumptions", "scenario"] and parts[-1] == "value"
+    _require(canonical_shape or spec_shape, f"{label} must use /assumptions/<ASM-ID>/value or /assumptions/scenario/<ASM-ID>/value")
     assumption_id = parts[-2]
     assumptions = bundle.get("assumptions", {})
     aliases = {
