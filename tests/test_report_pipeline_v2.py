@@ -10,7 +10,7 @@ from scripts.report_compiler_v21 import compile_report_v21
 from scripts.report_pipeline_v2 import build, verify
 from scripts.report_renderer_v2 import render_markdown
 from scripts.report_spec_v2 import SpecError
-from tests.meta_v21_factory import make_spec
+from tests.meta_v21_spec import make_spec
 
 FIXTURES = Path(__file__).parent / "fixtures"
 EXPECTED_FIXTURE = FIXTURES / "meta_v2_expected.json"
