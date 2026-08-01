@@ -9,24 +9,38 @@ from scripts.report_pipeline_v2 import build, verify
 from scripts.report_renderer_v2 import render_markdown
 from scripts.report_spec_v2 import SpecError, compile_spec
 
-FIXTURE = Path(__file__).parent / "fixtures" / "meta_v2_spec.json"
+FIXTURES = Path(__file__).parent / "fixtures"
+SPEC_FIXTURE = FIXTURES / "meta_v2_spec.json"
+EXPECTED_FIXTURE = FIXTURES / "meta_v2_expected.json"
 
 
 def load_spec():
-    return json.loads(FIXTURE.read_text(encoding="utf-8"))
+    return json.loads(SPEC_FIXTURE.read_text(encoding="utf-8"))
+
+
+def load_expected():
+    return json.loads(EXPECTED_FIXTURE.read_text(encoding="utf-8"))
 
 
 class ReportPipelineV2Tests(unittest.TestCase):
-    def test_meta_end_to_end_core_outputs(self):
+    def test_meta_end_to_end_golden_outputs(self):
         bundle = compile_spec(load_spec())
-        self.assertEqual(bundle["derived"]["ttm"]["eps"]["value"], "26.5500")
-        self.assertEqual(bundle["derived"]["ttm"]["operating_margin"]["value_pct"], "38.08")
-        self.assertEqual(bundle["scenarios"]["base"]["revenue"]["forward_revenue"], "2617.9044")
-        self.assertEqual(bundle["scenarios"]["bull"]["revenue"]["periods"][0]["revenue"], "640.0000")
-        self.assertEqual(bundle["scenarios"]["base"]["eps_bridge"]["eps"], "29.2350")
-        self.assertEqual(bundle["decision"]["new_money_action"], "DO_NOT_BUY")
-        self.assertEqual(bundle["decision"]["existing_position_action"], "REDUCE")
-        self.assertTrue(bundle["decision"]["robustness"]["stable"])
+        expected = load_expected()
+        actual = {
+            "ttm_eps": bundle["derived"]["ttm"]["eps"]["value"],
+            "ttm_operating_margin_pct": bundle["derived"]["ttm"]["operating_margin"]["value_pct"],
+            "ttm_fcf": bundle["derived"]["ttm"]["fcf"]["value"],
+            "base_forward_revenue": bundle["scenarios"]["base"]["revenue"]["forward_revenue"],
+            "base_eps": bundle["scenarios"]["base"]["eps_bridge"]["eps"],
+            "base_irr_pct": bundle["scenarios"]["base"]["returns"]["irr"]["irr_pct"],
+            "base_target_return_price": bundle["scenarios"]["base"]["prices"]["target_return"],
+            "base_buy_price": bundle["scenarios"]["base"]["prices"]["buy"],
+            "bull_q3_revenue": bundle["scenarios"]["bull"]["revenue"]["periods"][0]["revenue"],
+            "new_money_action": bundle["decision"]["new_money_action"],
+            "existing_position_action": bundle["decision"]["existing_position_action"],
+            "robustness_stable": bundle["decision"]["robustness"]["stable"],
+        }
+        self.assertEqual(actual, expected)
 
     def test_markdown_has_one_source_and_no_legacy_tables(self):
         markdown = render_markdown(compile_spec(load_spec()))
@@ -42,7 +56,7 @@ class ReportPipelineV2Tests(unittest.TestCase):
             root = Path(temp)
             spec_path = root / "spec.json"
             report_path = root / "report.md"
-            spec_path.write_text(FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
+            spec_path.write_text(SPEC_FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
             result = build(spec_path, report_path)
             self.assertEqual(result["checks"]["spec_schema"], "PASS")
             self.assertEqual(verify(spec_path, report_path)["status"], "PASS")
