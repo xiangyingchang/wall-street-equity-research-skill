@@ -16,7 +16,7 @@ jobs:
 
       - name: Check Python syntax
         run: |
-          python -m py_compile scripts/*.py
+          python -m py_compile scripts/*.py tests/*.py
 
       - name: Run validation self-tests
         run: |
@@ -26,16 +26,25 @@ jobs:
           python scripts/report_lint.py --fixtures tests/fixtures
           python -m unittest discover -s tests
 
-      - name: Run v2 compiler end-to-end
+      - name: Run v2.1.1 compiler end-to-end
         run: |
-          mkdir -p /tmp/report-v2
+          mkdir -p /tmp/report-v211
+          python tests/meta_v21_spec.py /tmp/report-v211/meta.spec.json
           python scripts/report_pipeline_v2.py build \
-            --spec tests/fixtures/meta_v2_spec.json \
-            --output /tmp/report-v2/meta.md
+            --spec /tmp/report-v211/meta.spec.json \
+            --output /tmp/report-v211/meta.md
           python scripts/report_pipeline_v2.py verify \
-            --spec tests/fixtures/meta_v2_spec.json \
-            --output /tmp/report-v2/meta.md
-          test -f /tmp/report-v2/meta.md
-          test -f /tmp/report-v2/meta.md.bundle.json
-          test -f /tmp/report-v2/meta.md.verification.json
-          ! grep -q "Legacy Compatibility" /tmp/report-v2/meta.md
+            --spec /tmp/report-v211/meta.spec.json \
+            --output /tmp/report-v211/meta.md
+          test -f /tmp/report-v211/meta.md
+          test -f /tmp/report-v211/meta.md.bundle.json
+          test -f /tmp/report-v211/meta.md.verification.json
+          grep -q "report-spec-v2.1.1" /tmp/report-v211/meta.md
+          grep -q "## 4. 极限估值" /tmp/report-v211/meta.md
+          grep -q "## Claim-Evidence Matrix" /tmp/report-v211/meta.md
+          grep -q "## Source Registry" /tmp/report-v211/meta.md
+          grep -q "Base IRR 为 5.51%" /tmp/report-v211/meta.md
+          grep -q "目标回报 9.40%" /tmp/report-v211/meta.md
+          grep -q "supports" /tmp/report-v211/meta.md
+          ! grep -q "Legacy Compatibility" /tmp/report-v211/meta.md
+          ! grep -q "未提供叙事内容" /tmp/report-v211/meta.md
