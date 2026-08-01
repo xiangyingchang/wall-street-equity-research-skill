@@ -4,7 +4,7 @@ from copy import deepcopy
 import re
 from typing import Any
 
-from scripts.report_research_v21 import MODULES, _claim, _require, _validate_refs, _validate_text
+from scripts.report_research_v21 import MODULES, _claim, _json_pointer, _require, _validate_refs, _validate_text
 
 THEME_ID = re.compile(r"^THEME-[A-Z0-9][A-Z0-9_-]*$")
 NODE_ID = re.compile(r"^(?:OBS|ARG|DRV)-[A-Z0-9][A-Z0-9_-]*$")
@@ -30,13 +30,7 @@ def _has_role(item: dict[str, Any], role: str) -> bool:
 
 
 def _node(raw: Any, spec: dict[str, Any], bundle: dict[str, Any], label: str, *, field: str = "text") -> dict[str, Any]:
-    _require(isinstance(raw, dict), f"{label} must be object")
-    prepared = deepcopy(raw)
-    implication = prepared.pop("implication", None)
-    item = _claim(prepared, spec, bundle, label, text_field=field)
-    if implication is not None:
-        item["implication"] = _short_text(implication, f"{label}.implication")
-    return item
+    return _claim(raw, spec, bundle, label, text_field=field)
 
 
 def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -96,6 +90,9 @@ def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tupl
             "module_links": module_links,
         })
 
+    missing_modules = set(MODULES) - linked_modules
+    _require(not missing_modules, f"research_graph themes do not cover modules: {', '.join(sorted(missing_modules))}")
+
     debate = graph.get("debate")
     _require(isinstance(debate, dict), "research_graph.debate is required")
     normalized_sides: dict[str, list[dict[str, Any]]] = {}
@@ -124,6 +121,7 @@ def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tupl
     discounted = {str(x).upper() for x in raw_adjudication.get("discounted_argument_ids", [])}
     _require(accepted and discounted and not (accepted & discounted), "adjudication IDs must be non-empty and disjoint")
     _require((accepted | discounted) <= global_argument_ids, "adjudication references undefined argument IDs")
+    _require((accepted | discounted) == global_argument_ids, "adjudication must classify every debate argument")
     _require(accepted & side_ids["bull"] and accepted & side_ids["bear"], "adjudication must accept points from both sides")
     adjudication.update({
         "accepted_argument_ids": sorted(accepted),
@@ -149,6 +147,7 @@ def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tupl
         high_count += int(importance == "high")
         assumption_path = str(raw.get("base_assumption_path", "")).strip()
         _require(assumption_path.startswith("/assumptions/"), f"{label} requires an assumption JSON Pointer")
+        _json_pointer(bundle, assumption_path)
         normalized_drivers.append({
             "driver_id": driver_id,
             "variable": _short_text(raw.get("variable"), f"{label}.variable"),
@@ -174,6 +173,7 @@ def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tupl
         "observations": sum(len(x["observations"]) for x in normalized_themes),
         "bull_arguments": len(normalized_sides["bull"]),
         "bear_arguments": len(normalized_sides["bear"]),
+        "classified_arguments": len(accepted | discounted),
         "sensitivity_drivers": len(normalized_drivers),
         "high_importance_drivers": high_count,
         "module_links": sorted(linked_modules),
