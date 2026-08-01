@@ -120,8 +120,13 @@ def validate_text(text: str) -> list[Finding]:
 
     fact_registry = _find_table(
         tables,
-        {"fact id", "metric", "value", "period/as-of", "source/tier", "basis/unit", "confidence"},
+        {"value id", "metric", "value", "period/as-of", "source/tier", "basis/unit", "confidence"},
     )
+    if fact_registry is None:
+        fact_registry = _find_table(
+            tables,
+            {"fact id", "metric", "value", "period/as-of", "source/tier", "basis/unit", "confidence"},
+        )
     adjustment = _find_table(
         tables,
         {
@@ -202,7 +207,7 @@ def validate_text(text: str) -> list[Finding]:
     fact_ids: set[str] = set()
     if fact_registry is not None:
         for row in _rows_as_dict(fact_registry):
-            fact_id = _get(row, "Fact ID").strip()
+            fact_id = _get(row, "Value ID").strip() or _get(row, "Fact ID").strip()
             if _is_placeholder(fact_id):
                 continue
             if fact_id in fact_ids:

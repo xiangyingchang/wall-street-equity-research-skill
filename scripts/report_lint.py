@@ -283,6 +283,16 @@ def canonical_matrix_table_lines(text: str) -> set[int]:
                 masked.add(eval_idx + 1)
                 eval_idx += 1
             break
+    # Also mask the Threshold Policy Registry (policy definitions, not executable trades).
+    for th_heading_idx, line in enumerate(lines):
+        if re.search(r"###\s+Threshold Policy Registry", line):
+            th_idx = th_heading_idx + 1
+            while th_idx < len(lines) and not lines[th_idx].strip():
+                th_idx += 1
+            while th_idx < len(lines) and lines[th_idx].strip().startswith("|"):
+                masked.add(th_idx + 1)
+                th_idx += 1
+            break
     return masked
 
 
