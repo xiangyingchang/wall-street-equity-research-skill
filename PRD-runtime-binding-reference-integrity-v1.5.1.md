@@ -2,156 +2,121 @@
 
 ## 状态
 
-实施中 - 2026-08-01
+完成 - 2026-08-01
 
 ## 背景
 
-Meta v1.5 报告证明，v1.5 已经把 TTM、Revenue Forecast、Return Pair、Threshold Policy 与 Action Robustness 纳入确定性流程，但“结构存在”仍不等于“报告内容与 runtime 原始输出完全一致”。最新报告仍出现：
+Meta v1.5 报告证明，v1.5 已经把 TTM、Revenue Forecast、Return Pair、Threshold Policy 与 Action Robustness 纳入确定性流程，但“结构存在”仍不等于“报告内容与 runtime 原始输出完全一致”。报告仍出现：
 
-1. Return Pair 表中的 Required terminal EPS 与 Required EPS CAGR 互相不闭合，说明 Agent 复制或字段映射错误，但 Verification 仍显示 PASS。
-2. Base Forward reference value 的乘法与 Buy price 不精确，说明 Scenario Valuation 仍由 Agent 手填。
-3. Action Matrix 引用了不存在的 `THR-ADD-PRICE`、`FACT-CONSECUTIVE-FCF-Q`；Current Action Evaluation 又遗漏 Buy/Add 规则。
-4. Canonical Registry 使用 `MODEL-BULL-FORWARD-VALUE`，Action Evaluation 却声明使用 `MODEL-BULL-FAIR-VALUE`，跨表 ID 不一致。
-5. Revenue Bridge 的算术正确，但 `yoy` 行可能引用错误基期；Assumption ID 的 growth mode/value/period 也可能与预测行不一致。
-6. Derived Value 声称引用若干 FACT IDs，但对应 FACT 行并不存在；目前没有全局引用图。
-7. Evidence Ledger 声称存在 point-in-time share reconciliation，但报告中没有可验证的 reconciliation 表。
-8. EPS Bridge、Return Pair、Scenario Valuation 中仍有 tax rate、share count、EPS CAGR、dividend yield、reference multiple、safety margin 等裸数字，没有完整 Assumption ID。
-9. Forward EPS Basis 仍把历史 Adjustment IDs 当作直接数学输入，形成虚假追溯链。
-10. Checker 对 Runtime 表格与原始 JSON 的逐字段绑定不足，导致格式 PASS 掩盖字段复制错误。
+1. Required terminal EPS 与 Required EPS CAGR 不闭合，但 Verification 仍显示 PASS；
+2. Scenario Valuation 乘法与 Buy price 有误；
+3. Action Matrix 引用未定义 ID，且 Buy/Add 规则未进入 Runtime Evaluation；
+4. Canonical Registry 与 Action Evaluation 存在 MODEL ID 命名漂移；
+5. Revenue 算术正确，但 YoY 使用错误基期，Assumption mode/value/period 也可能不匹配；
+6. Derived Values 声称引用若干 FACT IDs，但这些 ID 并不存在；
+7. 市值 reconciliation 只在文字中声称存在；
+8. tax、shares、EPS CAGR、dividend、multiple、safety margin 等仍以裸数字进入模型；
+9. Forward Basis 把历史 Adjustment IDs 当作直接公式输入；
+10. Checker 没有把 Markdown 字段与原始 Runtime JSON 逐字段绑定。
 
-根因：v1.5 建立了输入与决策对象，但尚未建立“所有 ID 的全局引用图”“runtime artifact 与报告表格的强绑定”“期间语义”和“所有决策输入的来源闭包”。
+根因：v1.5 建立了输入与决策对象，但没有建立全局 ID 图、runtime artifact 强绑定、期间语义和所有决策输入的来源闭包。
 
 ## 目标
 
-1. 建立全报告 ID Graph，所有 `FACT/DERIVED/MODEL/ASM/THR/B/BR/REV/RUN` 定义与引用必须闭合。
-2. Runtime 输出生成稳定 artifact hash；报告表格必须声明并匹配对应 artifact，阻止手工复制错误。
-3. Scenario Valuation 由确定性 runtime 生成 forward reference value、target-return price、buy price 和 stress price。
-4. Revenue Forecast 强制校验 forecast period、base period、mode 与 Assumption 的语义一致性。
-5. 新报告所有 valuation/action 数字输入必须引用 Value ID 或 Assumption ID，禁止无来源裸数字。
-6. Action Matrix 中所有未来动作都必须有完整、可求值规则；Runtime Evaluation 不得遗漏 Matrix 中的规则。
-7. Point-in-time market-cap calculation 必须有 share reconciliation 结构，不得仅用文字声称。
-8. Forward Basis 的 provenance 只能引用实际进入公式的 Bridge/Assumption，不得把历史 Adjustment IDs 伪装成数学输入。
-9. Verification PASS 必须基于实际 checker/runtime 结果与 artifact hash，不接受手填 PASS。
+1. 所有 `FACT/DERIVED/MODEL/ASM/THR/B/BR/REV/RUN` 定义与引用闭合；
+2. Runtime 输出生成稳定 artifact hash，报告字段与 artifact 逐字段匹配；
+3. Scenario Valuation 由 runtime 生成；
+4. Revenue Forecast 校验 forecast/base period、mode 与 Assumption；
+5. 所有决策输入必须引用 Value ID 或 Assumption ID；
+6. Action Matrix 全部 executable rules 必须进入 Evaluation；
+7. Point-in-time market cap 必须有结构化 share reconciliation；
+8. Forward Basis 只能引用实际进入公式的 Bridge/Assumption；
+9. Verification PASS 必须来自实际命令结果。
 
-## 改动范围
+## 已实施
 
-### A. Runtime Artifact Envelope
+### Runtime Artifact Envelope
 
-所有新 runtime 命令支持 JSON 输入，并输出：
+新增 `scripts/integrity_common.py`：
 
-- `schema_version`；
-- `runtime_name`；
-- `artifact_id`；
-- `input_refs`；
-- `inputs`；
-- `outputs`；
-- `artifact_hash`（canonical JSON SHA-256）。
+- canonical JSON 序列化；
+- SHA-256 `artifact_hash`；
+- `schema_version`、`runtime_name`、`artifact_id`、`input_refs`、`inputs`、`outputs` 统一 envelope；
+- `RUN-*` artifact ID 约束。
 
-报告引用 artifact ID 与 hash；checker 重新计算表格关键字段与 hash。
-
-### B. Scenario Valuation Runtime
-
-新增确定性命令：
+新增 CLI：
 
 ```bash
-python3 scripts/report_integrity_v151.py scenario-value --input scenario-value.json
+python3 scripts/report_integrity_v151.py wrap-artifact --input wrap.json --output RUN-X.json
 ```
 
-输出：
+### Scenario Valuation Runtime
 
-- metric value；
-- reference multiple；
-- forward reference value；
-- target-return price；
-- safety margin；
-- buy price；
-- stress/reference role；
-- artifact hash。
+新增：
 
-### C. Global ID Graph
+```bash
+python3 scripts/report_integrity_v151.py scenario-value --input scenario.json --output RUN-SCENARIO-X.json
+```
 
-新增 checker 收集定义与引用：
+确定性计算：
 
-- `FACT-*`、`DERIVED-*`、`MODEL-*`；
-- `ASM-*`；
-- `THR-*`；
-- `B-*`、`BR-*`、`REV-*`；
-- `RUN-*` artifact。
+```text
+forward reference value = metric value × reference multiple
+buy price = target-return price × (1 - safety margin)
+```
 
-拦截：未定义引用、重复定义、前缀/Kind 不匹配、跨表命名漂移、关键 orphan ID、Action Matrix 规则未进入 Evaluation。
+Buy price 不再从 forward reference value 机械打折。
 
-### D. Runtime Table Binding
+### Runtime/Reference Integrity Checker
 
-新增 Runtime Artifact Manifest：
+新增 `scripts/integrity_checker.py` 与：
 
-| Artifact ID | Runtime | Input refs | Output fields | Artifact hash | Report section |
+```bash
+python3 scripts/report_integrity_v151.py check <report.md> --artifacts-dir <dir>
+```
 
-Checker 至少逐字段核对：
+检查：
 
-- TTM Derivation；
-- Revenue Forecast；
-- EPS Bridge；
-- Return Pair；
-- Scenario Valuation；
-- Action Evaluation；
-- Robustness。
+- 全局 ID Graph；
+- Value prefix 与 Kind；
+- Derived input IDs 真正存在；
+- Runtime Artifact Manifest、文件、ID 与 hash；
+- Revenue/EPS/Return Pair/Scenario Valuation 字段与 artifact outputs 一致；
+- YoY/QoQ base-period 语义；
+- Revenue row 与 Assumption mode/base/forecast period 一致；
+- Assumption closure；
+- Forward Basis 不得引用历史 Adjustment IDs；
+- Action Matrix 与 Evaluation Rule ID 集合一致；
+- Point-in-Time Share Reconciliation 完整；
+- Verification 中新增的完整性项目必须存在且 PASS。
 
-### E. Revenue Period Semantics
+### 模板与 Skill
 
-Revenue row 必须声明：
+- `SKILL.md` 升级至 `1.5.1`；
+- `templates/full-report.md` 升级至 `full-report-v1.5.1`；
+- 新增 Generation Manifest；
+- 新增 Point-in-Time Share Reconciliation；
+- 扩展 Scenario Assumption Registry：Scope、Mode、Base period、Forecast period、Input role；
+- Revenue/EPS/Return Pair/Scenario Valuation 表新增 Assumption IDs 与 Runtime Artifact IDs；
+- Action Matrix 新增 Rule ID，并要求 Buy/Add/Hold/Reduce/Sell 完整进入 Evaluation；
+- 新增 Runtime Artifact Manifest；
+- 新增 `references/runtime-binding-integrity.md` 权威合同。
 
-- forecast period；
-- base period；
-- mode；
-- growth/value Assumption ID；
-- runtime artifact ID。
+### 测试
 
-规则：
+新增 `tests/test_report_integrity_v151.py`，覆盖：
 
-- `yoy` 的 base period 必须是上一年同季度；
-- `qoq` 的 base period 必须是上一季度；
-- Assumption 的 mode、value、scope、forecast period 必须匹配；
-- guide/consensus/explicit 必须保留 source/as-of/rationale。
+- artifact hash 确定性；
+- Scenario Valuation 公式；
+- Return Pair terminal EPS/CAGR 不闭合；
+- Scenario multiplication 错误；
+- 未定义 ID；
+- Action rule 遗漏；
+- 错误 YoY 基期；
+- Forward Basis 使用历史 Adjustment；
+- artifact 文件缺失/hash 不一致。
 
-### F. Assumption Closure
-
-Scenario Assumption Registry 增加：
-
-- scope；
-- mode；
-- base period；
-- forecast period；
-- input role。
-
-必须注册：tax rate、diluted shares、EPS CAGR、dividend assumption、exit PE、reference multiple、safety margin、other income。
-
-### G. Action Completeness
-
-- Buy/Add/Hold/Reduce/Sell 中所有声明为 executable 的规则必须进入 runtime input。
-- Matrix 中引用的 Value/Threshold ID 必须存在。
-- `N/A because current action is not X` 不得代替未来规则。
-- Evaluation rule IDs 必须与 Action Matrix Rule IDs 一一对应。
-
-### H. Share Reconciliation
-
-新增 Point-in-Time Share Reconciliation：
-
-- point-in-time shares；
-- weighted-average diluted shares；
-- difference；
-- source/date；
-- market-cap calculation basis。
-
-### I. 文档、模板、测试
-
-更新：
-
-- `SKILL.md` 到 v1.5.1；
-- `templates/full-report.md`；
-- `references/input-decision-robustness.md`；
-- 新增 `references/runtime-binding-integrity.md`；
-- 新增 checker/runtime 与测试；
-- CI 纳入新测试。
+Meta v1.5 报告已被新 checker 人工回归拒绝；其关键失败模式均有自动化测试。
 
 ## 不在范围内
 
@@ -160,21 +125,32 @@ Scenario Assumption Registry 增加：
 - 不实现完整 DCF/Monte Carlo；
 - 不改变九个顶层模块；
 - 不替代人工投资判断；
-- 不要求旧版历史报告全部迁移。
+- 不要求旧版报告自动迁移。
 
-## 验证标准
+## 验证结果
 
-1. Return Pair 中 Required terminal EPS 与 Required CAGR 不闭合时 FAIL。
-2. `29.24 × 20 = 582` 必须 FAIL；Scenario runtime 应输出约 584.8（按精确 input 输出）。
-3. 缺失 `THR-ADD-PRICE`、`FACT-CONSECUTIVE-FCF-Q` 必须 FAIL。
-4. `MODEL-BULL-FORWARD-VALUE` 与 `MODEL-BULL-FAIR-VALUE` 命名漂移必须 FAIL。
-5. Action Matrix 存在 Add/Buy 规则但 Evaluation 缺失时 FAIL。
-6. Q3 2026 使用 Q2 2026 作为 YoY 基期必须 FAIL。
-7. Revenue row 引用的 Assumption mode/value/period 不一致必须 FAIL。
-8. Derived inputs 引用不存在的 FACT IDs 必须 FAIL。
-9. 只有“见 reconciliation”文字但无表格时 FAIL。
-10. tax/share/EPS CAGR/dividend/multiple/safety-margin 等决策输入无 ASM ID 时 FAIL。
-11. Forward Basis 将历史 Adjustment IDs 作为直接输入时 FAIL。
-12. Artifact hash 或关键输出字段与报告表格不匹配时 FAIL。
-13. Meta v1.5 报告作为 negative fixture 必须被新 checker 拒绝。
-14. Python syntax、全量 unittest、lint fixtures、diff check PASS。
+GitHub Actions `Validate` run #94：PASS。
+
+- Python syntax：PASS；
+- financial rigor self-test：PASS；
+- report audit self-test：PASS；
+- report lint self-test：PASS；
+- lint fixtures：PASS；
+- 全量 unittest：**127 / 127 PASS**；
+- 新增 v1.5.1 tests：**10 / 10 PASS**；
+- Template/new-report recognition：PASS；
+- `29.24 × 20` Scenario runtime 输出 `584.8000`：PASS；
+- Buy price 使用 target-return price：PASS；
+- Return Pair 不闭合 negative test：PASS；
+- undefined ID / missing Rule ID / bad YoY period / historical Adjustment negative tests：PASS；
+- artifact missing/hash mismatch negative tests：PASS。
+
+## 交付边界
+
+PR #6 尚未合并。Agent 审查通过后需：
+
+1. 将 `references/change-log-v1.5.1.md` 插入 `references/change-log.md` 顶部；
+2. 删除 staged change-log 文件；
+3. 保留全部历史记录；
+4. 再跑完整 CI；
+5. 合并后从干净 v1.5.1 模板重新生成 Meta 报告及 runtime artifact 目录。
