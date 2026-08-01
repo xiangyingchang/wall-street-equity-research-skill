@@ -2,7 +2,7 @@
 
 ## 状态
 
-实现完成，待远端 CI — 2026-08-01
+完成 — 2026-08-01
 
 ## 问题
 
@@ -110,3 +110,19 @@ Reader 不再用行数下限伪装质量；只设置合理上限并检查决策�
 - portfolio context：REVIEW（fixture 故意不提供真实权重，正确阻断候选 REDUCE）；
 - skill quick validation：PASS；
 - `git diff --check`：PASS。
+
+## 独立审阅与远端验证
+
+最终审阅发现并修复：
+
+1. 低价规则可能在 thesis-break 已触发时仍允许新资金 BUY；
+2. 初版 Action Matrix 只有当前动作，没有完整 Buy/Add/Hold/Review/Reduce/Sell 决策标准；
+3. Reduce 文案未体现 valuation neutral band 对 operating trigger 的优先级；
+4. 动态经营指标可声明与引用值不一致的单位；
+5. 多期 confirmation 可把小数静默转成整数；
+6. data-quality 总状态在 portfolio REVIEW 时仍写 PASS；
+7. V3 Reader 与 legacy report lint 各自 PASS、互不相认；
+8. 历史报告只记录旧 IRR 文本，没有用旧输入独立复算；
+9. Source、税务身份、thesis-break 人类标签和历史基线缺少 fail-closed 输入门。
+
+以上均已修复并加入回归。GitHub Actions Validate 首轮：push run 30694261919 PASS；PR run 30694275857 PASS。最终文档收口提交后再运行一次 CI。
