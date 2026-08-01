@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 from typing import Any
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tests.meta_v21_factory import make_spec as _base_spec
 
