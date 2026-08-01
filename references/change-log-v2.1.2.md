@@ -2,47 +2,78 @@
 
 ## 2026-08-01
 
-### Planned change
+### Change
 
-- Split the generated Markdown into a Reader Report and a separate Audit Appendix.
-- Keep the Single-Source Compiler and all v2.1.1 evidence/value constraints unchanged.
-- Move Build Manifest, Source Registry, Evidence Ledger, full Scenario Assumptions, Decision Policy, Claim-Evidence Matrix, and Verification out of the Reader Report.
-- Render human-readable evidence labels instead of internal IDs in the Reader Report.
-- Merge related claims into continuous prose instead of repeating a fixed claim/implication/evidence/confidence card pattern.
-- Increase the density of compiler-owned key numbers in natural-language analysis.
-- Generate and verify four artifacts: Reader Markdown, Audit Markdown, Bundle JSON, and Verification JSON.
-- Add reader/audit hashes to Verification and tamper tests for both Markdown files.
-- Add readability regression tests that block internal IDs and audit tables from the Reader Report while requiring them in the Audit Appendix.
+- Added a Reader-First dual-layer renderer.
+- Added `scripts/report_renderer_readable_v212.py` with:
+  - `render_reader_markdown(bundle)`;
+  - `render_audit_markdown(bundle)`.
+- Build now generates four immutable artifacts:
+  - `<report>.md` Reader Report;
+  - `<report>.audit.md` Audit Appendix;
+  - `<report>.md.bundle.json`;
+  - `<report>.md.verification.json`.
+- Reader Report now leads with actions, current price, Base IRR, hurdle, target-return price, buy price, forward reference, core thesis, three core tensions, and falsification condition.
+- Reader Report keeps all nine modules but removes implementation noise:
+  - no Build Manifest or hashes;
+  - no Source Registry or Evidence Ledger;
+  - no internal `FACT-*`, `SRC-*`, `BUNDLE:*`, or `[supports]` tokens;
+  - no full Assumption Registry or raw Decision Policy;
+  - no Claim-Evidence Matrix or Verification table.
+- Related claims are rendered as continuous prose instead of repeated claim/implication/evidence/confidence cards.
+- Compiler-owned TTM, Scenario, IRR, price, payback, and action numbers are embedded directly into the readable argument.
+- Reader evidence notes use human-readable source titles and “报告情景模型”.
+- Audit Appendix preserves the complete v2.1.1 traceability view, including all registries, IDs, evidence roles, assumptions, policy evaluation, Claim-Evidence Matrix, and Verification.
+- Verification now records both `reader_markdown_hash` and `audit_markdown_hash`.
+- Verify recompiles and compares Reader Markdown, Audit Markdown, Bundle, and Verification independently.
+- Added Reader-layer cleanliness checks, Audit-layer completeness checks, nine-module checks, key-number checks, and a 120–300 line readability budget.
+- Updated Skill contract to v2.1.2.
+- Updated CI and regression tests for dual-layer generation and tamper detection.
 
 ### Reason
 
-v2.1.1 is reliable but difficult to read. The main report gives implementation objects—hashes, IDs, registries, evidence roles, and verification tables—the same visual weight as the investment conclusion. The content is fragmented into dozens of small cards and the reader must reconstruct the investment argument from system output.
+v2.1.1 was reliable but difficult to read because it gave hashes, IDs, registries, evidence roles, and verification tables the same visual weight as the investment argument. The main report behaved like an audit export and forced the reader to reconstruct the thesis.
 
-The fix is not to weaken evidence controls or return to hand-written Markdown. The fix is to separate the human communication layer from the machine audit layer while compiling both from the same Bundle.
+v2.1.2 does not weaken evidence controls or return to Markdown-first writing. It compiles a reader-facing report and a machine-facing appendix from the same Bundle, so readability and auditability no longer compete inside one document.
 
 ### Scope boundary
 
-- No valuation or decision-policy changes.
+- No valuation formula changes.
+- No Scenario-assumption changes.
+- No decision-policy changes.
 - No new research modules.
-- No reduction in evidence, source, or numeric binding requirements.
-- No Markdown-first editing.
-- Audit information remains complete, but moves to a separate generated file.
+- No reduction in Source, Evidence Role, Value Binding, Research Quality, or tamper controls.
+- Audit data is moved, not deleted.
 
-### Verification target
+### Verification
 
-- Reader Report contains all nine modules and key decision numbers.
-- Reader Report contains no internal IDs, evidence-role tokens, hashes, or audit registries.
-- Audit Appendix contains the complete audit structures.
-- Reader Report stays within the configured readability line budget.
-- Reader, Audit, Bundle, and Verification tampering all fail verification.
-- Full test suite, self-tests, fixtures, and Meta end-to-end build/verify pass.
+GitHub Actions `Validate` run #213: PASS.
+
+- Python syntax: PASS.
+- financial rigor / report audit / report lint self-tests: PASS.
+- lint fixtures: PASS.
+- full unittest suite: **159 / 159 PASS**.
+- v2.1.2 Meta build: PASS.
+- v2.1.2 Meta verify: PASS.
+- Reader Report generated: PASS.
+- Audit Appendix generated: PASS.
+- Reader contains all nine modules and key decision numbers: PASS.
+- Reader excludes Source Registry, Claim-Evidence Matrix, FACT IDs, Bundle paths, and evidence-role tokens: PASS.
+- Audit includes Source Registry, Claim-Evidence Matrix, and evidence roles: PASS.
+- Reader tamper detection: PASS.
+- Audit tamper detection: PASS.
+- Bundle tamper detection: PASS.
+- Verification tamper detection: PASS.
+- deterministic Reader and Audit output: PASS.
 
 ### Integration
 
-After implementation and validation:
+Before merging PR #8:
 
-1. replace this planned entry with actual implementation and exact results;
-2. prepend the finalized v2.1.2 entry to `references/change-log.md`;
-3. delete `references/change-log-v2.1.2.md`;
-4. mark `PRD-reader-first-dual-layer-renderer-v2.1.2.md` completed;
-5. rerun CI before merge.
+1. prepend this entry, followed by v2.1.1 and v2.1, below the title in `references/change-log.md`;
+2. delete all three staged change-log files;
+3. preserve every historical entry;
+4. retarget/rebase PR #8 onto main;
+5. rerun full CI;
+6. merge only after Agent review and green CI;
+7. regenerate Meta and deliver Spec, Reader, Audit, Bundle, and Verification together.
