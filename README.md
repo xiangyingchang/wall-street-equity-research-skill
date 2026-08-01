@@ -13,7 +13,8 @@
 - 周期/高 Capex 双估值：峰值利润、新周期中枢、旧周期平准、EV/FCF
 - 三条投资纪律：持有=买入、机会成本、10 年回本
 - 最终四档判决：Buy / Hold-Index / Watchlist / Avoid
-- 单一 Action Matrix：所有条件交易与阈值只在第 9 模块定义
+- 单一 Action Matrix：v3.1 Compiler Reader 放在第一页；旧手工报告契约放在第 8 模块；两条路径都禁止第二套交易规则
+- v3.1 Reader：来源直链、Base 假设前置、公司特有经营指标、研究候选与组合可执行动作分离
 
 > 免责声明：本仓库仅用于个人研究、学习和辅助信息整理，不构成投资建议。所有财务数据、估值和结论都必须回到监管原文、公司公告和可靠数据源复核。
 
@@ -37,6 +38,15 @@
 - [`LICENSE`](LICENSE)：MIT License
 
 ## 快速使用
+
+v3.1 的标准交付由一个 JSON Spec 生成 Reader、Audit、Bundle 和 Verification：
+
+```bash
+python3 scripts/report_pipeline_v3.py build --spec <report-spec-v3.1.json> --output <report.md>
+python3 scripts/report_pipeline_v3.py verify --spec <report-spec-v3.1.json> --output <report.md>
+```
+
+Spec 必须提供真实 HTTPS 来源、同量纲 TTM 数据、公司特有 `operating.metrics[]`、明确的 `portfolio_context`，以及 `prior_report_context`。持仓或目标权重不完整时，研究候选 `REDUCE` 只能输出可执行 `REVIEW`；旧报告 IRR 必须保留报告值并由 runtime 独立复算，不能复制旧正文数字。
 
 把 [`SKILL.md`](SKILL.md) 的内容交给支持长上下文的 LLM / Agent，然后输入股票信息：
 

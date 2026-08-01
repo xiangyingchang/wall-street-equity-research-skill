@@ -12,6 +12,8 @@ Use this reference before assigning confidence to a report. It governs source ch
 
 Tier 1 decides a conflict. Tier 2 is useful for speed and independent cross-checking, but cannot replace a filing or an official market notice.
 
+For v3.1, every registered Source must include the direct HTTPS URL actually used plus a precise locator inside that document or index. A publisher label, search-result title, or generic phrase such as “peer filings” is not a source. Reader renders clickable links; Audit preserves the full URL and locator.
+
 ## Discrepancy rules
 
 | Difference | Required treatment |
@@ -45,6 +47,7 @@ The audit denominator is only full-cell numeric values in eligible Markdown tabl
 ## Manual verification boundaries
 
 - Record the value date, fiscal/reporting period, currency, unit, source tier, and accounting basis beside every key number.
+- Before any TTM sum or margin ratio, verify that all quarterly inputs use one currency and one scale. Revenue, operating income, and FCF may not be added or compared across mixed currencies/scales; EPS and current price must use the same per-share currency unit.
 - Do not compare GAAP and non-GAAP profit, TTM and fiscal-year totals, basic and diluted EPS, or pre- and post-transaction share counts as if they were the same field.
 - Convert FX only with the stated rate and date; do not merge close, regular-session, and after-hours prices.
 - For market cap, use a contemporaneous actual price and latest share count. Repurchases, issuance, ADR ratios, and treasury shares may explain a mismatch but must be recorded.

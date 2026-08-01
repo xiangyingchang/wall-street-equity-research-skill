@@ -1,5 +1,48 @@
 # Wall Street Equity Research Skill Change Log
 
+## v3.1 - Data, Reasoning, and Decision Reader
+
+## 2026-08-01
+
+### Change
+
+- Upgraded the active contract to `report-spec-v3.1`, `report-bundle-v3.1`, and Compiler/Verification 3.1.0.
+- Required direct HTTPS source URLs, ISO dates no later than report as-of, precise locators, and rejection of generic index/peer placeholders.
+- Added homogeneous TTM currency/scale checks and per-share currency checks; dynamic operating metric units must match their referenced Fact/Bundle values.
+- Replaced the universal FCF operating gate with company-specific `metrics[]`, supporting higher/lower-is-better thresholds, explicit uncertainty bands, and integer confirmation evidence.
+- Added mandatory portfolio context and separated the research candidate from the executable existing-position action. Candidate REDUCE without position/current/target weights becomes REVIEW; no position becomes NOT_APPLICABLE.
+- Added mandatory prior-report context. Old reported IRR is preserved separately from a Decimal runtime recalculation using the old price, EPS, CAGR, exit multiple, horizon, and dividend assumptions.
+- Changed Graph cardinality from fixed quotas to 2–6 material Themes, 1–4 observations per Theme, 2–6 arguments per side, and 2–6 sensitivity drivers while preserving evidence/counter-evidence/adjudication gates.
+- Rebuilt the Reader first page around a current-decision summary, one six-action Matrix, the three original investment principles, visible Base assumptions, prior-report delta, and clickable sources.
+- Replaced the seven repeated Theme labels with continuous evidence → explanation → challenge → decision → falsification prose; kept the complete node graph in Audit.
+- Added a v3.1 Reader profile to `report_lint.py` and made Pipeline build/verify enforce it, so Reader/Audit separation no longer bypasses the established report discipline.
+- Made source/calculation/data-quality/portfolio/prior-report/render checks dynamic; intentional missing portfolio context is REVIEW, not a false PASS or an invented trade.
+- Added human thesis-break labels and blocked new-money BUY whenever thesis break triggers, regardless of price.
+- Corrected stale active paths in `references/source-map.md` and stale module-8/9 Action Matrix references in the methodology.
+
+### Reason
+
+v3.0 improved auditability but directly rendered its graph as fixed three-theme, three-bull, three-bear, seven-label prose. The result was less direct and less useful than earlier reports. It also allowed missing URLs, a hard-coded FCF gate, historical arithmetic drift, and context-free REDUCE instructions.
+
+v3.1 restores the earlier report's decision rhythm without giving up deterministic calculations or tamper-proof artifacts: collect accurate data, adjudicate only material logic, apply the three principles, then write a natural Reader.
+
+### Verification
+
+- Python syntax, financial rigor, audit, and lint self-tests: PASS.
+- Lint fixtures: PASS.
+- Full unittest suite: 184 / 184 PASS.
+- v2.1.2 regression build/verify: PASS.
+- v3.1 META build/verify and integrated report lint: PASS.
+- Reader: 261 lines, zero old seven-label sequences, one authoritative Action Matrix.
+- META prior-report IRR: reported 9.50%, runtime recalculated 1.64%; declared mismatch regression blocks.
+- Source URL, unit, dynamic metric, portfolio gate, prior-report, thesis-break, Reader/Audit, and all-artifact tamper regressions: PASS.
+- Skill quick validation and `git diff --check`: PASS.
+- GitHub Actions first pass: push run 30694261919 and PR run 30694275857 PASS.
+
+### Integration
+
+Implemented in PR #10. The staged v3.1 change log was merged into this history and deleted before final CI.
+
 ## v3.0 - Research Graph and Investment Debate
 
 ## 2026-08-01

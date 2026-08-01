@@ -1,4 +1,4 @@
-# Research Graph v3 Contract
+# Research Graph v3.1 Contract
 
 ## Purpose
 
@@ -24,7 +24,7 @@ Bad examples:
 - risks;
 - growth.
 
-Each Theme contains at least two observations, a hypothesis, the strongest credible challenge, a resolution, decision impact, falsification, and module links.
+Use 2-6 Themes based on materiality, not a fixed quota. Each Theme contains 1-4 observations, a hypothesis, the strongest credible challenge, a resolution, decision impact, falsification, and module links. Across all Themes, links must cover overview, valuation, opportunity cost, positioning, final verdict, and at least one company-specific operating module.
 
 ## Observation
 
@@ -52,7 +52,7 @@ Falsification states the observable condition that would invalidate the resoluti
 
 ## Investment Debate
 
-Bull and Bear each require at least three `ARG-*` arguments. Arguments are independent research propositions, not repeated sentences from the Theme narrative.
+Bull and Bear each require 2-6 `ARG-*` arguments. Arguments are independent research propositions, not repeated sentences from the Theme narrative; do not add weak points to hit a count.
 
 Adjudication must:
 
@@ -64,7 +64,7 @@ Adjudication must:
 
 ## Sensitivity Explanation
 
-`DRV-*` drivers identify the model assumptions that control the decision. At least one driver is high importance. Each driver explains mechanism, upside, downside, and decision consequence. Assumption pointers accept `/assumptions/<ASM-ID>/value` or the Spec form `/assumptions/scenario/<ASM-ID>/value`; compiled output is canonical.
+Use 2-6 `DRV-*` drivers that actually control the decision. At least one driver is high importance. Each driver explains mechanism, upside, downside, and decision consequence. Assumption pointers accept `/assumptions/<ASM-ID>/value` or the Spec form `/assumptions/scenario/<ASM-ID>/value`; compiled output is canonical.
 
 ## Multi-Perspective Workflow
 
@@ -82,13 +82,13 @@ Agents never edit generated Markdown. They contribute nodes to one Spec.
 
 Build fails when:
 
-- fewer than three or more than five Themes exist;
+- fewer than two or more than six Themes exist;
 - Theme titles are generic;
-- observations are missing or reused;
+- a Theme has no Observation, more than four Observations, or reuses an ID;
 - challenge lacks counter-evidence;
 - resolution ignores one side;
 - decision impact lacks Bundle evidence;
-- Bull or Bear has fewer than three arguments;
+- Bull or Bear has fewer than two or more than six arguments;
 - adjudication references unknown IDs or ignores one side;
 - no high-importance sensitivity driver exists.
 - Reader exposes `THEME-*`, `OBS-*`, `ARG-*`, or `DRV-*` IDs;
@@ -97,6 +97,6 @@ Build fails when:
 
 ## Rendering
 
-Reader Report shows human-readable Theme narratives, sensitivity explanations, and Bull/Bear adjudication. It never displays internal IDs.
+Reader Report synthesizes each Theme into continuous prose, shows a compact evidence debate and actual Base assumption values, and never prints the old seven-node label sequence or internal IDs. The complete node graph remains in Audit.
 
 Audit Appendix shows complete Theme, Observation, Argument, Driver, and evidence-role structures.

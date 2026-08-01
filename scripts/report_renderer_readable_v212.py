@@ -38,6 +38,25 @@ def _number(value: Any, digits: int = 2) -> str:
         return str(value)
 
 
+def _discount_rate_label(rate: Any, target_return: Any) -> str:
+    try:
+        numeric = float(rate)
+        target = float(target_return)
+    except Exception:
+        return str(rate)
+    if abs(numeric) < 1e-12:
+        return "名义（0.00%）"
+    if abs(numeric - target / 2) < 0.00005:
+        return f"10Y 国债 ×1（{numeric * 100:.2f}%）"
+    if abs(numeric - target) < 0.00005:
+        return f"10Y 国债 ×2（{numeric * 100:.2f}%）"
+    if abs(numeric - 0.08) < 0.00005:
+        return "8%"
+    if abs(numeric - 0.10) < 0.00005:
+        return "10%"
+    return f"{numeric * 100:.2f}%"
+
+
 def _absolute_money(value: Any, currency: Any) -> str:
     try:
         return f"{_currency_prefix(currency)}{float(value):,.2f}亿"
@@ -138,6 +157,7 @@ def _action_label(value: str) -> str:
         "REVIEW": "复核",
         "REDUCE": "减仓",
         "SELL": "卖出",
+        "NOT_APPLICABLE": "不适用",
     }
     return mapping.get(str(value), str(value))
 
@@ -218,7 +238,8 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
     lines += _source_note(bundle, financial.values())
 
     moat = research["moat"]
-    lines.extend(["## 3. 护城河", "", f"{company} 的护城河整体趋势为 **{moat['trajectory']}**。", ""])
+    trajectory = {"strengthening": "增强", "stable": "稳定", "weakening": "减弱"}.get(moat["trajectory"], moat["trajectory"])
+    lines.extend(["## 3. 护城河", "", f"{company} 的护城河整体趋势为 **{trajectory}**。", ""])
     lines.extend(["| 维度 | 评分 | 判断 | 反向证据 |", "|---|---:|---|---|"])
     for item in moat["dimensions"]:
         lines.append("| " + " | ".join([
@@ -240,7 +261,7 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
         f"| 贴现率 | {payback_years}年回本所需 EPS 增长 |", "|---:|---:|",
     ])
     for rate, growth in derived["payback_required_growth"].items():
-        lines.append(f"| {_pct_decimal(rate)} | {_pct_decimal(growth)} |")
+        lines.append(f"| {_discount_rate_label(rate, bundle['target_return'])} | {_pct_decimal(growth)} |")
     lines.extend(["", f"**最关键假设：** {_paragraph(valuation['critical_assumption'])}", ""])
     lines += _source_note(bundle, valuation.values())
 
@@ -301,7 +322,10 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
         "## 主要来源", "",
     ])
     for source in list(bundle["source_registry"].values())[:8]:
-        lines.append(f"- {_escape(source['title'])} — {_escape(source['publisher'])}，{_escape(source['date'])}")
+        title = _escape(source["title"])
+        url = str(source.get("url", "")).strip()
+        source_label = f"[{title}]({url})" if url else title
+        lines.append(f"- {source_label} — {_escape(source['publisher'])}，{_escape(source['date'])}；定位：{_escape(source['locator'])}")
     lines.extend(["", "> 完整证据链、模型假设与验证结果见同名 `.audit.md`。", ""])
     return "\n".join(lines)
 

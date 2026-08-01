@@ -62,7 +62,7 @@ def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tupl
     graph = spec.get("research_graph")
     _require(isinstance(graph, dict), "v3 requires research_graph")
     themes = graph.get("themes")
-    _require(isinstance(themes, list) and 3 <= len(themes) <= 5, "research_graph requires 3-5 themes")
+    _require(isinstance(themes, list) and 2 <= len(themes) <= 6, "research_graph requires 2-6 material themes")
 
     normalized_themes: list[dict[str, Any]] = []
     theme_ids: set[str] = set()
@@ -78,7 +78,7 @@ def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tupl
         title = _validate_text(raw.get("title"), f"{label}.title")
         _require(title.casefold() not in GENERIC_TITLES, f"{label}.title is too generic")
         observations = raw.get("observations")
-        _require(isinstance(observations, list) and len(observations) >= 2, f"{label} requires at least two observations")
+        _require(isinstance(observations, list) and 1 <= len(observations) <= 4, f"{label} requires 1-4 material observations")
         normalized_observations = []
         for obs_index, observation in enumerate(observations):
             obs_label = f"{label}.observations[{obs_index}]"
@@ -115,8 +115,11 @@ def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tupl
             "module_links": module_links,
         })
 
-    missing_modules = set(MODULES) - linked_modules
-    _require(not missing_modules, f"research_graph themes do not cover modules: {', '.join(sorted(missing_modules))}")
+    decision_chain = {"overview", "valuation", "opportunity_cost", "positioning", "final_verdict"}
+    missing_modules = decision_chain - linked_modules
+    _require(not missing_modules, f"research_graph themes do not cover decision chain: {', '.join(sorted(missing_modules))}")
+    company_modules = {"financial_autopsy", "moat", "risks", "growth_limits"}
+    _require(bool(company_modules & linked_modules), "research_graph requires at least one company-specific operating module")
 
     debate = graph.get("debate")
     _require(isinstance(debate, dict), "research_graph.debate is required")
@@ -125,7 +128,7 @@ def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tupl
     global_argument_ids: set[str] = set()
     for side in ("bull", "bear"):
         arguments = debate.get(side)
-        _require(isinstance(arguments, list) and len(arguments) >= 3, f"debate.{side} requires at least three arguments")
+        _require(isinstance(arguments, list) and 2 <= len(arguments) <= 6, f"debate.{side} requires 2-6 material arguments")
         normalized = []
         for index, raw in enumerate(arguments):
             label = f"research_graph.debate.{side}[{index}]"
@@ -158,7 +161,7 @@ def compile_research_graph(spec: dict[str, Any], bundle: dict[str, Any]) -> tupl
 
     sensitivity = graph.get("sensitivity")
     drivers = sensitivity.get("drivers") if isinstance(sensitivity, dict) else None
-    _require(isinstance(drivers, list) and len(drivers) >= 3, "sensitivity requires at least three drivers")
+    _require(isinstance(drivers, list) and 2 <= len(drivers) <= 6, "sensitivity requires 2-6 decision-critical drivers")
     normalized_drivers = []
     driver_ids: set[str] = set()
     high_count = 0
