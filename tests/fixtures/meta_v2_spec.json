@@ -1,0 +1,126 @@
+{
+  "schema_version": "report-spec-v2",
+  "report": {
+    "ticker": "META.US",
+    "company": "Meta",
+    "as_of": "2026-07-31",
+    "currency": "USD",
+    "tax_identity": "中国大陆个人",
+    "horizon": "3-10Y",
+    "return_years": 5,
+    "payback_years": 10,
+    "payback_discount_rates": ["0", "0.047", "0.094", "0.08", "0.10"],
+    "current_price_fact_id": "FACT-CURRENT-PRICE",
+    "target_return_assumption_id": "ASM-GLOBAL-TARGET-RETURN"
+  },
+  "facts": {
+    "FACT-CURRENT-PRICE": {"value": "549", "unit": "USD/share", "as_of": "2026-07-31", "source": "Yahoo Finance", "tier": "Tier 2", "confidence": "medium", "uncertainty": "0.01"},
+    "FACT-Q3-25-REV": {"value": "512.42", "unit": "USD bn/10", "period": "Q3 2025", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q4-25-REV": {"value": "598.93", "unit": "USD bn/10", "period": "Q4 2025", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q1-26-REV": {"value": "563.11", "unit": "USD bn/10", "period": "Q1 2026", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q2-26-REV": {"value": "608.01", "unit": "USD bn/10", "period": "Q2 2026", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q3-25-OI": {"value": "205.35", "unit": "USD bn/10", "period": "Q3 2025", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q4-25-OI": {"value": "247.45", "unit": "USD bn/10", "period": "Q4 2025", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q1-26-OI": {"value": "228.72", "unit": "USD bn/10", "period": "Q1 2026", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q2-26-OI": {"value": "187.75", "unit": "USD bn/10", "period": "Q2 2026", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q3-25-EPS": {"value": "1.05", "unit": "USD/share", "period": "Q3 2025", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q4-25-EPS": {"value": "8.88", "unit": "USD/share", "period": "Q4 2025", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q1-26-EPS": {"value": "10.44", "unit": "USD/share", "period": "Q1 2026", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q2-26-EPS": {"value": "6.18", "unit": "USD/share", "period": "Q2 2026", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q3-25-FCF": {"value": "148.30", "unit": "USD bn/10", "period": "Q3 2025", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q4-25-FCF": {"value": "98.70", "unit": "USD bn/10", "period": "Q4 2025", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q1-26-FCF": {"value": "123.86", "unit": "USD bn/10", "period": "Q1 2026", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-Q2-26-FCF": {"value": "7.84", "unit": "USD bn/10", "period": "Q2 2026", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"},
+    "FACT-CONSECUTIVE-CAPEX-Q": {"value": "1", "unit": "quarters", "as_of": "Q2 2026", "source": "Meta 8-K", "tier": "Tier 1", "confidence": "high"}
+  },
+  "quarterly_series": {
+    "revenue": ["FACT-Q3-25-REV", "FACT-Q4-25-REV", "FACT-Q1-26-REV", "FACT-Q2-26-REV"],
+    "operating_income": ["FACT-Q3-25-OI", "FACT-Q4-25-OI", "FACT-Q1-26-OI", "FACT-Q2-26-OI"],
+    "eps": ["FACT-Q3-25-EPS", "FACT-Q4-25-EPS", "FACT-Q1-26-EPS", "FACT-Q2-26-EPS"],
+    "fcf": ["FACT-Q3-25-FCF", "FACT-Q4-25-FCF", "FACT-Q1-26-FCF", "FACT-Q2-26-FCF"]
+  },
+  "assumptions": {
+    "ASM-GLOBAL-TAX": {"scope": "global", "role": "tax_rate", "value": "0.18", "period": "Forward 12M", "rationale": "normalized effective tax rate", "confidence": "medium"},
+    "ASM-GLOBAL-OTHER": {"scope": "global", "role": "other_income", "value": "0", "period": "Forward 12M", "rationale": "no material other income", "confidence": "medium"},
+    "ASM-GLOBAL-DIVIDEND": {"scope": "global", "role": "dividend_yield", "value": "0.005", "period": "5Y", "rationale": "current dividend yield", "confidence": "high"},
+    "ASM-GLOBAL-TARGET-RETURN": {"scope": "global", "role": "target_return", "value": "0.094", "period": "5Y", "rationale": "10Y Treasury x2 hurdle", "confidence": "high"},
+    "ASM-GLOBAL-SAFETY": {"scope": "global", "role": "safety_margin", "value": "0.30", "period": "current", "rationale": "AI capex uncertainty", "confidence": "medium"},
+
+    "ASM-BEAR-Q3": {"scope": "bear", "role": "revenue", "mode": "yoy", "growth": "-0.05", "rationale": "advertising slowdown", "confidence": "medium"},
+    "ASM-BEAR-Q4": {"scope": "bear", "role": "revenue", "mode": "explicit", "value": "580", "source": "analyst scenario", "rationale": "stabilization", "confidence": "medium"},
+    "ASM-BEAR-Q1": {"scope": "bear", "role": "revenue", "mode": "explicit", "value": "580", "source": "analyst scenario", "rationale": "stabilization", "confidence": "medium"},
+    "ASM-BEAR-Q2": {"scope": "bear", "role": "revenue", "mode": "explicit", "value": "580", "source": "analyst scenario", "rationale": "stabilization", "confidence": "medium"},
+    "ASM-BEAR-MARGIN": {"scope": "bear", "role": "operating_margin", "value": "0.30", "rationale": "depreciation pressure", "confidence": "medium"},
+    "ASM-BEAR-SHARES": {"scope": "bear", "role": "diluted_shares", "value": "25.9", "rationale": "limited buyback", "confidence": "medium"},
+    "ASM-BEAR-CAGR": {"scope": "bear", "role": "eps_cagr", "value": "-0.03", "rationale": "profit compression", "confidence": "medium"},
+    "ASM-BEAR-EXIT": {"scope": "bear", "role": "exit_pe", "value": "14", "rationale": "stress multiple", "confidence": "medium"},
+    "ASM-BEAR-REF": {"scope": "bear", "role": "reference_multiple", "value": "14", "rationale": "stress multiple", "confidence": "medium"},
+
+    "ASM-BASE-Q3": {"scope": "base", "role": "revenue", "mode": "guide_midpoint", "low": "610", "high": "640", "source": "Meta Q3 guide", "rationale": "management midpoint", "confidence": "medium"},
+    "ASM-BASE-Q4": {"scope": "base", "role": "revenue", "mode": "qoq", "growth": "0.09", "rationale": "seasonality", "confidence": "medium"},
+    "ASM-BASE-Q1": {"scope": "base", "role": "revenue", "mode": "yoy", "growth": "0.12", "rationale": "normalized growth", "confidence": "medium"},
+    "ASM-BASE-Q2": {"scope": "base", "role": "revenue", "mode": "yoy", "growth": "0.12", "rationale": "normalized growth", "confidence": "medium"},
+    "ASM-BASE-MARGIN": {"scope": "base", "role": "operating_margin", "value": "0.35", "rationale": "one-offs normalize", "confidence": "medium"},
+    "ASM-BASE-SHARES": {"scope": "base", "role": "diluted_shares", "value": "25.7", "rationale": "buyback trend", "confidence": "medium"},
+    "ASM-BASE-CAGR": {"scope": "base", "role": "eps_cagr", "value": "0.06", "rationale": "mid-cycle growth", "confidence": "medium"},
+    "ASM-BASE-EXIT": {"scope": "base", "role": "exit_pe", "value": "18", "rationale": "lower mature multiple", "confidence": "medium"},
+    "ASM-BASE-REF": {"scope": "base", "role": "reference_multiple", "value": "20", "rationale": "reference multiple", "confidence": "medium"},
+
+    "ASM-BULL-Q3": {"scope": "bull", "role": "revenue", "mode": "guide_high", "low": "610", "high": "640", "source": "Meta Q3 guide", "rationale": "management high end", "confidence": "low"},
+    "ASM-BULL-Q4": {"scope": "bull", "role": "revenue", "mode": "qoq", "growth": "0.12", "rationale": "AI acceleration", "confidence": "low"},
+    "ASM-BULL-Q1": {"scope": "bull", "role": "revenue", "mode": "yoy", "growth": "0.15", "rationale": "AI acceleration", "confidence": "low"},
+    "ASM-BULL-Q2": {"scope": "bull", "role": "revenue", "mode": "yoy", "growth": "0.15", "rationale": "AI acceleration", "confidence": "low"},
+    "ASM-BULL-MARGIN": {"scope": "bull", "role": "operating_margin", "value": "0.38", "rationale": "AI monetization", "confidence": "low"},
+    "ASM-BULL-SHARES": {"scope": "bull", "role": "diluted_shares", "value": "25.5", "rationale": "accelerated buybacks", "confidence": "low"},
+    "ASM-BULL-CAGR": {"scope": "bull", "role": "eps_cagr", "value": "0.12", "rationale": "AI monetization", "confidence": "low"},
+    "ASM-BULL-EXIT": {"scope": "bull", "role": "exit_pe", "value": "22", "rationale": "premium multiple", "confidence": "low"},
+    "ASM-BULL-REF": {"scope": "bull", "role": "reference_multiple", "value": "25", "rationale": "premium reference", "confidence": "low"}
+  },
+  "scenarios": {
+    "bear": {
+      "revenue_periods": [
+        {"id": "REV-BEAR-Q3", "period": "Q3 2026", "mode": "yoy", "base_ref": "FACT-Q3-25-REV", "assumption_id": "ASM-BEAR-Q3"},
+        {"id": "REV-BEAR-Q4", "period": "Q4 2026", "mode": "explicit", "assumption_id": "ASM-BEAR-Q4"},
+        {"id": "REV-BEAR-Q1", "period": "Q1 2027", "mode": "explicit", "assumption_id": "ASM-BEAR-Q1"},
+        {"id": "REV-BEAR-Q2", "period": "Q2 2027", "mode": "explicit", "assumption_id": "ASM-BEAR-Q2"}
+      ],
+      "assumptions": {"operating_margin": "ASM-BEAR-MARGIN", "tax_rate": "ASM-GLOBAL-TAX", "other_income": "ASM-GLOBAL-OTHER", "diluted_shares": "ASM-BEAR-SHARES", "eps_cagr": "ASM-BEAR-CAGR", "exit_pe": "ASM-BEAR-EXIT", "dividend_yield": "ASM-GLOBAL-DIVIDEND", "reference_multiple": "ASM-BEAR-REF", "safety_margin": "ASM-GLOBAL-SAFETY"}
+    },
+    "base": {
+      "revenue_periods": [
+        {"id": "REV-BASE-Q3", "period": "Q3 2026", "mode": "guide_midpoint", "assumption_id": "ASM-BASE-Q3"},
+        {"id": "REV-BASE-Q4", "period": "Q4 2026", "mode": "qoq", "base_ref": "REV-BASE-Q3", "assumption_id": "ASM-BASE-Q4"},
+        {"id": "REV-BASE-Q1", "period": "Q1 2027", "mode": "yoy", "base_ref": "FACT-Q1-26-REV", "assumption_id": "ASM-BASE-Q1"},
+        {"id": "REV-BASE-Q2", "period": "Q2 2027", "mode": "yoy", "base_ref": "FACT-Q2-26-REV", "assumption_id": "ASM-BASE-Q2"}
+      ],
+      "assumptions": {"operating_margin": "ASM-BASE-MARGIN", "tax_rate": "ASM-GLOBAL-TAX", "other_income": "ASM-GLOBAL-OTHER", "diluted_shares": "ASM-BASE-SHARES", "eps_cagr": "ASM-BASE-CAGR", "exit_pe": "ASM-BASE-EXIT", "dividend_yield": "ASM-GLOBAL-DIVIDEND", "reference_multiple": "ASM-BASE-REF", "safety_margin": "ASM-GLOBAL-SAFETY"}
+    },
+    "bull": {
+      "revenue_periods": [
+        {"id": "REV-BULL-Q3", "period": "Q3 2026", "mode": "guide_high", "assumption_id": "ASM-BULL-Q3"},
+        {"id": "REV-BULL-Q4", "period": "Q4 2026", "mode": "qoq", "base_ref": "REV-BULL-Q3", "assumption_id": "ASM-BULL-Q4"},
+        {"id": "REV-BULL-Q1", "period": "Q1 2027", "mode": "yoy", "base_ref": "FACT-Q1-26-REV", "assumption_id": "ASM-BULL-Q1"},
+        {"id": "REV-BULL-Q2", "period": "Q2 2027", "mode": "yoy", "base_ref": "FACT-Q2-26-REV", "assumption_id": "ASM-BULL-Q2"}
+      ],
+      "assumptions": {"operating_margin": "ASM-BULL-MARGIN", "tax_rate": "ASM-GLOBAL-TAX", "other_income": "ASM-GLOBAL-OTHER", "diluted_shares": "ASM-BULL-SHARES", "eps_cagr": "ASM-BULL-CAGR", "exit_pe": "ASM-BULL-EXIT", "dividend_yield": "ASM-GLOBAL-DIVIDEND", "reference_multiple": "ASM-BULL-REF", "safety_margin": "ASM-GLOBAL-SAFETY"}
+    }
+  },
+  "decision_policy": {
+    "valuation": {"reduce_gap": "0.02", "review_band": "0.01", "buy_below": "base.buy_price", "add_below": "base.buy_price"},
+    "operating": {"metric": "ttm_fcf", "hold_threshold": "400", "reduce_threshold": "350", "tolerance": "0.05", "uncertainty": "0.01", "confirmation": 1},
+    "thesis_break": {"logic": "all", "conditions": [{"fact_id": "FACT-Q2-26-FCF", "operator": "<", "value": "8"}, {"fact_id": "FACT-CONSECUTIVE-CAPEX-Q", "operator": ">=", "value": "4"}]},
+    "robustness_shock": "0.05"
+  },
+  "portfolio": {"current_weight": "0.052"},
+  "narrative": {
+    "overview": "广告主业强劲，但 AI capex 的股东回报尚未被现金流验证。",
+    "financial_autopsy": "Q2 capex 几乎吞噬全部经营现金流。",
+    "moat": "Family of Apps 的网络效应仍然强。",
+    "risks": "AI 投资回报、折旧压力、监管。",
+    "growth_limits": "用户增长接近全球天花板，未来依赖变现率和新业务。",
+    "opportunity_cost": "Base IRR 必须和目标回报及指数替代方案比较。",
+    "positioning": "新资金与存量仓位分开决策。",
+    "final_verdict": "由 Compiler 的 Decision Policy 输出，不接受手工覆盖。"
+  },
+  "sources": ["Meta investor relations", "U.S. Treasury", "Yahoo Finance"]
+}
