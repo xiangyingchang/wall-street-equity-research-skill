@@ -3,9 +3,12 @@ from __future__ import annotations
 
 import argparse
 import json
-from copy import deepcopy
 from pathlib import Path
+import sys
 from typing import Any
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from scripts.report_renderer_v2 import render_markdown
 from scripts.report_spec_v2 import SpecError, canonical_json, compile_spec, sha256
