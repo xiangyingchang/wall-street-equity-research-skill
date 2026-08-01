@@ -9,12 +9,20 @@ import sys
 import tempfile
 from pathlib import Path
 
-from validation_common import iter_markdown_tables
-from validation_common import (
-    ACTION_MATRIX_COLUMNS,
-    ACTION_MATRIX_NA_VALUE as NA_VALUE,
-    find_action_matrix_table,
-)
+try:
+    from validation_common import iter_markdown_tables
+    from validation_common import (
+        ACTION_MATRIX_COLUMNS,
+        ACTION_MATRIX_NA_VALUE as NA_VALUE,
+        find_action_matrix_table,
+    )
+except ModuleNotFoundError:
+    from scripts.validation_common import iter_markdown_tables
+    from scripts.validation_common import (
+        ACTION_MATRIX_COLUMNS,
+        ACTION_MATRIX_NA_VALUE as NA_VALUE,
+        find_action_matrix_table,
+    )
 
 
 REQUIRED_PATTERNS = [
@@ -22,7 +30,7 @@ REQUIRED_PATTERNS = [
     ("First-Page Verdict", re.compile(r"First-Page Verdict|首页结论|一页结论", re.I)),
     ("Evidence Ledger", re.compile(r"Evidence Ledger|证据台账|证据账本", re.I)),
     ("Final Verdict", re.compile(r"Final Verdict|最终判决|最终结论", re.I)),
-    ("source links", re.compile(r"Source Links|Sources|来源链接|参考资料|参考来源|资料来源", re.I)),
+    ("source links", re.compile(r"Source Links|Sources|来源链接|参考资料|参考来源|资料来源|主要来源", re.I)),
     ("current price", re.compile(r"现价|当前价格|close price|regular-session|after-hours|盘后|收盘价", re.I)),
     ("latest filing or earnings", re.compile(r"最新财报|最新季报|最新年报|earnings release|10-K|10-Q|20-F|6-K|HKEX|公告", re.I)),
     ("10Y government yield", re.compile(r"10Y|10 年|10年|国债|Treasury", re.I)),
@@ -177,7 +185,7 @@ def top_section_token(title: str) -> str | None:
     number_match = re.match(r"(\d+)\.", title)
     if number_match:
         return f"{number_match.group(1)}."
-    if re.search(r"Source Links|Sources|来源链接|参考资料|参考来源|资料来源", title, re.I):
+    if re.search(r"Source Links|Sources|来源链接|参考资料|参考来源|资料来源|主要来源", title, re.I):
         return "Sources"
     return title
 
@@ -586,7 +594,144 @@ def unit_standardization_errors(text: str) -> list[str]:
     return []
 
 
+V31_READER_MARKER = re.compile(r"报告契约\s*=\s*Compiler Reader v3\.1", re.I)
+
+
+def _table_has_headers(table: dict, expected: set[str]) -> bool:
+    return expected <= {str(value).strip() for value in table.get("headers", [])}
+
+
+def _table_rows(table: dict) -> list[list[str]]:
+    rows: list[list[str]] = []
+    for raw in table.get("rows", []):
+        cells = raw.get("cells", []) if isinstance(raw, dict) else raw
+        rows.append([str(value).strip() for value in cells])
+    return rows
+
+
+def lint_v31_reader(text: str) -> list[str]:
+    """Validate the compiler Reader without forcing Audit data back into prose.
+
+    v3.1 keeps the Evidence Ledger, registries, and graph internals in the
+    companion Audit. This profile checks the equivalent reader-facing
+    disciplines instead of applying the legacy hand-authored layout verbatim.
+    """
+    errors: list[str] = []
+    if re.match(r"\A---\s*\n.*?\n---\s*\n", text, re.S):
+        errors.append("frontmatter must not appear in the report body")
+
+    required = (
+        "## 一页结论",
+        "### 当前决策",
+        "### Action Matrix（唯一执行口径）",
+        "### 三条原投资原则",
+        "### Base 情景关键假设",
+        "### 与上次报告相比",
+        "## 1. 决定回报的投资主线",
+        "### 真正决定估值的变量",
+        "## 8. 组合约束与执行边界",
+        "### 最强正反证据与裁决",
+        "## 9. 最终判决",
+        "## 主要来源",
+    )
+    for token in required:
+        if token not in text:
+            errors.append(f"v3.1 Reader missing {token}")
+
+    sections = top_sections(text)
+    tokens = [top_section_token(title) for title, _ in sections]
+    expected = ["First-Page Verdict", *[f"{number}." for number in range(1, 10)], "Sources"]
+    if tokens != expected:
+        errors.append("v3.1 top-level order must be 一页结论 -> ## 1 through ## 9 -> 主要来源")
+
+    if text.count("### Action Matrix（唯一执行口径）") != 1:
+        errors.append("v3.1 Reader must contain exactly one authoritative Action Matrix")
+    tables = list(iter_markdown_tables(text))
+    current_tables = [table for table in tables if _table_has_headers(table, {"对象", "研究候选", "可执行动作", "依据与限制"})]
+    if len(current_tables) != 1:
+        errors.append(f"v3.1 current-decision table count must be one; found {len(current_tables)}")
+    else:
+        rows = _table_rows(current_tables[0])
+        objects = {row[0] for row in rows if row}
+        if not {"新资金", "已有仓位"} <= objects:
+            errors.append("v3.1 Action Matrix must cover new money and existing position")
+        for row in rows:
+            if len(row) >= 4 and row[0] == "已有仓位" and "减仓" in row[2]:
+                if not re.search(r"当前权重[^\n|]*\d|current_weight[^\n|]*\d", row[3], re.I):
+                    errors.append("executable REDUCE requires a numeric current weight")
+                if not re.search(r"目标权重[^\n|]*\d|target_weight[^\n|]*\d", row[3], re.I):
+                    errors.append("executable REDUCE requires a numeric target weight")
+
+    action_tables = [table for table in tables if _table_has_headers(table, {"动作", "触发类型", "可执行条件", "仓位/执行", "当前状态"})]
+    if len(action_tables) != 1:
+        errors.append(f"v3.1 Action Matrix table count must be one; found {len(action_tables)}")
+    else:
+        actions = {row[0] for row in _table_rows(action_tables[0]) if row}
+        required_actions = {"买入", "加仓", "持有", "复核", "减仓", "卖出"}
+        if actions != required_actions:
+            errors.append(f"v3.1 Action Matrix actions must be exactly {', '.join(sorted(required_actions))}")
+
+    principle_tables = [table for table in tables if _table_has_headers(table, {"原则", "结论", "决策标准"})]
+    if len(principle_tables) != 1:
+        errors.append("v3.1 Reader requires one three-principle decision table")
+    else:
+        content = " ".join(" ".join(row) for row in _table_rows(principle_tables[0]))
+        for principle in ("持有等于买入", "机会成本", "10年回本"):
+            if principle not in content:
+                errors.append(f"v3.1 principle table missing {principle}")
+
+    assumption_tables = [table for table in tables if _table_has_headers(table, {"假设", "Base 值", "依据", "置信度"})]
+    if len(assumption_tables) != 1 or len(_table_rows(assumption_tables[0])) < 4:
+        errors.append("v3.1 Reader must expose at least four Base assumptions")
+
+    scenario_tables = [table for table in tables if _table_has_headers(table, {"场景", "Forward revenue", "EPS"})]
+    if not scenario_tables or not {"Bear", "Base", "Bull"} <= {row[0] for row in _table_rows(scenario_tables[0]) if row}:
+        errors.append("v3.1 Reader requires Bear/Base/Bull valuation outputs")
+
+    moat_tables = [table for table in tables if _table_has_headers(table, {"维度", "评分", "判断", "反向证据"})]
+    if not moat_tables or len(_table_rows(moat_tables[0])) < 4:
+        errors.append("v3.1 Reader requires at least four evidence-backed moat dimensions")
+
+    for label, row in (
+        ("10Y x1 discount row", "10y_x1"),
+        ("10Y x2 discount row", "10y_x2"),
+        ("8% discount row", "8"),
+        ("10% discount row", "10"),
+    ):
+        if not has_discount_row(text, row):
+            errors.append(f"v3.1 Reader missing {label}")
+
+    if len(re.findall(r"\[[^\]]+\]\(https://[^)]+\)", text)) < 3:
+        errors.append("v3.1 Reader requires at least three clickable HTTPS source links")
+    if not TAX_IDENTITY.search(text):
+        errors.append("v3.1 Reader must disclose tax identity")
+    errors.extend(opportunity_cost_benchmark_errors(text))
+    if "未找到可比的上一份报告" not in text:
+        errors.extend(previous_report_delta_errors(text))
+    errors.extend(unit_standardization_errors(text))
+
+    module8 = section_body(text, r"8\.")
+    for token in ("组合状态", "数据截至", "来源", "置信度", "研究模型的候选动作", "组合闸门结果"):
+        if token not in module8:
+            errors.append(f"v3.1 portfolio section missing {token}")
+
+    forbidden = (
+        "THEME-", "OBS-", "ARG-", "DRV-", "FACT-", "SRC-", "BUNDLE:",
+        "Source Registry", "Evidence Ledger", "Claim-Evidence Matrix",
+        "**核心问题：**", "**发生了什么：**", "**基础判断：**", "**最强反方：**",
+        "**综合裁决：**", "**对决策的影响：**", "**什么会推翻判断：**",
+    )
+    for token in forbidden:
+        if token in text:
+            errors.append(f"v3.1 Reader exposes forbidden audit/repetitive token: {token}")
+    if len(text.splitlines()) > 360:
+        errors.append("v3.1 Reader exceeds 360-line readability ceiling")
+    return errors
+
+
 def lint_text(text: str) -> list[str]:
+    if V31_READER_MARKER.search(text):
+        return lint_v31_reader(text)
     errors: list[str] = []
 
     for label, pattern in REQUIRED_PATTERNS:

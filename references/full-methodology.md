@@ -397,12 +397,12 @@ python3 scripts/valuation_consistency.py <report.md>
 ```markdown
 | 价格区间 | 估值语境 | 执行来源 |
 |---|---|---|
-| ¥XX 以上 | 高估区 | 仅见模块 9 Action Matrix |
-| ¥XX-XX | 观察区 | 仅见模块 9 Action Matrix |
-| ¥XX 以下 | 潜在安全边际区 | 仅见模块 9 Action Matrix |
+| ¥XX 以上 | 高估区 | 仅见模块 8 Action Matrix |
+| ¥XX-XX | 观察区 | 仅见模块 8 Action Matrix |
+| ¥XX 以下 | 潜在安全边际区 | 仅见模块 8 Action Matrix |
 ```
 
-**原因**：价格区间用于解释估值，不是第二套交易规则；所有动作与条件只由模块 9 Action Matrix 定义。
+**原因**：价格区间用于解释估值，不是第二套交易规则；旧手工报告的所有动作与条件只由模块 8 Action Matrix 定义。v3.1 Compiler Reader 将同一唯一矩阵前置到第一页，第 8 模块只解释组合边界。
 
 #### 置信度与复核清单
 

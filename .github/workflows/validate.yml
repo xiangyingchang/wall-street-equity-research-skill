@@ -39,20 +39,27 @@ jobs:
           ! grep -q "Claim-Evidence Matrix" /tmp/report-v212/meta.md
           grep -q "## Claim-Evidence Matrix" /tmp/report-v212/meta.audit.md
 
-      - name: Run v3 research graph end-to-end
+      - name: Run v3.1 data-reasoning-reader end-to-end
         run: |
           mkdir -p /tmp/report-v3
           python tests/meta_v3_spec.py /tmp/report-v3/meta.spec.json
           python scripts/report_pipeline_v3.py build --spec /tmp/report-v3/meta.spec.json --output /tmp/report-v3/meta.md
           python scripts/report_pipeline_v3.py verify --spec /tmp/report-v3/meta.spec.json --output /tmp/report-v3/meta.md
+          python scripts/report_lint.py /tmp/report-v3/meta.md
           test -f /tmp/report-v3/meta.md
           test -f /tmp/report-v3/meta.audit.md
           test -f /tmp/report-v3/meta.md.bundle.json
           test -f /tmp/report-v3/meta.md.verification.json
-          grep -q "## 1. 投资叙事与核心矛盾" /tmp/report-v3/meta.md
-          grep -q "### Bull vs Bear 投资辩论" /tmp/report-v3/meta.md
-          grep -q "### 哪些假设真正决定估值" /tmp/report-v3/meta.md
-          grep -q "## Research Graph v3" /tmp/report-v3/meta.audit.md
+          grep -q "### Action Matrix（唯一执行口径）" /tmp/report-v3/meta.md
+          grep -q "### 三条原投资原则" /tmp/report-v3/meta.md
+          grep -q "### Base 情景关键假设" /tmp/report-v3/meta.md
+          grep -q "## 1. 决定回报的投资主线" /tmp/report-v3/meta.md
+          grep -q "### 最强正反证据与裁决" /tmp/report-v3/meta.md
+          grep -q "### 真正决定估值的变量" /tmp/report-v3/meta.md
+          grep -q "## Research Graph v3.1" /tmp/report-v3/meta.audit.md
+          grep -q "](https://" /tmp/report-v3/meta.md
+          test "$(grep -c "### Action Matrix（唯一执行口径）" /tmp/report-v3/meta.md)" -eq 1
           grep -q "THEME-CAPITAL-RETURNS" /tmp/report-v3/meta.audit.md
           grep -q "Auto-discounted:" /tmp/report-v3/meta.audit.md
+          ! grep -Eq "\*\*(核心问题|发生了什么|基础判断|最强反方|综合裁决|对决策的影响|什么会推翻判断)：\*\*" /tmp/report-v3/meta.md
           ! grep -Eq "THEME-|OBS-|ARG-|DRV-|FACT-|SRC-|BUNDLE:|Source Registry|Evidence Ledger|Claim-Evidence Matrix|hash" /tmp/report-v3/meta.md

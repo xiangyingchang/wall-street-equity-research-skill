@@ -138,15 +138,35 @@ def _compile_ttm(spec: dict[str, Any]) -> dict[str, Any]:
     series = spec.get("quarterly_series", {})
     required = {"eps", "revenue", "operating_income", "fcf"}
     _require(required <= set(series), "quarterly_series requires eps/revenue/operating_income/fcf")
-    def components(name: str) -> list[dict[str, Any]]:
+    units: dict[str, str] = {}
+    for name in ("eps", "revenue", "operating_income", "fcf"):
         ids = series[name]
         _require(isinstance(ids, list) and len(ids) == 4, f"{name} requires four fact IDs")
+        observed = {str(_fact(spec, fact_id).get("unit", "")).strip() for fact_id in ids}
+        _require(len(observed) == 1 and "" not in observed, f"{name} quarterly facts must use one explicit unit")
+        units[name] = observed.pop()
+    _require(
+        len({units["revenue"], units["operating_income"], units["fcf"]}) == 1,
+        "revenue/operating_income/fcf must use the same currency and scale",
+    )
+    current_price_id = str(spec.get("report", {}).get("current_price_fact_id", ""))
+    if current_price_id:
+        _require(
+            str(_fact(spec, current_price_id).get("unit", "")).strip() == units["eps"],
+            "current price and EPS must use the same per-share currency unit",
+        )
+
+    def components(name: str) -> list[dict[str, Any]]:
+        ids = series[name]
         return [{"id": fid, "period": _fact(spec, fid).get("period", _fact(spec, fid).get("as_of", "")), "value": _fact(spec, fid)["value"]} for fid in ids]
     eps = ttm_derive({"id": "DERIVED-TTM-EPS", "metric": "TTM EPS", "mode": "sum", "components": components("eps")})
+    eps["unit"] = units["eps"]
     rev = components("revenue")
     oi = components("operating_income")
     margin = ttm_derive({"id": "DERIVED-TTM-OP-MARGIN", "metric": "TTM operating margin", "mode": "ratio", "numerator": oi, "denominator": rev})
+    margin["unit"] = "ratio"
     fcf = ttm_derive({"id": "DERIVED-TTM-FCF", "metric": "TTM FCF", "mode": "sum", "components": components("fcf")})
+    fcf["unit"] = units["fcf"]
     return {"eps": eps, "operating_margin": margin, "fcf": fcf}
 
 
@@ -193,6 +213,178 @@ def _compile_scenario(spec: dict[str, Any], scenario: str, current_price: Decima
     }
 
 
+def _bundle_value(bundle: dict[str, Any], reference: str) -> tuple[Decimal, str]:
+    if reference.startswith("FACT-"):
+        fact = bundle.get("facts", {}).get(reference)
+        _require(isinstance(fact, dict), f"operating metric references undefined fact {reference}")
+        return dec(fact.get("value")), str(fact.get("unit", ""))
+    _require(reference.startswith("BUNDLE:/"), f"operating metric uses unsupported value_ref {reference}")
+    current: Any = bundle
+    parent: Any = None
+    for raw in reference.removeprefix("BUNDLE:/").split("/"):
+        part = raw.replace("~1", "/").replace("~0", "~")
+        _require(isinstance(current, dict) and part in current, f"operating metric references undefined bundle path {reference}")
+        parent = current
+        current = current[part]
+    if isinstance(current, dict):
+        _require("value" in current, f"operating metric bundle object has no value {reference}")
+        return dec(current["value"]), str(current.get("unit", ""))
+    unit = str(parent.get("unit", "")) if isinstance(parent, dict) else ""
+    return dec(current), unit
+
+
+def _metric_status(raw: dict[str, Any], bundle: dict[str, Any], index: int) -> dict[str, Any]:
+    label = f"operating.metrics[{index}]"
+    for field in ("metric_id", "label", "value_ref", "unit", "direction", "hold_threshold", "reduce_threshold", "tolerance", "uncertainty"):
+        _require(str(raw.get(field, "")).strip(), f"{label} missing {field}")
+    direction = str(raw["direction"]).lower()
+    _require(direction in {"higher_is_better", "lower_is_better"}, f"{label} invalid direction")
+    value, derived_unit = _bundle_value(bundle, str(raw["value_ref"]))
+    declared_unit = str(raw["unit"]).strip()
+    if derived_unit:
+        _require(declared_unit == derived_unit, f"{label} unit {declared_unit} mismatches referenced value unit {derived_unit}")
+    hold = dec(raw["hold_threshold"])
+    reduce = dec(raw["reduce_threshold"])
+    tolerance = dec(raw["tolerance"])
+    uncertainty = dec(raw["uncertainty"])
+    band = tolerance + uncertainty
+    _require(tolerance >= 0 and uncertainty >= 0, f"{label} tolerance and uncertainty must be non-negative")
+    if direction == "higher_is_better":
+        _require(hold >= reduce, f"{label} higher_is_better requires hold_threshold >= reduce_threshold")
+        near_hold = abs(value - hold) <= abs(hold) * band
+        near_reduce = abs(value - reduce) <= abs(reduce) * band
+        status = "review" if near_hold or near_reduce else ("reduce" if value < reduce else "hold" if value > hold else "review")
+    else:
+        _require(hold <= reduce, f"{label} lower_is_better requires hold_threshold <= reduce_threshold")
+        near_hold = abs(value - hold) <= abs(hold) * band
+        near_reduce = abs(value - reduce) <= abs(reduce) * band
+        status = "review" if near_hold or near_reduce else ("reduce" if value > reduce else "hold" if value < hold else "review")
+
+    confirmation_value = dec(raw.get("confirmation_periods", raw.get("confirmation", 1)))
+    _require(confirmation_value == confirmation_value.to_integral_value() and confirmation_value >= 1, f"{label} confirmation_periods must be a positive integer")
+    confirmation_periods = int(confirmation_value)
+    confirmation_ref = str(raw.get("confirmation_ref", "")).strip()
+    confirmation_actual: Decimal | None = None
+    if confirmation_periods > 1:
+        _require(confirmation_ref, f"{label} requires confirmation_ref when confirmation_periods > 1")
+        confirmation_actual, _ = _bundle_value(bundle, confirmation_ref)
+        _require(confirmation_actual >= 0 and confirmation_actual == confirmation_actual.to_integral_value(), f"{label} confirmation_ref must resolve to a non-negative integer")
+        if status == "reduce" and confirmation_actual < confirmation_periods:
+            status = "review"
+
+    return {
+        "metric_id": str(raw["metric_id"]),
+        "label": str(raw["label"]),
+        "value_ref": str(raw["value_ref"]),
+        "value": q(value),
+        "unit": declared_unit,
+        "direction": direction,
+        "hold_threshold": q(hold),
+        "reduce_threshold": q(reduce),
+        "tolerance": q(tolerance),
+        "uncertainty": q(uncertainty),
+        "confirmation_periods": confirmation_periods,
+        "confirmation_ref": confirmation_ref or None,
+        "confirmation_actual": q(confirmation_actual) if confirmation_actual is not None else None,
+        "status": status,
+    }
+
+
+def _evaluate_operating_policy(policy: dict[str, Any], bundle: dict[str, Any]) -> dict[str, Any]:
+    metrics = policy.get("metrics")
+    if metrics is None:
+        for field in ("metric", "hold_threshold", "reduce_threshold", "tolerance", "uncertainty", "confirmation"):
+            _require(field in policy, f"operating policy missing {field}")
+        _require(policy["metric"] == "ttm_fcf", "legacy operating policy requires ttm_fcf")
+        metrics = [{
+            "metric_id": "OP-TTM-FCF",
+            "label": "TTM FCF",
+            "value_ref": "BUNDLE:/derived/ttm/fcf/value",
+            "unit": bundle["derived"]["ttm"]["fcf"].get("unit", ""),
+            "direction": "higher_is_better",
+            "hold_threshold": policy["hold_threshold"],
+            "reduce_threshold": policy["reduce_threshold"],
+            "tolerance": policy["tolerance"],
+            "uncertainty": policy["uncertainty"],
+            "confirmation_periods": policy["confirmation"],
+        }]
+        legacy = True
+    else:
+        _require(isinstance(metrics, list) and metrics, "operating.metrics must be a non-empty list")
+        legacy = False
+    metric_results = [_metric_status(raw, bundle, index) for index, raw in enumerate(metrics)]
+    statuses = {item["status"] for item in metric_results}
+    status = "reduce" if "reduce" in statuses else "review" if "review" in statuses else "hold"
+    result: dict[str, Any] = {
+        "aggregation": "any_reduce_then_review",
+        "status": status,
+        "metrics": metric_results,
+    }
+    if legacy:
+        item = metric_results[0]
+        result.update({
+            "ttm_fcf": item["value"],
+            "hold_threshold": item["hold_threshold"],
+            "reduce_threshold": item["reduce_threshold"],
+            "tolerance": item["tolerance"],
+            "uncertainty": item["uncertainty"],
+        })
+    return result
+
+
+def _portfolio_gate(spec: dict[str, Any], candidate: str, reason: str) -> tuple[str, str, dict[str, Any]]:
+    required = bool(spec.get("decision_policy", {}).get("require_portfolio_context", False))
+    raw = spec.get("portfolio_context")
+    if not required and raw is None:
+        return candidate, reason, {"required": False, "position_status": "not_provided", "complete": True, "gate": "not_required"}
+    _require(isinstance(raw, dict), "portfolio_context must be an object")
+    status = str(raw.get("position_status", "")).lower()
+    _require(status in {"held", "not_held", "unknown"}, "portfolio_context.position_status must be held/not_held/unknown")
+    for field in ("as_of", "source", "confidence"):
+        _require(str(raw.get(field, "")).strip(), f"portfolio_context missing {field}")
+    _require(str(raw["confidence"]).lower() in CONFIDENCE, "portfolio_context invalid confidence")
+
+    current_weight = dec(raw["current_weight"]) if raw.get("current_weight") is not None else None
+    target_weight = dec(raw["target_weight"]) if raw.get("target_weight") is not None else None
+    for name, value in (("current_weight", current_weight), ("target_weight", target_weight)):
+        if value is not None:
+            _require(D(0) <= value <= D(1), f"portfolio_context.{name} must be between 0 and 1")
+
+    complete = status == "not_held" or (status == "held" and current_weight is not None)
+    gate = "passed"
+    action = candidate
+    gated_reason = reason
+    if status == "not_held":
+        action = "NOT_APPLICABLE"
+        gated_reason = "no existing position"
+        gate = "not_applicable"
+    elif status == "unknown":
+        action = "REVIEW"
+        gated_reason = f"portfolio context unknown; research candidate is {candidate}"
+        gate = "blocked_missing_position_status"
+        complete = False
+    elif candidate == "REDUCE" and (current_weight is None or target_weight is None or target_weight >= current_weight):
+        action = "REVIEW"
+        gated_reason = "portfolio weights do not support an executable reduce instruction"
+        gate = "blocked_missing_reduce_target"
+        complete = False
+
+    context = {
+        "required": required,
+        "position_status": status,
+        "as_of": str(raw["as_of"]),
+        "source": str(raw["source"]),
+        "confidence": str(raw["confidence"]).lower(),
+        "current_weight": q(current_weight) if current_weight is not None else None,
+        "target_weight": q(target_weight) if target_weight is not None else None,
+        "tax_friction": str(raw.get("tax_friction", "unknown")),
+        "constraints": str(raw.get("constraints", "")),
+        "complete": complete,
+        "gate": gate,
+    }
+    return action, gated_reason, context
+
+
 def _evaluate_policy(spec: dict[str, Any], bundle: dict[str, Any]) -> dict[str, Any]:
     policy = spec.get("decision_policy", {})
     _require({"valuation", "operating", "thesis_break"} <= set(policy), "decision_policy requires valuation/operating/thesis_break")
@@ -211,18 +403,8 @@ def _evaluate_policy(spec: dict[str, Any], bundle: dict[str, Any]) -> dict[str, 
     buy_price = dec(base["prices"]["buy"])
     target_price = dec(base["prices"]["target_return"])
 
-    operating = policy["operating"]
-    for field in ("metric", "hold_threshold", "reduce_threshold", "tolerance", "uncertainty", "confirmation"):
-        _require(field in operating, f"operating policy missing {field}")
-    _require(operating["metric"] == "ttm_fcf", "v2 currently requires ttm_fcf operating metric")
-    fcf = dec(bundle["derived"]["ttm"]["fcf"]["value"])
-    hold = dec(operating["hold_threshold"])
-    reduce = dec(operating["reduce_threshold"])
-    band = dec(operating["tolerance"]) + dec(operating["uncertainty"])
-    _require(band >= 0, "operating tolerance + uncertainty must be non-negative")
-    hold_indeterminate = abs(fcf - hold) <= abs(hold) * band
-    reduce_indeterminate = abs(fcf - reduce) <= abs(reduce) * band
-    operating_status = "review" if hold_indeterminate or reduce_indeterminate else ("reduce" if fcf < reduce else "hold")
+    operating = _evaluate_operating_policy(policy["operating"], bundle)
+    operating_status = operating["status"]
 
     thesis = policy["thesis_break"]
     _require("conditions" in thesis and isinstance(thesis["conditions"], list), "thesis_break requires conditions")
@@ -234,11 +416,21 @@ def _evaluate_policy(spec: dict[str, Any], bundle: dict[str, Any]) -> dict[str, 
         expected = dec(condition["value"])
         op = condition["operator"]
         result = {"<": actual < expected, "<=": actual <= expected, ">": actual > expected, ">=": actual >= expected}[op]
-        thesis_results.append({"fact_id": fid, "actual": q(actual), "operator": op, "expected": q(expected), "result": result})
+        thesis_results.append({
+            "fact_id": fid,
+            "label": str(condition.get("label", fid)),
+            "unit": str(_fact(spec, fid).get("unit", "")),
+            "actual": q(actual),
+            "operator": op,
+            "expected": q(expected),
+            "result": result,
+        })
     logic = thesis.get("logic", "all")
     thesis_broken = all(x["result"] for x in thesis_results) if logic == "all" else any(x["result"] for x in thesis_results)
 
-    if current <= buy_price and operating_status == "hold":
+    if thesis_broken:
+        new_money = "DO_NOT_BUY"
+    elif current <= buy_price and operating_status == "hold":
         new_money = "BUY"
     elif current <= target_price:
         new_money = "WATCH"
@@ -246,39 +438,43 @@ def _evaluate_policy(spec: dict[str, Any], bundle: dict[str, Any]) -> dict[str, 
         new_money = "DO_NOT_BUY"
 
     if thesis_broken:
-        existing = "SELL"
-        reason = "thesis-break policy triggered"
+        candidate = "SELL"
+        candidate_reason = "thesis-break policy triggered"
     elif irr_gap > reduce_gap + review_band:
-        existing = "REDUCE"
-        reason = "base IRR materially below hurdle"
+        candidate = "REDUCE"
+        candidate_reason = "base IRR materially below hurdle"
     elif irr_gap > max(D(0), reduce_gap - review_band):
-        existing = "REVIEW"
-        reason = "valuation gap within review band"
+        candidate = "REVIEW"
+        candidate_reason = "valuation gap within review band"
     elif operating_status == "reduce":
-        existing = "REDUCE"
-        reason = "operating policy triggered"
+        candidate = "REDUCE"
+        candidate_reason = "operating policy triggered"
     elif operating_status == "review":
-        existing = "REVIEW"
-        reason = "operating metric in explicit neutral band"
+        candidate = "REVIEW"
+        candidate_reason = "operating metric in explicit neutral band"
     else:
-        existing = "HOLD"
-        reason = "valuation and operating policy support holding"
+        candidate = "HOLD"
+        candidate_reason = "valuation and operating policy support holding"
 
     shock = dec(policy.get("robustness_shock", "0.05"))
     shocked_actions = []
     for multiplier in (D(1) - shock, D(1) + shock):
         shocked_gap = target_return - base_irr * multiplier
-        action = "REDUCE" if shocked_gap > reduce_gap + review_band else "REVIEW" if shocked_gap > max(D(0), reduce_gap - review_band) else existing
+        action = "REDUCE" if shocked_gap > reduce_gap + review_band else "REVIEW" if shocked_gap > max(D(0), reduce_gap - review_band) else candidate
         shocked_actions.append(action)
-    stable = all(action == existing for action in shocked_actions)
-    if not stable and existing not in {"SELL"}:
-        existing = "REVIEW"
-        reason = "decision changes under configured robustness shock"
+    stable = all(action == candidate for action in shocked_actions)
+    if not stable and candidate not in {"SELL"}:
+        candidate = "REVIEW"
+        candidate_reason = "decision changes under configured robustness shock"
+
+    existing, reason, portfolio = _portfolio_gate(spec, candidate, candidate_reason)
 
     return {
         "new_money_action": new_money,
         "existing_position_action": existing,
+        "existing_position_candidate_action": candidate,
         "reason": reason,
+        "candidate_reason": candidate_reason,
         "valuation": {
             "base_irr": q(base_irr),
             "target_return": q(target_return),
@@ -286,15 +482,9 @@ def _evaluate_policy(spec: dict[str, Any], bundle: dict[str, Any]) -> dict[str, 
             "reduce_gap": q(reduce_gap),
             "review_band": q(review_band),
         },
-        "operating": {
-            "ttm_fcf": q(fcf),
-            "hold_threshold": q(hold),
-            "reduce_threshold": q(reduce),
-            "tolerance": q(dec(operating["tolerance"])),
-            "uncertainty": q(dec(operating["uncertainty"])),
-            "status": operating_status,
-        },
-        "thesis_break": {"triggered": thesis_broken, "conditions": thesis_results},
+        "operating": operating,
+        "portfolio_context": portfolio,
+        "thesis_break": {"triggered": thesis_broken, "logic": logic, "conditions": thesis_results},
         "robustness": {"shock": q(shock), "stable": stable, "shocked_actions": shocked_actions},
     }
 

@@ -114,10 +114,10 @@ def render_markdown(bundle: dict[str, Any]) -> str:
         f"| Base forward reference | {_money(base['prices']['forward_reference'])} |", "",
         research["overview"]["thesis"]["text"], "",
         f"证据：`{_refs(research['overview']['thesis'])}` · 置信度：{research['overview']['thesis']['confidence']}", "",
-        "## Source Registry", "", "| Source ID | Title | Publisher | Date | Tier | Type | Scope | Locator |", "|---|---|---|---|---:|---|---|---|",
+        "## Source Registry", "", "| Source ID | Title | Publisher | Date | Tier | Type | Scope | Locator | URL |", "|---|---|---|---|---:|---|---|---|---|",
     ])
     for source_id, source in bundle["source_registry"].items():
-        cells = [source_id, source['title'], source['publisher'], source['date'], source['tier'], source['document_type'], ', '.join(source['scope']), source['locator']]
+        cells = [source_id, source['title'], source['publisher'], source['date'], source['tier'], source['document_type'], ', '.join(source['scope']), source['locator'], source.get('url', '')]
         lines.append("| " + " | ".join(_escape(x) for x in cells) + " |")
 
     lines.extend(["", "## Evidence Ledger", "", "| Fact ID | Value | Unit | Period/as-of | Source IDs | Tier | Confidence |", "|---|---:|---|---|---|---|---|"])
