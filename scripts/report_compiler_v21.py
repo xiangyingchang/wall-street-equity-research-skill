@@ -15,6 +15,11 @@ def compile_report_v21(spec: dict[str, Any]) -> dict[str, Any]:
     # intentionally preserving the established numeric compiler contract.
     if working_spec.get("schema_version") == "report-spec-v2.2":
         working_spec["schema_version"] = "report-spec-v2.1.1"
+    # Preserve compatibility with the historical Meta fixture's plural peer
+    # source alias. New specs should use the canonical source ID directly.
+    sources = working_spec.get("sources", {})
+    if "SRC-PEERS" not in sources and "SRC-PEER" in sources:
+        sources["SRC-PEERS"] = deepcopy(sources["SRC-PEER"])
     bundle = compile_spec_v21(working_spec)
     bundle["spec_schema_version"] = source_spec.get("schema_version")
     bundle["spec_hash"] = sha256(source_spec)
