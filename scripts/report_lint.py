@@ -211,7 +211,7 @@ def action_matrix_errors(text: str, module8: str) -> list[str]:
         tables = list(iter_markdown_tables(matrix_block))
         if len(tables) != 1:
             errors.append(f"Action Matrix must contain exactly one Markdown table; found {len(tables)}")
-        elif tables[0]["headers"] != ACTION_MATRIX_COLUMNS:
+        elif tables[0]["headers"] != ACTION_MATRIX_COLUMNS and tables[0]["headers"] != ["Rule ID"] + ACTION_MATRIX_COLUMNS:
             errors.append(
                 "Action Matrix columns must be exactly: Action | Trigger type | Executable condition | Position/execution"
             )
@@ -222,6 +222,9 @@ def action_matrix_errors(text: str, module8: str) -> list[str]:
     executable_trigger_types: set[str] = set()
     for row in table["rows"]:
         cells = row["cells"]
+        # v1.5.1 adds a leading Rule ID column; strip it for legacy checks.
+        if len(cells) == len(ACTION_MATRIX_COLUMNS) + 1:
+            cells = cells[1:]
         if len(cells) != len(ACTION_MATRIX_COLUMNS):
             errors.append(f"Action Matrix row at line {row['line_number']} must have exactly four cells")
             continue
@@ -266,7 +269,9 @@ def canonical_matrix_table_lines(text: str) -> set[int]:
     if index + 1 >= len(lines):
         return set()
     headers = [cell.strip() for cell in lines[index].strip().strip("|").split("|")]
-    if headers != ACTION_MATRIX_COLUMNS or not re.fullmatch(r"\|[\s:|-]+\|", lines[index + 1].strip()):
+    # v1.5.1 template adds a leading Rule ID column.
+    v151_headers = ["Rule ID"] + ACTION_MATRIX_COLUMNS
+    if (headers != ACTION_MATRIX_COLUMNS and headers != v151_headers) or not re.fullmatch(r"\|[\s:|-]+\|", lines[index + 1].strip()):
         return set()
     masked = {index + 1, index + 2}
     index += 2
