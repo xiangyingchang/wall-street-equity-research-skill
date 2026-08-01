@@ -2,217 +2,143 @@
 
 ## 状态
 
-实施中 — 2026-08-01
+完成 — 2026-08-01
 
-## 背景
+## 背景与根因
 
-v2.1.2 已经解决了报告可信度和可读性之间的冲突：数值由单一 Spec/Bundle 生成，Reader Report 与 Audit Appendix 分离，主报告不再暴露内部 ID。但最新 Meta Reader Report 仍然存在最后一类质量问题：它虽然好读，却仍然主要是“把若干 Claims 按模块顺序串起来”，没有稳定形成真正的投资研究叙事。
+v2.1.2 已经解决单一数值真相、证据追溯和 Reader/Audit 分层，但研究的基本单元仍是孤立 Claim。报告能正确陈述事实，却不能稳定回答：为什么发生、替代解释是什么、哪一方更有说服力、哪些假设真正决定动作。
 
-具体表现：
+根因不是 Renderer，而是缺少 Fact 与 Narrative 之间的研究中间层。
 
-1. 同一观点在一页结论、Overview 和模块正文重复出现，缺少推进；
-2. 财务数据被正确列出，但没有稳定解释“发生了什么、为什么发生、是否可持续、对估值意味着什么”；
-3. 机会成本、护城河和风险容易退化为适用于任何公司的通用模板；
-4. Variant View、Bull/Bear 争论和最终裁决过短，没有解释为什么某一方更有说服力；
-5. 敏感性分析停留在结果表，没有说明哪些假设真正主导结论；
-6. 现有结构是 Fact → Claim → Markdown，缺少 Observation、Hypothesis、Challenge、Resolution 和 Theme 层；
-7. 单一 Agent 可以写出逻辑自洽的报告，但不一定主动挑战自己的结论。
-
-AI Berkshire 中值得借鉴的不是“四位大师”的人设，而是三点：
-
-- 多视角独立研究，而不是单一路径；
-- 强制 Bull/Bear 对抗和反偏见机制；
-- Team Lead 在冲突中做裁决，而不是简单平均观点。
-
-本项目不照搬大师角色，也不依赖特定 Agent 工具；v3 将这些思想抽象为可验证的 Research Graph 和 Investment Debate，并继续保持单一数据真相。
-
-## 根因
-
-v2.1.2 的可信链已经成熟，但研究对象仍然以“孤立 Claim”为基本单元。Renderer 只能把 Claim 组合成段落，无法知道：
-
-- 哪些 Facts 共同形成一个 Observation；
-- Observation 支持什么 Hypothesis；
-- 哪些反例挑战 Hypothesis；
-- 最终如何裁决；
-- 该裁决如何影响估值和动作；
-- 不同模块应围绕哪几个公司特有的 Theme 推进。
-
-因此真正缺失的是研究中间层，而不是更多模板或更多表格。
+AI Berkshire 值得借鉴的是独立视角、对抗分析和 Team Lead 裁决；本项目不复制人格化大师评分，也不依赖特定多 Agent Runtime。
 
 ## 目标
 
-1. 将研究链路升级为：
+将研究链路升级为：
 
 ```text
-Source → Fact → Observation → Hypothesis → Challenge → Resolution → Theme → Narrative → Decision
+Source → Fact → Observation → Hypothesis → Challenge
+       → Resolution → Theme → Narrative → Decision
 ```
 
-2. 每份报告必须定义 3–5 个公司特有的 Investment Themes，而不是仅按通用模块组织 Claims。
-3. 每个 Theme 必须包含：
-   - 核心问题；
-   - observations；
-   - hypothesis；
-   - challenge；
-   - resolution；
-   - decision impact；
-   - falsification condition；
-   - evidence refs；
-   - value refs。
-4. 强制生成独立 Bull Case、Bear Case 和 Adjudication；最终裁决必须说明采纳和未采纳的理由。
-5. 增加 Sensitivity Explanation：明确 Base IRR 对 revenue、margin、EPS CAGR、exit multiple 等变量的方向、相对重要性和结论影响。
-6. Reader Report 以 Themes 推动叙事，减少重复总结和通用模板。
-7. Audit Appendix 完整展示 Research Graph、Debate 和 Sensitivity 的结构化对象。
-8. 不修改 v2 的事实、估值、决策公式和篡改检测。
-9. 不要求运行环境一定支持多 Agent；若支持，可由不同 Agent 独立产生 graph nodes，最终仍必须合并进同一 Spec。
+要求：
 
-## 设计
+1. 每份报告定义 3–5 个公司特有 Investment Themes；
+2. 每个 Theme 包含 observations、hypothesis、challenge、resolution、decision impact、falsification；
+3. 强制最强 Bull、最强 Bear 和 Lead Adjudication；
+4. 解释决定 Base IRR 与目标回报价格的关键敏感变量；
+5. Reader 用 Theme 推进叙事，Audit 保存完整图结构；
+6. 保留 v2.1.2 的数值、决策、证据和篡改边界。
 
-### A. Research Graph Schema
+## 已实施
 
-Spec 新增：
+### Research Graph
 
-```json
-{
-  "research_graph": {
-    "themes": [
-      {
-        "theme_id": "THEME-CAPITAL-RETURNS",
-        "title": "AI资本开支能否转化为股东回报",
-        "core_question": "高额投入是暂时压低现金流，还是永久抬高资本强度？",
-        "observations": [
-          {
-            "observation_id": "OBS-FCF-COLLAPSE",
-            "text_template": "最新季度自由现金流降至 {q2_fcf}。",
-            "value_refs": {},
-            "evidence_refs": []
-          }
-        ],
-        "hypothesis": {},
-        "challenge": {},
-        "resolution": {},
-        "decision_impact": {},
-        "falsification": {},
-        "module_links": ["financial_autopsy", "valuation", "risks"]
-      }
-    ],
-    "debate": {
-      "bull": {},
-      "bear": {},
-      "adjudication": {}
-    },
-    "sensitivity": {
-      "drivers": []
-    }
-  }
-}
-```
+新增 `scripts/report_research_graph_v3.py`：
 
-### B. Theme Contract
+- `THEME-*`：3–5 个公司特有主题；
+- `OBS-*`：每个 Theme 至少两个观察；
+- hypothesis；
+- challenge，必须含 `counter_evidence`；
+- resolution，必须同时处理 supports 与 counter evidence；
+- decision impact，必须引用 Bundle；
+- falsification；
+- module links，必须指向合法研究模块。
 
-每个 Theme：
+### Investment Debate
 
-- `theme_id` 使用 `THEME-*`；
-- title 和 core question 必须公司特有，禁止通用占位描述；
-- 至少 2 个 observations；
-- hypothesis、challenge、resolution、decision impact、falsification 均为 evidence-bound claim；
-- challenge 必须至少包含一个 `counter_evidence` role；
-- resolution 必须同时引用 supports 和 counter_evidence；
-- decision impact 必须引用 Bundle 中的动作、IRR、价格或关键模型值；
-- module_links 至少覆盖两个模块；
-- Theme 之间引用的 Observation ID 不得重复。
+- Bull 至少三个 `ARG-*`；
+- Bear 至少三个 `ARG-*`；
+- Argument ID 全局唯一；
+- Adjudication 的 accepted/discounted IDs 必须有效、非重叠；
+- accepted 必须同时包含 Bull 与 Bear 观点；
+- 裁决保留 remaining uncertainty。
 
-### C. Investment Debate
+### Sensitivity Explanation
 
-Debate 包含：
+每个 `DRV-*` 包含：
 
-- Bull：最强看多论点，而非稻草人；
-- Bear：最强看空论点；
-- Adjudication：
-  - accepted points；
-  - rejected/discounted points；
-  - decisive evidence；
-  - remaining uncertainty；
-  - why current action follows。
-
-Bull 与 Bear 均至少包含 3 条独立 arguments，每条绑定 evidence。Adjudication 必须引用双方 argument IDs，不得重新创造第三套无来源观点。
-
-### D. Sensitivity Explanation
-
-每个 driver 包含：
-
-- driver ID；
 - variable；
-- base assumption path；
+- assumption JSON Pointer；
 - direction；
-- importance：high/medium/low；
+- importance；
 - mechanism；
-- upside case；
-- downside case；
+- upside/downside；
 - decision consequence；
 - evidence refs。
 
-Compiler 不重新做完整 Monte Carlo，但必须解释哪些输入支配 Base IRR 和 target-return price。
+至少一个 driver 为 high importance。
 
-### E. Narrative Synthesis
+### Compiler、Renderer 与 Pipeline
 
-Reader Renderer 使用 Theme 生成“投资叙事”而不是直接堆 Claims：
+新增：
 
-1. Core question；
-2. Evidence-backed observations；
-3. Base hypothesis；
-4. Strongest challenge；
-5. Resolution；
-6. Decision impact；
-7. What would falsify it。
+- `scripts/report_compiler_v3.py`；
+- `scripts/report_renderer_v3.py`；
+- `scripts/report_pipeline_v3.py`；
+- `references/research-graph-v3.md`。
 
-九模块仍保留，但模块内容优先引用关联 Themes；避免同一观点在一页结论和 Overview 原样重复。
+v3：
 
-### F. Multi-Agent Adapter（借鉴 AI Berkshire）
+- 强制 `report-spec-v3.0`；
+- 生成 `report-bundle-v3.0`；
+- Reader 模块1改为 Theme narrative；
+- 估值部分新增“哪些假设真正决定估值”；
+- 最终判决前新增 Bull vs Bear 投资辩论；
+- Audit 保存 Theme、Observation、Argument、Driver 和 evidence role；
+- Reader、Audit、Bundle、Verification 继续做确定性重建和篡改校验。
 
-新增非强制运行合同：
+### Multi-Perspective Adapter
 
-- business analyst：商业模式和护城河 observations；
-- financial analyst：财务和估值 observations；
-- industry challenger：竞争与反共识 challenge；
-- risk assessor：失败路径和 falsification；
-- lead：resolution、debate adjudication、最终 narrative。
+Skill 定义五个独立研究角色：
 
-如果运行环境支持 subagents，可并行执行；否则单 Agent 必须顺序模拟独立视角。所有输出必须写入同一 `research_graph`，不能直接编辑 Markdown。
+1. business analyst；
+2. financial analyst；
+3. industry challenger；
+4. risk assessor；
+5. lead analyst。
 
-### G. Quality Gates
-
-阻断以下情况：
-
-- Theme 少于 3 或多于 5；
-- Theme 名称过于通用；
-- challenge 没有 counter evidence；
-- resolution 未同时处理正反证据；
-- Debate 少于 3 条 Bull 或 Bear；
-- Adjudication 未引用双方 argument IDs；
-- Sensitivity 缺少高重要性 driver；
-- Reader 没有 Theme narrative 或 Investment Debate；
-- Theme narrative 原样重复 Overview 关键句；
-- Audit 缺少 Research Graph；
-- Research Graph、Reader、Audit、Bundle 或 Verification 任一篡改。
+有 subagents 时前四者可并行；没有时必须分离轮次执行。所有结果写入同一个 Spec，禁止直接编辑 Markdown或机械平均评分。
 
 ## 非目标
 
-- 不修改 valuation runtime、payback 或 decision policy；
-- 不引入无法复现的 LLM runtime 依赖；
-- 不照搬巴菲特/芒格等人格化评分；
-- 不把不同 Agent 结论简单平均；
-- 不要求所有公司使用同样的 Theme 名称；
-- 不自动判断所有经济假设一定正确。
+- 不修改估值、回本或动作公式；
+- 不照搬大师人格和评分；
+- 不引入不可复现的 LLM 运行依赖；
+- 不声称结构化辩论自动保证经济假设正确。
 
-## 验收标准
+## 测试与验证结果
 
-1. Meta fixture 至少生成 3 个公司特有 Themes。
-2. Reader 包含“投资叙事”和“Bull vs Bear 投资辩论”。
-3. Reader 的财务、护城河、估值和风险内容能够引用 Theme resolution，而不是通用模板句。
-4. Audit 包含完整 Research Graph、Debate、Sensitivity。
-5. Bull/Bear 各至少 3 条 argument；Adjudication 引用双方 IDs。
-6. 每个 Theme 的 challenge 含 counter evidence，resolution 同时处理正反证据。
-7. 至少一个 high-importance sensitivity driver。
-8. 修改 graph node、debate、Reader、Audit、Bundle、Verification 任一内容后 verify 失败。
-9. 全量 unittest、lint、自测、Meta build/verify 全部通过。
-10. 完成后进行独立 code review，重点检查 schema 旁路、重复真相、Renderer 注入和测试虚假 PASS。
+GitHub Actions Validate run #271：PASS。
+
+- Python syntax：PASS；
+- financial rigor / audit / lint self-tests：PASS；
+- lint fixtures：PASS；
+- 全量 unittest：**168 / 168 PASS**；
+- v2.1.2 end-to-end：PASS；
+- v3 Meta build：PASS；
+- v3 Meta verify：PASS；
+- Research Graph：3 Themes、6 Observations；
+- Debate：3 Bull、3 Bear；
+- Sensitivity：3 Drivers，其中 2 个 High；
+- Reader 包含 Theme narrative、Sensitivity Explanation、Bull vs Bear；
+- Reader 不含 Theme/Argument 内部 IDs；
+- Audit 包含完整 Research Graph；
+- graph/Reader/Audit/Bundle/Verification 篡改检测：PASS。
+
+## 独立 Code Review
+
+实施后进行了单独 Review，发现并修复：
+
+1. Theme module links 未验证合法模块名；
+2. Argument ID 仅在单侧去重，可能 Bull/Bear 冲突；
+3. Adjudication accepted/discounted 可能重叠；
+4. Graph implication 复用旧 Claim 最低长度导致合理短句误报；
+5. 测试 Fixture 引用了不存在的 Bundle path；
+6. v3 Compiler 未明确阻断旧 schema 输入。
+
+修复后重新跑完整 CI 并通过。
+
+## 交付边界
+
+PR #9 为 stacked PR。先完成并合并 PR #8，再将 PR #9 rebase/retarget 到 main，重新运行完整 CI。合并前将 `references/change-log-v3.0.md` 合入总 change log 并删除 staged 文件。
