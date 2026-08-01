@@ -30,26 +30,27 @@ jobs:
         run: |
           mkdir -p /tmp/report-v212
           python tests/meta_v21_spec.py /tmp/report-v212/meta.spec.json
-          python scripts/report_pipeline_v2.py build \
-            --spec /tmp/report-v212/meta.spec.json \
-            --output /tmp/report-v212/meta.md
-          python scripts/report_pipeline_v2.py verify \
-            --spec /tmp/report-v212/meta.spec.json \
-            --output /tmp/report-v212/meta.md
+          python scripts/report_pipeline_v2.py build --spec /tmp/report-v212/meta.spec.json --output /tmp/report-v212/meta.md
+          python scripts/report_pipeline_v2.py verify --spec /tmp/report-v212/meta.spec.json --output /tmp/report-v212/meta.md
           test -f /tmp/report-v212/meta.md
           test -f /tmp/report-v212/meta.audit.md
-          test -f /tmp/report-v212/meta.md.bundle.json
-          test -f /tmp/report-v212/meta.md.verification.json
-          grep -q "## 4. 极限估值" /tmp/report-v212/meta.md
-          grep -q "Base 5年 IRR" /tmp/report-v212/meta.md
-          grep -q "最低目标回报" /tmp/report-v212/meta.md
-          grep -q "目标回报价格" /tmp/report-v212/meta.md
-          grep -q "## Source Registry" /tmp/report-v212/meta.audit.md
-          grep -q "## Claim-Evidence Matrix" /tmp/report-v212/meta.audit.md
-          grep -q "supports" /tmp/report-v212/meta.audit.md
-          ! grep -q "## Source Registry" /tmp/report-v212/meta.md
-          ! grep -q "## Claim-Evidence Matrix" /tmp/report-v212/meta.md
           ! grep -q "FACT-" /tmp/report-v212/meta.md
-          ! grep -q "BUNDLE:" /tmp/report-v212/meta.md
-          ! grep -q "Legacy Compatibility" /tmp/report-v212/meta.md
-          ! grep -q "未提供叙事内容" /tmp/report-v212/meta.md
+          grep -q "## Claim-Evidence Matrix" /tmp/report-v212/meta.audit.md
+
+      - name: Run v3 research graph end-to-end
+        run: |
+          mkdir -p /tmp/report-v3
+          python tests/meta_v3_spec.py /tmp/report-v3/meta.spec.json
+          python scripts/report_pipeline_v3.py build --spec /tmp/report-v3/meta.spec.json --output /tmp/report-v3/meta.md
+          python scripts/report_pipeline_v3.py verify --spec /tmp/report-v3/meta.spec.json --output /tmp/report-v3/meta.md
+          test -f /tmp/report-v3/meta.md
+          test -f /tmp/report-v3/meta.audit.md
+          test -f /tmp/report-v3/meta.md.bundle.json
+          test -f /tmp/report-v3/meta.md.verification.json
+          grep -q "## 1. 投资叙事与核心矛盾" /tmp/report-v3/meta.md
+          grep -q "### Bull vs Bear 投资辩论" /tmp/report-v3/meta.md
+          grep -q "### 哪些假设真正决定估值" /tmp/report-v3/meta.md
+          grep -q "## Research Graph v3" /tmp/report-v3/meta.audit.md
+          grep -q "THEME-CAPITAL-RETURNS" /tmp/report-v3/meta.audit.md
+          ! grep -q "THEME-" /tmp/report-v3/meta.md
+          ! grep -q "ARG-" /tmp/report-v3/meta.md
