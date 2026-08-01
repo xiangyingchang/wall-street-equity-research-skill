@@ -4,6 +4,7 @@ from typing import Any
 
 from scripts.report_renderer_readable_v212 import (
     _claim_text,
+    _escape,
     _paragraph,
     _source_note,
     render_audit_markdown as render_audit_v212,
@@ -92,9 +93,12 @@ def _graph_audit(bundle: dict[str, Any]) -> str:
         f"| Observations | {quality['observations']} |",
         f"| Bull arguments | {quality['bull_arguments']} |",
         f"| Bear arguments | {quality['bear_arguments']} |",
+        f"| Classified arguments | {quality['classified_arguments']} |",
         f"| Sensitivity drivers | {quality['sensitivity_drivers']} |",
         f"| High-importance drivers | {quality['high_importance_drivers']} |", "",
     ]
+    if quality.get("auto_discounted_arguments"):
+        lines.extend([f"> Auto-discounted unclassified arguments: {', '.join(quality['auto_discounted_arguments'])}", ""])
     for theme in graph["themes"]:
         lines.extend([
             f"### {theme['theme_id']} — {theme['title']}", "",
@@ -103,16 +107,16 @@ def _graph_audit(bundle: dict[str, Any]) -> str:
             "| Node | Text | Evidence |", "|---|---|---|",
         ])
         for item in theme["observations"]:
-            lines.append(f"| {item['observation_id']} | {_claim_text(item)} | {_evidence_refs(item)} |")
+            lines.append(f"| {_escape(item['observation_id'])} | {_escape(_claim_text(item))} | {_escape(_evidence_refs(item))} |")
         for name in ("hypothesis", "challenge", "resolution", "decision_impact", "falsification"):
             item = theme[name]
-            lines.append(f"| {name} | {_claim_text(item)} | {_evidence_refs(item)} |")
+            lines.append(f"| {_escape(name)} | {_escape(_claim_text(item))} | {_escape(_evidence_refs(item))} |")
         lines.append("")
     debate = graph["debate"]
     lines.extend(["### Investment Debate", "", "| Side | Argument ID | Claim | Evidence |", "|---|---|---|---|"])
     for side in ("bull", "bear"):
         for item in debate[side]:
-            lines.append(f"| {side} | {item['argument_id']} | {_claim_text(item, 'claim')} | {_evidence_refs(item)} |")
+            lines.append(f"| {_escape(side)} | {_escape(item['argument_id'])} | {_escape(_claim_text(item, 'claim'))} | {_escape(_evidence_refs(item))} |")
     adjudication = debate["adjudication"]
     lines.extend([
         "", f"**Adjudication:** {_claim_text(adjudication)}", "",
@@ -120,11 +124,11 @@ def _graph_audit(bundle: dict[str, Any]) -> str:
         f"- Discounted: {', '.join(adjudication['discounted_argument_ids'])}",
         f"- Remaining uncertainty: {adjudication['remaining_uncertainty']}", "",
         "### Sensitivity Explanation", "",
-        "| Driver ID | Variable | Direction | Importance | Mechanism | Decision consequence | Evidence |", "|---|---|---|---|---|---|---|",
+        "| Driver ID | Variable | Assumption | Direction | Importance | Mechanism | Decision consequence | Evidence |", "|---|---|---|---|---|---|---|---|",
     ])
     for item in graph["sensitivity"]["drivers"]:
-        lines.append("| " + " | ".join([
-            item["driver_id"], item["variable"], item["direction"], item["importance"], item["mechanism"], item["decision_consequence"], _evidence_refs(item),
+        lines.append("| " + " | ".join(_escape(value) for value in [
+            item["driver_id"], item["variable"], item["base_assumption_path"], item["direction"], item["importance"], item["mechanism"], item["decision_consequence"], _evidence_refs(item),
         ]) + " |")
     lines.append("")
     return "\n".join(lines)
