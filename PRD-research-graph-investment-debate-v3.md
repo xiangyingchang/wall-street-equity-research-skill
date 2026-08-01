@@ -43,7 +43,7 @@ Source → Fact → Observation → Hypothesis → Challenge
 - resolution，必须同时处理 supports 与 counter evidence；
 - decision impact，必须引用 Bundle；
 - falsification；
-- module links，必须指向合法研究模块。
+- module links，必须指向合法研究模块并覆盖九个正式模块。
 
 ### Investment Debate
 
@@ -52,6 +52,7 @@ Source → Fact → Observation → Hypothesis → Challenge
 - Argument ID 全局唯一；
 - Adjudication 的 accepted/discounted IDs 必须有效、非重叠；
 - accepted 必须同时包含 Bull 与 Bear 观点；
+- 未显式分类的 Argument 采取保守策略自动进入 discounted，并在 Audit 与 quality 中披露；
 - 裁决保留 remaining uncertainty。
 
 ### Sensitivity Explanation
@@ -67,7 +68,7 @@ Source → Fact → Observation → Hypothesis → Challenge
 - decision consequence；
 - evidence refs。
 
-至少一个 driver 为 high importance。
+至少一个 driver 为 high importance。Assumption pointer 必须解析到真实 Assumption Registry；历史别名会归一化成 canonical path，未知 ID 直接失败。
 
 ### Compiler、Renderer 与 Pipeline
 
@@ -86,7 +87,10 @@ v3：
 - 估值部分新增“哪些假设真正决定估值”；
 - 最终判决前新增 Bull vs Bear 投资辩论；
 - Audit 保存 Theme、Observation、Argument、Driver 和 evidence role；
-- Reader、Audit、Bundle、Verification 继续做确定性重建和篡改校验。
+- Audit 表格统一做 Markdown escaping；
+- Reader、Audit、Bundle、Verification 继续做确定性重建和篡改校验；
+- build 阶段即执行 Reader/Audit 完整性检查，不再先生成一个自称 PASS 的无效产物；
+- Verification 的 narrative、debate、sensitivity、reader、audit 状态由实际结构和渲染检查动态计算，不再硬编码 PASS。
 
 ### Multi-Perspective Adapter
 
@@ -98,7 +102,7 @@ Skill 定义五个独立研究角色：
 4. risk assessor；
 5. lead analyst。
 
-有 subagents 时前四者可并行；没有时必须分离轮次执行。所有结果写入同一个 Spec，禁止直接编辑 Markdown或机械平均评分。
+有 subagents 时前四者可并行；没有时必须分离轮次执行。所有结果写入同一个 Spec，禁止直接编辑 Markdown 或机械平均评分。
 
 ## 非目标
 
@@ -109,7 +113,7 @@ Skill 定义五个独立研究角色：
 
 ## 测试与验证结果
 
-GitHub Actions Validate run #271：PASS。
+GitHub Actions Validate run #285：PASS。
 
 - Python syntax：PASS；
 - financial rigor / audit / lint self-tests：PASS；
@@ -124,20 +128,26 @@ GitHub Actions Validate run #271：PASS。
 - Reader 包含 Theme narrative、Sensitivity Explanation、Bull vs Bear；
 - Reader 不含 Theme/Argument 内部 IDs；
 - Audit 包含完整 Research Graph；
+- build-time Reader/Audit gate：PASS；
+- dynamic Verification：PASS；
 - graph/Reader/Audit/Bundle/Verification 篡改检测：PASS。
 
 ## 独立 Code Review
 
 实施后进行了单独 Review，发现并修复：
 
-1. Theme module links 未验证合法模块名；
+1. Theme module links 只验证合法性，没有验证九模块覆盖；
 2. Argument ID 仅在单侧去重，可能 Bull/Bear 冲突；
-3. Adjudication accepted/discounted 可能重叠；
-4. Graph implication 复用旧 Claim 最低长度导致合理短句误报；
-5. 测试 Fixture 引用了不存在的 Bundle path；
-6. v3 Compiler 未明确阻断旧 schema 输入。
+3. Adjudication accepted/discounted 可能重叠，且遗漏的论点可能被静默忽略；
+4. Graph implication 复用旧 Claim 最低长度导致合理中文短句误报；
+5. Sensitivity assumption path 只验证字符串前缀，没有绑定真实 Assumption Registry；
+6. Meta fixture 引用了不存在的 Bundle path；
+7. Audit Graph 表格未统一转义管道符与换行；
+8. v3 build 在渲染不完整时仍可能先写出产物；
+9. Verification 的 narrative/debate/sensitivity/reader/audit 状态存在硬编码 PASS；
+10. v3 Compiler 未明确阻断旧 schema 输入。
 
-修复后重新跑完整 CI 并通过。
+以上问题均已修复，并在最终完整 CI 中通过。
 
 ## 交付边界
 
