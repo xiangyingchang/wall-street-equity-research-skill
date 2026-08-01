@@ -1,5 +1,189 @@
 # Wall Street Equity Research Skill Change Log
 
+## v2.1.2 - Reader-First Dual-Layer Renderer
+
+## 2026-08-01
+
+### Change
+
+- Added a Reader-First dual-layer renderer.
+- Added `scripts/report_renderer_readable_v212.py` with:
+  - `render_reader_markdown(bundle)`;
+  - `render_audit_markdown(bundle)`.
+- Build now generates four immutable artifacts:
+  - `<report>.md` Reader Report;
+  - `<report>.audit.md` Audit Appendix;
+  - `<report>.md.bundle.json`;
+  - `<report>.md.verification.json`.
+- Reader Report now leads with actions, current price, Base IRR, hurdle, target-return price, buy price, forward reference, core thesis, three core tensions, and falsification condition.
+- Reader Report keeps all nine modules but removes implementation noise:
+  - no Build Manifest or hashes;
+  - no Source Registry or Evidence Ledger;
+  - no internal `FACT-*`, `SRC-*`, `BUNDLE:*`, or `[supports]` tokens;
+  - no full Assumption Registry or raw Decision Policy;
+  - no Claim-Evidence Matrix or Verification table.
+- Related claims are rendered as continuous prose instead of repeated claim/implication/evidence/confidence cards.
+- Compiler-owned TTM, Scenario, IRR, price, payback, and action numbers are embedded directly into the readable argument.
+- Reader evidence notes use human-readable source titles and “报告情景模型”.
+- Audit Appendix preserves the complete v2.1.1 traceability view, including all registries, IDs, evidence roles, assumptions, policy evaluation, Claim-Evidence Matrix, and Verification.
+- Verification now records both `reader_markdown_hash` and `audit_markdown_hash`.
+- Verify recompiles and compares Reader Markdown, Audit Markdown, Bundle, and Verification independently.
+- Added Reader-layer cleanliness checks, Audit-layer completeness checks, nine-module checks, key-number checks, and a 120–300 line readability budget.
+- Updated Skill contract to v2.1.2.
+- Updated CI and regression tests for dual-layer generation and tamper detection.
+
+### Reason
+
+v2.1.1 was reliable but difficult to read because it gave hashes, IDs, registries, evidence roles, and verification tables the same visual weight as the investment argument. The main report behaved like an audit export and forced the reader to reconstruct the thesis.
+
+v2.1.2 does not weaken evidence controls or return to Markdown-first writing. It compiles a reader-facing report and a machine-facing appendix from the same Bundle, so readability and auditability no longer compete inside one document.
+
+### Scope boundary
+
+- No valuation formula changes.
+- No Scenario-assumption changes.
+- No decision-policy changes.
+- No new research modules.
+- No reduction in Source, Evidence Role, Value Binding, Research Quality, or tamper controls.
+- Audit data is moved, not deleted.
+
+### Verification
+
+GitHub Actions `Validate` run #213: PASS.
+
+- Python syntax: PASS.
+- financial rigor / report audit / report lint self-tests: PASS.
+- lint fixtures: PASS.
+- full unittest suite: **159 / 159 PASS**.
+- v2.1.2 Meta build: PASS.
+- v2.1.2 Meta verify: PASS.
+- Reader Report generated: PASS.
+- Audit Appendix generated: PASS.
+- Reader contains all nine modules and key decision numbers: PASS.
+- Reader excludes Source Registry, Claim-Evidence Matrix, FACT IDs, Bundle paths, and evidence-role tokens: PASS.
+- Audit includes Source Registry, Claim-Evidence Matrix, and evidence roles: PASS.
+- Reader tamper detection: PASS.
+- Audit tamper detection: PASS.
+- Bundle tamper detection: PASS.
+- Verification tamper detection: PASS.
+- deterministic Reader and Audit output: PASS.
+
+### Integration
+
+Before merging PR #8:
+
+1. prepend this entry, followed by v2.1.1 and v2.1, below the title in `references/change-log.md`;
+2. delete all three staged change-log files;
+3. preserve every historical entry;
+4. retarget/rebase PR #8 onto main;
+5. rerun full CI;
+6. merge only after Agent review and green CI;
+7. regenerate Meta and deliver Spec, Reader, Audit, Bundle, and Verification together.
+
+## v2.1.1 - Research Quality Binding
+
+## 2026-08-01
+
+### Planned change
+
+- Add `text_template + value_refs` so research prose can embed compiler-owned values without handwritten numbers.
+- Replace dot-separated Bundle paths with JSON Pointer paths.
+- Upgrade evidence refs to typed `{ref, role}` objects with `supports`, `context`, and `counter_evidence`.
+- Require at least one supporting evidence ref for each key claim.
+- Compute Research Quality results dynamically and render Verification from those results.
+- Validate risk confidence and rank uniqueness/continuity.
+- Validate Source scope against Fact metric category.
+- Escape Markdown table content safely.
+- Add end-to-end and negative tests for value binding, evidence roles, path safety, source scope, dynamic verification, and table escaping.
+
+### Reason
+
+v2.1 restored complete research structure, but its prose still could not directly use core numbers; evidence only needed to exist rather than carry an explicit logical role; several quality flags were hard-coded; dot paths failed for decimal keys; and some validation boundaries remained weak. v2.1.1 turns the Research Layer from a structured outline into a numerically integrated and honestly verified report layer without changing the Single-Source Compiler architecture.
+
+### Integration
+
+After implementation and validation:
+
+1. replace this planned entry with exact implementation and test results;
+2. prepend it below the title in `references/change-log.md`;
+3. delete `references/change-log-v2.1.1.md`;
+4. mark `PRD-research-quality-binding-v2.1.1.md` completed;
+5. rerun full CI before merge.
+
+## v2.1 - Evidence-Bound Research Layer
+
+## 2026-08-01
+
+### Change
+
+- Upgraded new-report schema to `report-spec-v2.1` and bundle schema to `report-bundle-v2.1`.
+- Added structured `SRC-*` Source Registry with title, publisher, date, tier, document type, locator, and scope.
+- Required every Fact to reference registered Source IDs; critical company financial facts require Tier 1 evidence when available.
+- Added structured Research Layer covering all nine modules.
+- Added claim/text, evidence_refs, confidence, implication, counter-evidence, risk mechanism, indicators, triggers, and mitigants.
+- Added evidence closure for `SRC-*`, `FACT-*`, and `BUNDLE:<path>` references.
+- Added numeric-safety validation so research prose cannot introduce unbound prices, percentages, multiples, large numeric facts, thresholds, or actions.
+- Added complete generated Source Registry, Evidence Ledger, Quarterly TTM Bridge, Scenario Assumption tables, modules 1-9, Claim-Evidence Matrix, and Verification summary.
+- Restored module 4 as a mandatory Valuation and Payback research section.
+- Added Moat minimum contract: four dimensions, scores, evidence, counter-evidence, and trajectory.
+- Added Risk minimum contract: three ranked risks with mechanism, leading indicators, trigger, and mitigant.
+- Added separate research explanations for new-money and existing-position decisions without allowing narrative to override Compiler actions.
+- Updated `report_pipeline_v2.py` build/verify to use the v2.1 research compiler and enforce required report sections.
+- Updated `SKILL.md` to v2.1.0.
+- Added `references/research-layer-v2.1.md`.
+- Added a complete Meta v2.1 Spec factory and end-to-end research-quality tests.
+- Updated CI to generate, build, and verify a full v2.1 Meta report.
+
+### Reason
+
+v2.0 correctly established one numeric truth, but its first Meta report was a thin calculation summary: most modules contained one sentence, module 4 was absent, sources were vague, assumptions were hidden, and claims lacked evidence binding.
+
+v2.1 preserves the Single-Source Compiler and adds a constrained Research Layer:
+
+```text
+one typed Spec
+→ deterministic analytical Bundle
+→ evidence-bound Research Layer
+→ complete compiled Markdown
+→ generated Verification Manifest
+```
+
+This avoids both previous failure modes: freehand Markdown inconsistency and compiler-generated research shallowness.
+
+### Verification
+
+GitHub Actions Validate run #164: PASS.
+
+- Python syntax: PASS.
+- financial rigor, audit, and lint self-tests: PASS.
+- lint fixtures: PASS.
+- full unittest suite: **143 / 143 PASS**.
+- v2.1 end-to-end build: PASS.
+- v2.1 end-to-end verify: PASS.
+- all nine modules present, including module 4: PASS.
+- Source Registry, Evidence Ledger, Quarterly TTM Bridge, Scenario Assumptions, and Claim-Evidence Matrix: PASS.
+- report depth threshold and thin-placeholder rejection: PASS.
+- Markdown, Bundle, and Spec tamper detection: PASS.
+- missing module, missing evidence, undefined source, and unbound numeric negative tests: PASS.
+- cross-scenario assumption and missing valuation-policy negative tests: PASS.
+- guide-high versus midpoint test: PASS.
+- deterministic Payback and Price Zone tests: PASS.
+- Legacy Compatibility absence check: PASS.
+
+### Integration
+
+PR #8 is stacked on PR #7.
+
+Before final merge:
+
+1. review and merge PR #7;
+2. rebase or retarget PR #8 onto the updated main branch;
+3. prepend this entry below the title in `references/change-log.md`;
+4. delete `references/change-log-v2.1.md`;
+5. preserve every historical change-log entry;
+6. rerun the full CI suite;
+7. regenerate Meta from a fresh v2.1 Spec and deliver Spec, Markdown, Bundle, and Verification together.
+
 ## v2.0 - Single-Source Report Compiler
 
 ## 2026-08-01
