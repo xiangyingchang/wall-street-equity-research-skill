@@ -26,6 +26,8 @@ Only use a chat-only quick take when the user explicitly asks for "快评", "简
 
 The saved report must not include visible YAML frontmatter. It must include a default-input statement, First-Page Verdict, Evidence Ledger, Key Forces, Variant View, Pre-Mortem, Action Triggers, 9 fixed modules, final verdict, and source links.
 
+Current portfolio facts must come from the Ledger project, not an old Obsidian Dashboard export. Use the authenticated `/api/stocks` snapshot or `scripts/ledger_portfolio_preflight.py`; treat only `amount > 0` as an active holding and record the snapshot time and freshness warnings.
+
 Metadata such as ticker, company, market, date, verdict, and action belongs in the filename, title, Evidence Ledger, or internal workflow notes. Do not expose YAML frontmatter in the final report body.
 
 For new reports, start from `templates/full-report.md` or generate a skeleton with `scripts/new_report.py`. Hand-written skeletons are not acceptable for full Obsidian reports.
@@ -74,6 +76,7 @@ Include, when relevant:
 - PE, forward PE, EV/EBITDA, FCF yield, PB, dividend yield
 - Dividend DPS, total dividends, buybacks, SBC, share count trend
 - Segment revenue/profit, key operating metrics
+- Current holding state, quantity, market value, portfolio weight, Ledger endpoint, snapshot time, and any stale/missing-price warning
 - Module 5 must state `流动性结论：不构成约束` or `流动性结论：构成约束`. When constrained, include 90-day average value traded, position value, stress participation rate, and stress exit days.
 - 2-3 direct competitor valuation references
 - Relevant 10Y government bond yield and opportunity-cost benchmark
@@ -101,6 +104,14 @@ For US, HK, and other non-A-share reports, complete and disclose this preflight 
 - Relevant 10Y government bond yield and opportunity-cost benchmark.
 - Peer valuation set and any source conflicts.
 
+For position-sensitive reports, complete and disclose this Ledger preflight as well:
+
+- Read-only authenticated `GET /api/stocks` through `scripts/ledger_portfolio_preflight.py`.
+- Filter zero-quantity historical records from active holdings.
+- Record `retrieved_at`, each position's `amount`, `current_price`, currency, and price timestamp.
+- Treat `GET /api/allocation` as a configuration snapshot only. Its stock values currently read persisted `Stock.currentPrice`, so it cannot override a fresher `/api/stocks` snapshot.
+- If Ledger cannot be read or the snapshot is stale, say `持仓未核验`; do not invent an existing-position Hold/Reduce/Sell conclusion.
+
 If a source is a PDF, extract text with `scripts/pdf_text_extract.py <pdf_or_url>` when possible. If extraction fails, record the tool/dependency failure and cap confidence for any management-commentary claim based only on headlines or snippets.
 
 If `summary.business_model_flags.equity_method_holding_company` is true:
@@ -117,6 +128,7 @@ If `summary.business_model_flags.equity_method_holding_company` is true:
 - Missing EPS or FCF/share: do not rate Buy.
 - Missing current price or valuation multiples: do not rate Buy.
 - Missing debt/cash data: maximum Watchlist.
+- Missing or stale Ledger holdings snapshot: existing-position action must be `Review / 未核验`; new-money action may still be analyzed from current market data.
 - When liquidity is declared constrained but the required inputs are missing: do not recommend more than 5% portfolio weight.
 - Only Tier 2/3 data and no filing spot-check: confidence maximum Medium.
 - Conflicting data with unresolved source quality: show the conflict and use the conservative口径.

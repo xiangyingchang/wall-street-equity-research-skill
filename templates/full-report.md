@@ -24,6 +24,7 @@
 | 当前价格 | TODO | {{date}} | TODO | TODO | TODO |
 | 10Y 国债 ×1 / ×2 | TODO | {{date}} | TODO | TODO | TODO |
 | 最新财报 | TODO | TODO | TODO | TODO | TODO |
+| 当前持仓事实（Ledger） | TODO | TODO | Ledger `/api/stocks`；记录 retrieved_at | TODO | TODO |
 
 ## 1. 华尔街式全景扫描 Overview
 
@@ -122,6 +123,10 @@ TODO
 ## 8. 仓位与风控 Position Sizing & Exit Rules
 
 TODO
+
+### Ledger 持仓事实
+
+数据来源：Ledger `/api/stocks`；快照时间：TODO；active position 过滤规则：`amount > 0`。当前持仓数量、币种、市值和价格时间：TODO。若 Ledger 未读取、认证失败或快照过期，必须写明“持仓未核验”，不得把旧 Dashboard 或历史报告当作当前仓位。
 
 ### Pre-Mortem
 

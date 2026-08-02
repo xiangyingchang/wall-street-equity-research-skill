@@ -53,6 +53,8 @@ agent_created: true
 | 当前状态 | 未持有 / 已持有 |
 | 现有仓位或计划投入资金 | 金额 / 组合占比 |
 
+当前状态和仓位必须以 Ledger 为准：运行 `scripts/ledger_portfolio_preflight.py` 读取鉴权后的 `/api/stocks`，只把 `amount > 0` 视为 active position。旧 Dashboard、历史报告和 dated allocation note 不能作为当前仓位事实；Ledger 不可用时只能写“持仓未核验”。
+
 ### ⭐ Input 默认值声明（强制）
 
 即使用户说"按默认跑"，报告开头也**必须显式声明本次使用的默认输入**：
@@ -314,6 +316,7 @@ TTM PE / Forward PE / EV/EBITDA / FCF Yield / 股息率 / 行业平均 / 公司�
 
 ### 8. 仓位与风控 Position Sizing & Exit Rules（操作规则）
 
+- **Ledger 持仓事实**：记录 `/api/stocks` 的快照时间、代码、数量、币种、当前价和价格时间；`/api/allocation` 只能作为配置快照交叉参考。
 - 当前状态是未持有还是已持有？
 - 如果已持有：今天是否仍值得用现价重新买入同等仓位？
 - 最大可接受仓位

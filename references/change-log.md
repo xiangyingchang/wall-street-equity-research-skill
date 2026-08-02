@@ -1,5 +1,29 @@
 # Wall Street Equity Research Skill Change Log
 
+## ledger-authoritative-positions-v1 — 2026-08-02
+
+### Change
+
+- 将当前持仓事实来源从过时 Dashboard 切换为鉴权后的 Ledger `/api/stocks`。
+- 规定只把 `amount > 0` 的 Ledger 记录视为 active position；零数量记录只保留为历史。
+- 明确 `/api/allocation` 只能作为配置快照交叉参考，因为其股票价格读取保存的 `Stock.currentPrice`，可能滞后。
+- 新增只读 `ledger_portfolio_preflight.py`，输出持仓、价格时间、来源和 warning，不保存认证 token。
+- 借鉴 AI-伯克希尔的双源交叉验证、差异标记和 `financial_rigor.py` 精确市值/估值验算规则。
+
+### Reason
+
+旧 Dashboard 已经过时，继续引用会把历史仓位误写成当前事实。AI-伯克希尔的 FinMind 工具只覆盖台股，没有通用稳定的美股行情接口；可借鉴的是数据交叉验证和精确计算，而不是把 FinMind 当成美股行情源。
+
+### Verification
+
+- `python3 -m py_compile scripts/*.py tests/*.py`：PASS
+- `python3 -m unittest tests.test_ledger_portfolio_preflight -v`：9/9 PASS
+- `python3 -m unittest discover -s tests`：28/28 PASS
+- `python3 scripts/report_lint.py --self-test`：PASS
+- `python3 scripts/report_lint.py --fixtures tests/fixtures`：PASS
+- 无 `LEDGER_AUTH_TOKEN` 时安全失败且不输出 token：PASS
+- `git diff --check`：PASS
+
 ## price-discipline-v2 — 2026-08-01
 
 ### Change

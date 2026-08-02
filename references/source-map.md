@@ -11,7 +11,15 @@ The first file is the current authority for the stock due-diligence prompt. The 
 
 ## Obsidian Stock Vault Default
 
-When `cwd` is `/Users/muskxiang/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian` and the user says "跑一下 + 股票名/代码", the default output is a full Obsidian Markdown report, not a chat-only quick take.
+### Current portfolio authority
+
+- `/Users/haoshifasheng/Downloads/Github/ledger` is the current portfolio and transaction project.
+- Use its authenticated `GET /api/stocks` snapshot, preferably through `scripts/ledger_portfolio_preflight.py` in this Skill.
+- Use only records with `amount > 0` as active holdings. Zero-quantity records are historical records retained for dividend/profit history.
+- `/api/allocation` is a Ledger allocation snapshot, not the primary real-time price source; record its warning and timestamp if used.
+- The old Dashboard and dated allocation notes are historical context only. They must not supply current position, weight, or action facts.
+
+When `cwd` is `/Users/haoshifasheng/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian` and the user says "跑一下 + 股票名/代码", the default output is a full Obsidian Markdown report, not a chat-only quick take.
 
 Use this rule unless the user explicitly says "快评", "简单说下", "不用建文档", "先别写文件", or equivalent.
 
