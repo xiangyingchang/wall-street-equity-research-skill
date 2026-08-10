@@ -13,7 +13,10 @@ disable: false
 agent_created: true
 ---
 
-# 华尔街式股票脱水质检 Skill（9 个固定模块 + 前置信息）
+# Legacy v3.1-era 9-module methodology
+
+The active V3 methodology is [`full-methodology-v3.md`](full-methodology-v3.md).
+This file remains for compatibility with the retained v3.1 compiler paths.
 
 你正在执行一次股票脱水质检。最终产出一份**结构化、有数学审判、有终极判决**的深度分析报告。
 

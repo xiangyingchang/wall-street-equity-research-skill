@@ -1,5 +1,30 @@
 # Wall Street Equity Research Skill Change Log
 
+## optimized-v3 Reader + V3-Fast guardrails — 2026-08-10
+
+### Change
+
+- Restored `optimized-v3` as the active 11-module Reader contract.
+- Added V3-specific output contract, methodology, template, migration PRD, and
+  `report_lint.py --profile v3` routing.
+- Added deterministic `scripts/valuation_math.py`, including the explicit
+  `dividend-total` command for nominal after-tax dividend sums.
+- Kept the v3.1 Compiler/Bundle/Research Graph files in the repository as
+  compatibility history, but removed them from the default Reader path.
+
+### Reason
+
+V3 has the preferred business-to-valuation-to-action reading rhythm. V3-Fast
+keeps the high-value denominator, security-classification, source, unit, and
+deterministic-math checks without making every report pay the full v3.1
+Compiler/Audit cost.
+
+### Verification target
+
+- V3 skill validation, template generation, lint self-tests, and fixture tests.
+- Existing v2.1.2/v3.1 compiler tests remain green.
+- The user's local V3 baseline remains the rollback point for future iterations.
+
 ## v3.1 - Data, Reasoning, and Decision Reader
 
 ## 2026-08-01

@@ -1,52 +1,40 @@
-# Wall-Street Equity Research Skill｜股票脱水质检 Prompt
+# Wall-Street Equity Research Skill｜optimized-v3 股票脱水质检 Prompt
 
-一个用于个人投资研究的股票质检 Prompt / Agent Skill。
+当前激活版本是 `optimized-v3`：11 模块、读者优先、Evidence Ledger、TTM/Forward 双口径、EPS/FCF 双口径、三档贴现和确定性轻量校验。
 
 它把单只股票分析拆成可执行的研究流程：
 
 - 数据源优先级：监管原文 / 公司 IR / 交易所公告优先
 - Data Acquisition Workflow：先找财报原文，再取表格，再补行情和估值
 - Evidence Ledger：关键数字必须标注日期、来源、口径、可信度
+- 正常化桥：强制区分 Reported / Adjusted / Normalized，利润正常化与现金流正常化分开
+- CapEx 制度检查：把季度资本开支、全年指引和经营现金流运行率放在一起判断
+- 价格纪律：分开盈利参考价、目标回报价、现金流确认价、联合新资金价和安全边际价
 - 10 年回本测试：名义与贴现双口径，EPS 与 FCF/share 双口径
 - A 股预抓取脚本：公告链接、行情、三表、分红、FCF、EV/FCF、同业比较、权益法平台识别、中国 10Y 缓存
 - 非 A 股 preflight：公司 IR、SEC/HKEX filing、PDF deck、收盘/盘后价格、10Y 收益率和同业估值
 - 周期/高 Capex 双估值：峰值利润、新周期中枢、旧周期平准、EV/FCF
 - 三条投资纪律：持有=买入、机会成本、10 年回本
+- V3-Fast：只跑一次数据采集、一次 Evidence Ledger 和本地确定性 math/lint，不默认运行 v3.1 Compiler
 - 最终四档判决：Buy / Hold-Index / Watchlist / Avoid
-- 单一 Action Matrix：v3.1 Compiler Reader 放在第一页；旧手工报告契约放在第 8 模块；两条路径都禁止第二套交易规则
-- v3.1 Reader：来源直链、Base 假设前置、公司特有经营指标、研究候选与组合可执行动作分离
 
 > 免责声明：本仓库仅用于个人研究、学习和辅助信息整理，不构成投资建议。所有财务数据、估值和结论都必须回到监管原文、公司公告和可靠数据源复核。
 
 ## 文件
 
 - [`SKILL.md`](SKILL.md)：完整 Prompt / Agent Skill 文档
-- [`references/report-contract.md`](references/report-contract.md)：报告输出契约
-- [`references/full-methodology.md`](references/full-methodology.md)：9 个固定模块加前置模块区段的方法论
-- [`references/data-validation.md`](references/data-validation.md)：数据验证与可执行审计流程
-- [`references/researchability.md`](references/researchability.md)：A/B/C 与置信度定义
+- [`references/report-contract-v3.md`](references/report-contract-v3.md)：V3 报告输出契约
+- [`references/full-methodology-v3.md`](references/full-methodology-v3.md)：11 模块完整方法论
+- [`references/PRD-v3-reader-fast-v1.md`](references/PRD-v3-reader-fast-v1.md)：迁移与验收约束
 - [`references/source-map.md`](references/source-map.md)：Obsidian 路径和历史报告定位
 - [`scripts/a_share_prefetch.py`](scripts/a_share_prefetch.py)：A 股预抓取脚本
 - [`scripts/pdf_text_extract.py`](scripts/pdf_text_extract.py)：财报 PDF / earnings deck 文本抽取
-- [`scripts/report_lint.py`](scripts/report_lint.py)：报告交付前的硬约束检查
-- [`scripts/valuation_consistency.py`](scripts/valuation_consistency.py)：估值口径、情景数学与跨章节语义一致性检查
-- [`scripts/financial_rigor.py`](scripts/financial_rigor.py)：Decimal 计算与交叉验证
-- [`scripts/report_audit.py`](scripts/report_audit.py)：v4 manifest/results 与 pack-backed v5 派生值审计
-- [`scripts/research_pack.py`](scripts/research_pack.py)：可恢复的研究包与估值口径锁
-- [`references/research-pack-v1.md`](references/research-pack-v1.md)：`research-pack-v1` 数据契约和命令
+- [`scripts/report_lint.py`](scripts/report_lint.py)：报告交付前的硬约束检查，V3 使用 `--profile v3`
+- [`scripts/valuation_math.py`](scripts/valuation_math.py)：确定性 payback、目标回报价格和 IRR 计算
 - [`examples/input-template.md`](examples/input-template.md)：使用时的输入模板
 - [`LICENSE`](LICENSE)：MIT License
 
 ## 快速使用
-
-v3.1 的标准交付由一个 JSON Spec 生成 Reader、Audit、Bundle 和 Verification：
-
-```bash
-python3 scripts/report_pipeline_v3.py build --spec <report-spec-v3.1.json> --output <report.md>
-python3 scripts/report_pipeline_v3.py verify --spec <report-spec-v3.1.json> --output <report.md>
-```
-
-Spec 必须提供真实 HTTPS 来源、同量纲 TTM 数据、公司特有 `operating.metrics[]`、明确的 `portfolio_context`，以及 `prior_report_context`。持仓或目标权重不完整时，研究候选 `REDUCE` 只能输出可执行 `REVIEW`；旧报告 IRR 必须保留报告值并由 runtime 独立复算，不能复制旧正文数字。
 
 把 [`SKILL.md`](SKILL.md) 的内容交给支持长上下文的 LLM / Agent，然后输入股票信息：
 
@@ -64,45 +52,28 @@ Spec 必须提供真实 HTTPS 来源、同量纲 TTM 数据、公司特有 `oper
 
 1. First-Page Verdict
 2. Evidence Ledger
-3. 9 个固定分析模块
+3. 11 个固定分析模块
 4. 最终 Buy / Hold-Index / Watchlist / Avoid 判决
 
-完整 Obsidian 报告交付前必须跑：
+完整 V3 Obsidian 报告交付前必须跑：
 
 ```bash
-python3 scripts/valuation_consistency.py "/path/to/report.md"
-python3 scripts/report_audit.py recognize --report "/path/to/report.md"
-python3 scripts/report_lint.py "/path/to/report.md"
+python3 scripts/report_lint.py --profile v3 "/path/to/report.md"
 ```
 
 没通过就修报告，不能说“跑完了”。
 
-`scripts/new_report.py` 会在写出模板骨架后自动执行字段识别并在失败时删除无效输出。手工创建或复制模板骨架时，必须立即显式运行 `recognize`。两种路径都必须在填完报告后、运行 `report_audit.py extract` 前再执行一次；`recognize` 不要求数值单元格已经填好。
-
-## 可恢复研究包
-
-跨会话或可能中断的完整研究，建议在生成骨架时同时创建 `research-pack-v1`：
+生成 V3 骨架：
 
 ```bash
-python3 scripts/new_report.py \
-  --ticker META --company Meta --market US \
-  --out "/path/to/META.md" --research-pack
+python3 scripts/new_report.py --profile v3 --ticker GOOGL --company Alphabet --market US --out "/path/to/report.md"
 ```
 
-也可以单独运行 `scripts/research_pack.py init`，随后用 `source-add`、`fact-add`、`derived-add`、`checkpoint`、`valuation-lock` 和 `status` 保存确定性的上游状态。完整命令和 JSON 契约见 [`references/research-pack-v1.md`](references/research-pack-v1.md)。
+高 CapEx 或存在明显一次性项目的公司，还必须通过正常化桥和现金流制度检查；目标回报价格必须记录股息处理方式，并由 `scripts/valuation_math.py` 复算。
 
-研究包是持久化恢复检查点，不是 provider/model/token/timing/retry/runtime telemetry，不抓取数据，也不替代报告、lint 或人工审计。
+仓库中保留的 v3.1 Compiler/Bundle/Research Graph 文件是兼容历史，不属于默认 V3-Fast 路径；只有明确要求深度审计时才调用。
 
-派生记录的输入是引用，不是调用方复制的数据：财务和市场输入使用 `fact_ref`，可组合结果使用无环 `derived_ref`；解析时从不可变 pack 快照取得 value、unit、as-of 和 source IDs。唯一 literal 是 payback 公式的正整数 `years`。TTM sum 要求四个连续财季、70-115 天相邻间隔，且这组中唯一的 `FYyyyy-Q4` 期末年份必须正好等于 `yyyy`；TTM bridge 要求年度 FY 期末年份正好等于声明财年、相邻财年、相同 1-3 季 YTD 长度、350-385 天同比间隔以及兼容 52/53 周财年的桥接日期。公式同时执行维度和十亿单位缩放代数。
-
-包含严格派生记录并完成 `draft_ready` 后，运行 pack-backed Audit v5：
-
-```bash
-python3 scripts/report_audit.py extract --report "/path/to/report.md" --pack "/path/to/pack.json" --manifest-out "/path/to/manifest-v5.json"
-python3 scripts/report_audit.py verdict --report "/path/to/report.md" --pack "/path/to/pack.json" --manifest "/path/to/manifest-v5.json"
-```
-
-v5 不读取 `results.json`，也不抓取网络数据。Extract/verdict 都拒绝 report/pack/manifest symlink 和路径碰撞；严格 JSON 拒绝重复键，公共 snapshot API 也拒绝伪造的 text/bytes、parsed/bytes 或容器类型组合。所有 skill 自带的 research-pack 写入器与 v5 verdict 共用 pack 旁的 advisory lock；verdict 持锁后重新读取并比对快照，再完成重建、复算和提交，因此协作写入器并发时不会丢失更新。该保证只适用于遵守此锁协议的 skill 写入器，无法阻止任意外部程序直接改写文件。成功后 pack 的实际 SHA-256 与 manifest 一致，相同 verdict 重跑仍 PASS 且不改字节。未使用 pack 时，v4 manifest/results 字节、判定逻辑和数值语法保持不变（例如 `$10/share` 仍不是 v4 数值）；v4 同时拒绝破坏性路径碰撞和 symlink 输出，并原子提交两个输出。
+周期股还必须通过 Price Discipline 检查。PE 和 FCF yield 阈值要有公司特定依据，不能把单一股票的价格区间直接复制给其他股票。
 
 ## A 股预抓取脚本
 
@@ -175,7 +146,7 @@ python3 scripts/pdf_text_extract.py <pdf_or_url>
 - 旧周期平准 EPS 与 FCF；
 - EV/FCF。
 
-只靠峰值利润支撑的 Buy，评级默认降为 Watchlist 或 Avoid；追高风险单独标记为高，不得写成第五档评级。
+只靠峰值利润支撑的 Buy，默认降为 Watchlist 或 Avoid。
 
 ## 核心原则
 
@@ -212,7 +183,7 @@ python3 scripts/pdf_text_extract.py <pdf_or_url>
 
 ## 版本
 
-当前公开版基于 `optimized-v7-preflight-cycle-pdf`。
+当前激活版基于 `optimized-v3`，迁移日期为 2026-08-10。
 
 主要特性：
 
@@ -222,7 +193,6 @@ python3 scripts/pdf_text_extract.py <pdf_or_url>
 - A 股预抓取脚本：`summary`、`peer_comparison`、权益法平台识别、中国 10Y 缓存
 - 非 A 股 preflight：IR + filing + PDF + 收盘/盘后价格分离
 - PDF 文本抽取脚本
-- 报告 lint：三原则、四档贴现、Evidence Ledger、9 个固定模块、source links 等交付前检查
-- 报告识别预检：占位符骨架也能验证强制决策字段标签；Action Matrix lint 阻止重复条件交易
+- 报告 lint：三原则、三档贴现、Evidence Ledger、11 模块、source links 等交付前检查
 - 周期/高 Capex 双估值闸门
-- 四档贴现回本测试：10Y×1 / 10Y×2 / 8% / 10%
+- V3 三档贴现回本测试：10Y×2 / 8% / 10%；10Y×1 可作为补充敏感性

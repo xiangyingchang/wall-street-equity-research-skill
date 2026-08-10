@@ -24,6 +24,7 @@ from research_pack import (
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 TEMPLATE = SKILL_DIR / "templates" / "full-report.md"
+V3_TEMPLATE = SKILL_DIR / "templates" / "full-report-v3.md"
 
 
 def render(template: str, values: dict[str, str]) -> str:
@@ -146,6 +147,7 @@ def _write_transaction(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Create a report skeleton from templates/full-report.md.")
+    parser.add_argument("--profile", choices=("current", "v3"), default="current")
     parser.add_argument("--ticker", required=True)
     parser.add_argument("--company", required=True)
     parser.add_argument("--market", required=True)
@@ -167,6 +169,45 @@ def main() -> int:
         help="Prior report recorded in --research-pack continuity metadata.",
     )
     args = parser.parse_args()
+
+    if args.profile == "v3":
+        if args.research_pack is not None or args.previous_report is not None:
+            raise SystemExit("ERROR: V3-Fast does not create a research pack; use the V3 Evidence Ledger instead.")
+        for label, value in (
+            ("ticker", args.ticker),
+            ("company", args.company),
+            ("market", args.market),
+            ("verdict", args.verdict),
+            ("action", args.action),
+        ):
+            if not value.strip():
+                raise SystemExit(f"ERROR: --{label} must be nonempty")
+        try:
+            report_date = date.fromisoformat(args.date)
+        except ValueError as error:
+            raise SystemExit("ERROR: --date must be a valid ISO date (YYYY-MM-DD)") from error
+        if report_date.isoformat() != args.date:
+            raise SystemExit("ERROR: --date must use canonical YYYY-MM-DD form")
+        if not args.out.parent.exists():
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+        reject_symlink(args.out, "report")
+        if args.out.exists() and not args.force:
+            raise SystemExit(f"ERROR: output exists, pass --force to overwrite: {args.out}")
+        template = V3_TEMPLATE.read_text(encoding="utf-8")
+        report = render(
+            template,
+            {
+                "ticker": args.ticker,
+                "company": args.company,
+                "market": args.market,
+                "date": args.date,
+                "verdict": args.verdict,
+                "action": args.action,
+            },
+        )
+        _write_transaction(args.out, report.encode("utf-8"), None, None, False)
+        print(args.out)
+        return 0
 
     try:
         if args.previous_report is not None and args.research_pack is None:
