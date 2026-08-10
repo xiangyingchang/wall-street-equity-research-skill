@@ -24,6 +24,11 @@ except ModuleNotFoundError:
         find_action_matrix_table,
     )
 
+try:
+    from report_lint_v3 import lint_v3_text, run_fixture_tests as run_v3_fixture_tests, self_test_v3
+except ModuleNotFoundError:
+    from scripts.report_lint_v3 import lint_v3_text, run_fixture_tests as run_v3_fixture_tests, self_test_v3
+
 
 REQUIRED_PATTERNS = [
     ("default input statement", re.compile(r"默认输入|input_", re.I)),
@@ -1020,11 +1025,16 @@ def main() -> int:
     parser.add_argument("report", nargs="?", type=Path, help="Path to the Markdown report to lint")
     parser.add_argument("--self-test", action="store_true", help="Run built-in lint rule regression tests")
     parser.add_argument("--fixtures", type=Path, help="Run fixture tests from a directory")
+    parser.add_argument("--profile", choices=("current", "v3"), default="current")
     args = parser.parse_args()
 
     if args.self_test:
+        if args.profile == "v3":
+            return self_test_v3()
         return self_test()
     if args.fixtures:
+        if args.profile == "v3":
+            return run_v3_fixture_tests(args.fixtures, profile="v3")
         return run_fixture_tests(args.fixtures)
 
     if args.report is None:
@@ -1037,7 +1047,7 @@ def main() -> int:
         print(f"ERROR: expected a Markdown report, got: {args.report}", file=sys.stderr)
         return 2
 
-    errors = lint(args.report)
+    errors = lint_v3_text(args.report.read_text(encoding="utf-8")) if args.profile == "v3" else lint(args.report)
     if errors:
         print(f"FAIL {args.report}")
         for error in errors:

@@ -1,4 +1,7 @@
-# Report Contract
+# Legacy v3.1-era report contract
+
+The active contract is [`report-contract-v3.md`](report-contract-v3.md). This
+file remains for compatibility with the retained v3.1 compiler paths.
 
 ## Default Inputs
 

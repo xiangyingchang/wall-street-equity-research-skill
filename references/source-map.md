@@ -45,7 +45,7 @@ Before writing a new report, inspect at least one recent comparable report for s
 For A-share reports, run the helper first when network access is available:
 
 ```bash
-python3 /Users/haoshifasheng/.agents/skills/wall-street-equity-research/scripts/a_share_prefetch.py 600900 --peers 600905 600025 600886 600674 600795 601985
+python3 /Users/haoshifasheng/.codex/skills/wall-street-equity-research/scripts/a_share_prefetch.py 600900 --peers 600905 600025 600886 600674 600795 601985
 ```
 
 Use the JSON output to seed:
@@ -65,6 +65,11 @@ Known limitations:
 
 The active installed copy lives at:
 
-- `/Users/haoshifasheng/.agents/skills/wall-street-equity-research/SKILL.md`
+- `/Users/haoshifasheng/.codex/skills/wall-street-equity-research/SKILL.md`
 
 The Git repository remains the editing authority; sync the installed copy only after tests pass.
+
+The active report contract is `references/report-contract-v3.md` and the active
+methodology is `references/full-methodology-v3.md`. The v3.1 Compiler/Bundle
+files remain in the repository as compatibility history, not as the default
+Reader path.

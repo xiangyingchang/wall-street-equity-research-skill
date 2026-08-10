@@ -1,3 +1,3 @@
 display_name: Wall Street Equity Research
-short_description: Build a source-linked, decision-first stock report with portfolio-aware actions.
-default_prompt: Analyze this stock from verified data through competing logic to a direct report. Apply hold-equals-buy, opportunity cost, and 10-year payback; return the canonical Buy / Hold-Index / Watchlist / Avoid verdict, and separate the research candidate from any executable portfolio action.
+short_description: Run readable optimized-v3 stock research with deterministic guardrails.
+default_prompt: Analyze this stock with the optimized-v3 11-module framework and give me a Buy, Hold-Index, Watchlist, or Avoid verdict.
