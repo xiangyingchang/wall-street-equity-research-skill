@@ -76,6 +76,30 @@ class LedgerPortfolioPreflightTests(unittest.TestCase):
         self.assertEqual(snapshot["allocation_endpoint"], "/api/allocation")
         self.assertIn("Ledger allocation warning: 股票价格快照可能滞后", snapshot["warnings"])
 
+    def test_research_endpoint_payload_preserves_endpoint_provenance(self):
+        snapshot = build_snapshot(
+            {
+                "retrieved_at": "2026-08-14T00:00:00+00:00",
+                "positions": [
+                    {
+                        "code": "0700.HK",
+                        "amount": 12,
+                        "currentPrice": 461.6,
+                        "priceUpdateTime": "2026-08-14T00:00:00Z",
+                    }
+                ],
+            },
+            base_url="https://ledger.example.com",
+            retrieved_at="2026-08-14T00:00:00+00:00",
+            endpoint="/api/research/holdings/0700.HK",
+        )
+
+        self.assertEqual(snapshot["endpoint"], "/api/research/holdings/0700.HK")
+        self.assertEqual(
+            snapshot["positions"][0]["source"],
+            "Ledger /api/research/holdings/0700.HK",
+        )
+
     def test_allocation_failure_does_not_drop_positions(self):
         snapshot = build_snapshot(
             [{"code": "META", "amount": 1, "currentPrice": 10}],

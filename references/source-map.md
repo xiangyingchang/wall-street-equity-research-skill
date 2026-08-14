@@ -14,7 +14,7 @@ The first file is the current authority for the stock due-diligence prompt. The 
 ### Current portfolio authority
 
 - `/Users/haoshifasheng/Downloads/Github/ledger` is the current portfolio and transaction project.
-- Use its authenticated `GET /api/stocks` snapshot, preferably through `scripts/ledger_portfolio_preflight.py` in this Skill.
+- Use its dedicated read-only `GET /api/research/holdings/<code>` snapshot with `LEDGER_RESEARCH_TOKEN`, preferably through `scripts/ledger_portfolio_preflight.py` in this Skill; fall back to authenticated `GET /api/stocks` only when the research token is unavailable.
 - Use only records with `amount > 0` as active holdings. Zero-quantity records are historical records retained for dividend/profit history.
 - `/api/allocation` is a Ledger allocation snapshot, not the primary real-time price source; record its warning and timestamp if used.
 - The old Dashboard and dated allocation notes are historical context only. They must not supply current position, weight, or action facts.

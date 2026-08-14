@@ -2,8 +2,8 @@
 """Read-only Ledger portfolio snapshot for equity-research reports.
 
 The script deliberately separates holdings facts from market-data facts. It
-reads the authenticated Ledger ``/api/stocks`` endpoint, keeps only positive
-holdings, and never writes or persists the bearer token.
+reads a read-only authenticated Ledger holdings endpoint, keeps only positive
+holdings, and never writes or persists the token.
 """
 
 from __future__ import annotations
@@ -38,14 +38,14 @@ def _unwrap_list(payload: Any) -> list[dict[str, Any]]:
         records = payload
     elif isinstance(payload, dict):
         records = None
-        for key in ("data", "stocks", "items"):
+        for key in ("positions", "data", "stocks", "items"):
             if key in payload:
                 records = payload[key]
                 break
     else:
         records = None
     if not isinstance(records, list) or any(not isinstance(item, dict) for item in records):
-        raise LedgerPreflightError("Ledger /api/stocks returned an unexpected payload")
+        raise LedgerPreflightError("Ledger holdings endpoint returned an unexpected payload")
     return records
 
 
@@ -67,6 +67,7 @@ def extract_active_positions(
     *,
     now: datetime | None = None,
     max_price_age_hours: float = 72.0,
+    source_endpoint: str = "/api/stocks",
 ) -> tuple[list[dict[str, Any]], list[str], int]:
     """Normalize Ledger stocks and filter historical zero-quantity records."""
     records = _unwrap_list(payload)
@@ -106,7 +107,7 @@ def extract_active_positions(
                 "current_price": current_price,
                 "holding_value": amount * current_price,
                 "price_timestamp": price_timestamp,
-                "source": "Ledger /api/stocks",
+                "source": f"Ledger {source_endpoint}",
             }
         )
 
@@ -120,22 +121,31 @@ def _validate_base_url(base_url: str) -> str:
         raise LedgerPreflightError("Ledger base URL must be an absolute http(s) URL")
     if parsed.username or parsed.password:
         raise LedgerPreflightError(
-            "Ledger base URL must not contain embedded credentials; use LEDGER_AUTH_TOKEN"
+            "Ledger base URL must not contain embedded credentials; use LEDGER_RESEARCH_TOKEN or LEDGER_AUTH_TOKEN"
         )
     if parsed.query or parsed.fragment:
         raise LedgerPreflightError("Ledger base URL must not contain query parameters or fragments")
     return base_url.rstrip("/") + "/"
 
 
-def fetch_json(base_url: str, path: str, token: str, timeout: float) -> Any:
+def fetch_json(
+    base_url: str,
+    path: str,
+    token: str,
+    timeout: float,
+    *,
+    header_name: str = "Authorization",
+    auth_error_hint: str = "LEDGER_AUTH_TOKEN",
+) -> Any:
     url = urljoin(_validate_base_url(base_url), path.lstrip("/"))
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "wall-street-equity-research/ledger-preflight",
+    }
+    headers[header_name] = f"Bearer {token}" if header_name.lower() == "authorization" else token
     request = Request(
         url,
-        headers={
-            "Accept": "application/json",
-            "Authorization": f"Bearer {token}",
-            "User-Agent": "wall-street-equity-research/ledger-preflight",
-        },
+        headers=headers,
         method="GET",
     )
     try:
@@ -145,7 +155,7 @@ def fetch_json(base_url: str, path: str, token: str, timeout: float) -> Any:
         if error.code in {401, 403}:
             raise LedgerPreflightError(
                 f"Ledger authentication failed for {path} (HTTP {error.code}); "
-                "set a fresh LEDGER_AUTH_TOKEN"
+                f"set a fresh {auth_error_hint}"
             ) from error
         raise LedgerPreflightError(f"Ledger request failed for {path} (HTTP {error.code})") from error
     except URLError as error:
@@ -165,14 +175,16 @@ def build_snapshot(
     allocation_payload: Any | None = None,
     allocation_error: str | None = None,
     max_price_age_hours: float = 72.0,
+    endpoint: str = "/api/stocks",
 ) -> dict[str, Any]:
     positions, warnings, inactive_count = extract_active_positions(
         stocks_payload,
         max_price_age_hours=max_price_age_hours,
+        source_endpoint=endpoint,
     )
     snapshot: dict[str, Any] = {
         "source": "Ledger",
-        "endpoint": "/api/stocks",
+        "endpoint": endpoint,
         "base_url": base_url.rstrip("/"),
         "retrieved_at": retrieved_at or datetime.now(timezone.utc).isoformat(),
         "active_position_count": len(positions),
@@ -225,6 +237,34 @@ def fetch_snapshot(
     )
 
 
+def fetch_research_snapshot(
+    base_url: str,
+    token: str,
+    code: str,
+    timeout: float,
+    max_price_age_hours: float,
+) -> dict[str, Any]:
+    from urllib.parse import quote
+
+    endpoint = f"/api/research/holdings/{quote(code, safe='')}"
+    payload = fetch_json(
+        base_url,
+        endpoint,
+        token,
+        timeout,
+        header_name="X-Ledger-Research-Token",
+        auth_error_hint="LEDGER_RESEARCH_TOKEN",
+    )
+    retrieved_at = payload.get("retrieved_at") if isinstance(payload, dict) else None
+    return build_snapshot(
+        payload,
+        base_url=base_url,
+        retrieved_at=retrieved_at,
+        max_price_age_hours=max_price_age_hours,
+        endpoint=endpoint,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -237,27 +277,52 @@ def main(argv: list[str] | None = None) -> int:
         default=os.environ.get("LEDGER_AUTH_TOKEN", ""),
         help="Bearer token; prefer LEDGER_AUTH_TOKEN so it is not stored in shell history",
     )
+    parser.add_argument(
+        "--research-token",
+        default=os.environ.get("LEDGER_RESEARCH_TOKEN", ""),
+        help="Dedicated read-only research token; prefer LEDGER_RESEARCH_TOKEN",
+    )
+    parser.add_argument(
+        "--research-code",
+        default=os.environ.get("LEDGER_RESEARCH_CODE", "0700.HK"),
+        help="Exact stock code for the read-only research endpoint",
+    )
     parser.add_argument("--timeout", type=float, default=10.0)
     parser.add_argument("--max-price-age-hours", type=float, default=72.0)
     parser.add_argument("--include-allocation", action="store_true")
     args = parser.parse_args(argv)
 
-    if not args.token:
+    if not args.token and not args.research_token:
         print(
-            "Ledger authentication token is required. Set LEDGER_AUTH_TOKEN; "
-            "the script never writes it to disk.",
+            "Ledger authentication token is required. Set LEDGER_RESEARCH_TOKEN "
+            "(preferred) or LEDGER_AUTH_TOKEN; the script never writes it to disk.",
             file=sys.stderr,
         )
         return 2
 
     try:
-        snapshot = fetch_snapshot(
-            args.base_url,
-            args.token,
-            args.timeout,
-            args.include_allocation,
-            args.max_price_age_hours,
-        )
+        if args.research_token:
+            if args.include_allocation:
+                print(
+                    "--include-allocation is only available with LEDGER_AUTH_TOKEN.",
+                    file=sys.stderr,
+                )
+                return 2
+            snapshot = fetch_research_snapshot(
+                args.base_url,
+                args.research_token,
+                args.research_code,
+                args.timeout,
+                args.max_price_age_hours,
+            )
+        else:
+            snapshot = fetch_snapshot(
+                args.base_url,
+                args.token,
+                args.timeout,
+                args.include_allocation,
+                args.max_price_age_hours,
+            )
     except LedgerPreflightError as error:
         print(f"Ledger preflight failed: {error}", file=sys.stderr)
         return 1
