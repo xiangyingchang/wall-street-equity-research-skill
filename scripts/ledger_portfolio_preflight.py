@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -21,6 +22,41 @@ from urllib.request import Request, urlopen
 
 class LedgerPreflightError(RuntimeError):
     """Raised when a Ledger snapshot cannot be trusted."""
+
+
+def read_research_token_from_keychain() -> str:
+    """Read the raw research token from macOS Keychain without printing it."""
+    if sys.platform != "darwin":
+        return ""
+
+    security_binary = "/usr/bin/security"
+    if not os.path.isfile(security_binary):
+        return ""
+
+    account = os.environ.get("LEDGER_RESEARCH_KEYCHAIN_ACCOUNT") or os.environ.get("USER", "")
+    service = os.environ.get("LEDGER_RESEARCH_KEYCHAIN_SERVICE", "ledger-research-token")
+    if not account or not service:
+        return ""
+
+    try:
+        result = subprocess.run(
+            [
+                security_binary,
+                "find-generic-password",
+                "-a",
+                account,
+                "-s",
+                service,
+                "-w",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return ""
+    return result.stdout.strip()
 
 
 def _number(value: Any) -> float | None:
@@ -280,7 +316,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--research-token",
         default=os.environ.get("LEDGER_RESEARCH_TOKEN", ""),
-        help="Dedicated read-only research token; prefer LEDGER_RESEARCH_TOKEN",
+        help="Dedicated read-only research token; prefer LEDGER_RESEARCH_TOKEN or the macOS Keychain item ledger-research-token",
     )
     parser.add_argument(
         "--research-code",
@@ -292,7 +328,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--include-allocation", action="store_true")
     args = parser.parse_args(argv)
 
-    if not args.token and not args.research_token:
+    research_token = args.research_token or read_research_token_from_keychain()
+
+    if not args.token and not research_token:
         print(
             "Ledger authentication token is required. Set LEDGER_RESEARCH_TOKEN "
             "(preferred) or LEDGER_AUTH_TOKEN; the script never writes it to disk.",
@@ -301,7 +339,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        if args.research_token:
+        if research_token:
             if args.include_allocation:
                 print(
                     "--include-allocation is only available with LEDGER_AUTH_TOKEN.",
@@ -310,7 +348,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             snapshot = fetch_research_snapshot(
                 args.base_url,
-                args.research_token,
+                research_token,
                 args.research_code,
                 args.timeout,
                 args.max_price_age_hours,

@@ -2,6 +2,8 @@ import sys
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
@@ -13,9 +15,32 @@ from ledger_portfolio_preflight import (  # noqa: E402
     build_snapshot,
     extract_active_positions,
 )
+import ledger_portfolio_preflight as preflight  # noqa: E402
 
 
 class LedgerPortfolioPreflightTests(unittest.TestCase):
+    def test_reads_research_token_from_macos_keychain_without_printing(self):
+        with patch.dict(
+            preflight.os.environ,
+            {"USER": "test-account", "LEDGER_RESEARCH_KEYCHAIN_ACCOUNT": "test-account"},
+            clear=False,
+        ):
+            with patch.object(preflight.sys, "platform", "darwin"):
+                with patch.object(preflight.os.path, "isfile", return_value=True):
+                    with patch.object(
+                        preflight.subprocess,
+                        "run",
+                        return_value=SimpleNamespace(stdout="keychain-research-token"),
+                    ) as run:
+                        self.assertEqual(
+                            preflight.read_research_token_from_keychain(),
+                            "keychain-research-token",
+                        )
+
+        command = run.call_args.args[0]
+        self.assertEqual(command[1:4], ["find-generic-password", "-a", "test-account"])
+        self.assertEqual(command[-3:-1], ["-s", "ledger-research-token"])
+
     def test_filters_zero_quantity_history_and_calculates_value(self):
         positions, warnings, inactive_count = extract_active_positions([
             {
