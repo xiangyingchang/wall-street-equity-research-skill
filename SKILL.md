@@ -53,6 +53,9 @@ python3 scripts/report_pipeline_v3.py verify --spec <spec.json> --output <report
 
 ## Execution Steps
 
+- Before filling portfolio context, use the authenticated read-only `scripts/ledger_portfolio_preflight.py` snapshot when available; record retrieval time and warnings and never print or persist the token. Missing or untrusted data means unverified holdings and portfolio REVIEW, not an inferred empty position.
+- If a five-line `Price Discipline` table is included, use complete Chinese first-column labels: 盈利参考价, 目标回报价, 现金流确认价, 联合新资金价, 安全边际价. Keep English identifiers in parentheses and explain formulas in Chinese. The active v3.1 Reader keeps Bundle-owned prices; do not invent additional gates absent from the Spec/Bundle.
+
 1. Collect the smallest sufficient data pack: prior report, current price, actual holdings context, filings, four-quarter facts, company-specific operating metrics, peers, rates, and direct source metadata.
 2. Reconcile units and discrepancies; register Sources, Facts, derived calculations, assumptions, scenarios, operating metrics, and Decision Policy in a fresh Spec.
 3. Conduct independent business, financial, challenge, and risk passes; synthesize only material logic into Themes and a Bull/Bear adjudication.

@@ -236,6 +236,22 @@ TODO
 
 > Required terminal EPS 必须等于 Starting EPS × (1 + Required EPS CAGR)^Years，并与 Runtime Artifact 逐字段一致。
 
+### Price Discipline 价格纪律
+
+| 价格线 | 怎么算 | 数值 | 情景 / 置信度 | 动作含义 |
+|---|---|---:|---|---|
+| **盈利参考价**（`Earnings reference price`） | 常态 EPS × 参考 PE | TODO | TODO | 只看估值位置，不自动买入 |
+| **目标回报价**（`Target-return price`） | 由估值程序计算：目标回报倒推买入价 | TODO | TODO | 达到目标回报时的最高可接受价 |
+| **现金流确认价**（`Cash-confirmation price`） | 常态 FCF/股 ÷ 现金收益率门槛 | TODO | TODO | 现金回报确认线 |
+| **联合新资金价**（`Joint new-money price`） | 所有有效执行门槛中的最低价 | TODO | TODO | 新资金 Buy/Add 的最高执行上限 |
+| **安全边际价**（`Safety price`） | 目标回报价 ×（1 - 安全边际） | TODO | TODO | 额外缓冲参考，不能替代现金闸门 |
+
+阅读顺序：盈利参考价看估值位置；目标回报价看目标回报上限；现金流确认价看现金闸门；联合新资金价取有效闸门中的最低价；安全边际价是在目标回报价上继续打折。
+
+Price Discipline 输入：情景 TODO；Normalized EPS TODO；reference PE 及理由 TODO；Normalized FCF/share TODO；cash hurdle 及理由 TODO；现金流置信度 TODO；joint action status TODO。
+
+所有价格线必须由 `scripts/valuation_math.py` 计算。PE 区间和 FCF yield 阈值属于公司特定假设，不得直接复制其他公司的数字。
+
 ### 名义 10 年回本压力测试
 
 TODO

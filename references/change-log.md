@@ -1,5 +1,15 @@
 # Wall Street Equity Research Skill Change Log
 
+## main-integration — 2026-10-06
+
+- 合并 `feat/a99-quality-hardening`，冲突以 main 的 V3.1 架构为基线，保留当前 Spec/Compiler/Reader、唯一 Action Matrix 和完整验证。
+- 保留独立 Ledger 只读预检和估值数学工具；将中文五价格表纳入旧版 Markdown 模板与契约。
+- 中文首列完整标签检查应用于含 Price Discipline 表的旧版与 V3.1 报告；不强制 V3.1 增加 Spec/Bundle 中不存在的价格闸门。
+- 旧分支报告布局测试由 main 现有合同测试替代，保留本次标签回归测试。
+- 验证：205 项单元测试 PASS；语法检查、自检、样例检查 PASS；V2.1.2 与 V3.1 build/verify 和 CI 产物断言 PASS；差异格式检查 PASS。
+- V3.1 样例的 data_quality/portfolio_context 保留 REVIEW，verify PASS 不代表这些研究数据或持仓已核验。
+- 本次没有取实时行情、读取真实 Ledger 持仓或重跑实际投资报告。
+
 ## v3.1 - Data, Reasoning, and Decision Reader
 
 ## 2026-08-01
@@ -1045,3 +1055,33 @@ The 2026-06-29 CME report review found that the original draft could be read as 
 - `python3 scripts/report_lint.py --self-test`
 - `python3 scripts/report_lint.py "/Users/haoshifasheng/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/股票/CME/CME-CME Group-华尔街式分析报告-2026-06-29.md"`
 - `python3 /Users/haoshifasheng/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Users/haoshifasheng/.agents/skills/wall-street-equity-research`
+
+
+## price-discipline-label-review — 2026-10-06
+
+- 复核待提交的中文价格线标签改动；估值公式保持不变。
+- 修复 lint 可被后续列中的中文标签绕过的问题：中文主标签必须占据首列完整单元格，允许加粗和括号中的英文标识。
+- 补充五条标签缺失、标签出现在后续列、仅标签前缀匹配，以及纯中文首列通过的回归测试。
+- 本次检查：单元测试 32/32 PASS、lint self-test PASS、fixture tests PASS、`git diff --check` PASS。
+- 本次未重跑 Meta / 迪士尼实际报告；下方 2026-08-03 验证记录为历史记录。
+
+## price-discipline-readable-labels — 2026-08-03
+
+### Change
+
+- 将五条 Price Discipline 价格线的中文读者标签固定为模板首列，英文内部标识保留在括号中用于审计。
+- 在 Skill、报告契约、完整方法论和完整报告模板中增加中文阅读顺序说明。
+- 让 report lint 拒绝只有英文内部字段名、没有中文主标签的价格纪律表。
+- 更新当前 Meta 和迪士尼报告；保留历史报告版本不覆盖。
+
+### Reason
+
+Price Discipline v2 的计算契约已经更新，但 canonical template 仍把 `Earnings reference price` 等实现字段名直接暴露为第一列。它虽然能通过语义 lint，却不够易读，也导致 Meta 中的可读性改进没有自动传递到后续报告。
+
+### Verification
+
+- `python3 scripts/report_lint.py --self-test`：PASS
+- `python3 scripts/report_lint.py --fixtures tests/fixtures`：PASS
+- `python3 -m unittest discover -s tests`：29/29 PASS
+- Meta 与迪士尼当前报告 lint：PASS
+- `git diff --check`：PASS

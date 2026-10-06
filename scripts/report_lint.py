@@ -729,10 +729,35 @@ def lint_v31_reader(text: str) -> list[str]:
     return errors
 
 
+def price_discipline_label_errors(text: str) -> list[str]:
+    """Check five-line tables when present without changing the v3.1 schema."""
+    heading = re.search(r"^###\s+(?:Price Discipline|价格纪律)[^\n]*$", text, re.M)
+    if not heading:
+        return []
+    tail = text[heading.end():]
+    next_heading = re.search(r"^#{1,3}\s+", tail, re.M)
+    section = tail[:next_heading.start()] if next_heading else tail
+    errors: list[str] = []
+    for label, pattern in [
+        ("Chinese earnings reference label", r"盈利参考价"),
+        ("Chinese target-return label", r"目标回报价"),
+        ("Chinese cash-confirmation label", r"现金(?:流)?确认价"),
+        ("Chinese joint new-money label", r"联合新资金价"),
+        ("Chinese safety label", r"安全边际价"),
+    ]:
+        first_cell = (
+            rf"^[ \t]*\|[ \t]*\*{{0,2}}{pattern}\*{{0,2}}[ \t]*"
+            rf"(?:[（(][^|\n]*[）)][ \t]*)?\|"
+        )
+        if not re.search(first_cell, section, re.I | re.M):
+            errors.append(f"Price Discipline must use a Chinese reader-facing {label}")
+    return errors
+
+
 def lint_text(text: str) -> list[str]:
     if V31_READER_MARKER.search(text):
-        return lint_v31_reader(text)
-    errors: list[str] = []
+        return lint_v31_reader(text) + price_discipline_label_errors(text)
+    errors: list[str] = price_discipline_label_errors(text)
 
     for label, pattern in REQUIRED_PATTERNS:
         if not pattern.search(text):
