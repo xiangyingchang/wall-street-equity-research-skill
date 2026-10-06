@@ -7,10 +7,15 @@ import re
 from typing import Any
 from urllib.parse import urlsplit
 
+from scripts.decision_sensitivity import compile_decision_sensitivity
 from scripts.report_compiler_v21 import compile_report_v21
+from scripts.report_decision_support_v32 import compile_decision_support
+from scripts.report_decision_coherence_v32 import compile_decision_coherence
 from scripts.report_research_graph_v3 import compile_research_graph
 from scripts.report_spec_v2 import SpecError, sha256
 from scripts.valuation_runtime import return_pair
+
+COMPILER_VERSION = "3.2.0"
 
 
 GENERIC_SOURCE = re.compile(
@@ -73,7 +78,14 @@ def _validate_v31_contract(spec: dict[str, Any]) -> dict[str, Any]:
     _require(isinstance(thesis_conditions, list) and thesis_conditions, "v3.1 requires thesis-break conditions")
     for index, condition in enumerate(thesis_conditions):
         _require(isinstance(condition, dict) and len(str(condition.get("label", "")).strip()) >= 4, f"v3.1 thesis-break condition {index} requires a human label")
+    overview = spec.get("research", {}).get("overview", {})
+    _require(isinstance(overview, dict) and isinstance(overview.get("business_model"), dict), "v3.1 overview requires business_model (how the company makes money)")
+    _require(isinstance(overview.get("earnings_update"), dict), "v3.1 overview requires earnings_update (period / changed / unchanged)")
     _require(isinstance(spec.get("portfolio_context"), dict), "v3.1 requires explicit portfolio_context")
+    _require(isinstance(report.get("cash_valuation"), dict), "v3.2 requires report.cash_valuation (three-basis cash valuation)")
+    _require(isinstance(report["cash_valuation"].get("dividend"), dict), "v3.2 requires report.cash_valuation.dividend (after-tax dividend math)")
+    _require(isinstance(policy.get("price_ladder"), dict), "v3.2 requires decision_policy.price_ladder (new-money price tiers)")
+    _require(isinstance(spec.get("decision_support"), dict), "v3.2 requires decision_support (triggers, pre-mortem, history, bridges)")
     prior_report = _validate_prior_report(spec)
     return {"source_urls": source_count, "operating_metrics": len(metrics), "prior_report": prior_report}
 
@@ -171,14 +183,30 @@ def compile_report_v3(spec: dict[str, Any]) -> dict[str, Any]:
     legacy_view = deepcopy(spec)
     legacy_view["schema_version"] = "report-spec-v2.1.1"
     bundle = compile_report_v21(legacy_view)
+    try:
+        bundle["decision_support"] = compile_decision_support(spec, bundle)
+    except (ValueError, ArithmeticError, KeyError, TypeError) as exc:
+        if isinstance(exc, SpecError):
+            raise
+        raise SpecError(f"decision support failed: {exc}") from exc
+    try:
+        bundle["decision_coherence"] = compile_decision_coherence(spec, bundle)
+    except (ValueError, ArithmeticError, KeyError, TypeError, StopIteration) as exc:
+        if isinstance(exc, SpecError):
+            raise
+        raise SpecError(f"decision coherence failed: {exc!r}") from exc
     graph, quality = compile_research_graph(spec, bundle)
     bundle["schema_version"] = "report-bundle-v3.1"
-    bundle["compiler_version"] = "3.1.0"
+    bundle["compiler_version"] = COMPILER_VERSION
     bundle["input_schema_version"] = "report-spec-v3.1"
     bundle["portfolio_context"] = deepcopy(bundle["decision"]["portfolio_context"])
     bundle["prior_report_context"] = deepcopy(validated["prior_report"])
     bundle["research_graph"] = graph
     bundle["research_graph_quality"] = quality
+    try:
+        bundle["decision_sensitivity"] = compile_decision_sensitivity(bundle, spec["decision_policy"])
+    except (ValueError, ArithmeticError, KeyError) as exc:
+        raise SpecError(f"decision sensitivity failed: {exc}") from exc
     portfolio_quality = "PASS" if bundle["portfolio_context"]["complete"] else "REVIEW"
     prior_quality = bundle["prior_report_context"]["quality"]
     bundle["data_quality"] = {

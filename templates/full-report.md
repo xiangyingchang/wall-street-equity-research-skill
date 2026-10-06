@@ -250,7 +250,7 @@ TODO
 
 Price Discipline 输入：情景 TODO；Normalized EPS TODO；reference PE 及理由 TODO；Normalized FCF/share TODO；cash hurdle 及理由 TODO；现金流置信度 TODO；joint action status TODO。
 
-所有价格线必须由 `scripts/valuation_math.py` 计算。PE 区间和 FCF yield 阈值属于公司特定假设，不得直接复制其他公司的数字。
+所有价格线必须由 `scripts/valuation_math.py` 计算（IRR、目标回报价与安全边际价与 v3 Bundle 引擎同口径）。PE 区间和 FCF yield 阈值属于公司特定假设，不得直接复制其他公司的数字。
 
 ### 名义 10 年回本压力测试
 

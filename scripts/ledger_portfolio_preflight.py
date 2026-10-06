@@ -80,7 +80,10 @@ def extract_active_positions(
         if amount is None:
             warnings.append(f"missing amount: {item.get('code', '<unknown>')}")
             continue
-        if amount <= 0:
+        if amount < 0:
+            warnings.append(f"negative amount (short or data error): {item.get('code', '<unknown>')}")
+            continue
+        if amount == 0:
             inactive_count += 1
             continue
 
@@ -114,10 +117,17 @@ def extract_active_positions(
     return positions, warnings, inactive_count
 
 
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
 def _validate_base_url(base_url: str) -> str:
     parsed = urlparse(base_url)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise LedgerPreflightError("Ledger base URL must be an absolute http(s) URL")
+    if parsed.scheme == "http" and (parsed.hostname or "") not in LOCAL_HOSTS:
+        raise LedgerPreflightError(
+            "Ledger base URL must use https unless it points to localhost; refusing to send the token in clear text"
+        )
     if parsed.username or parsed.password:
         raise LedgerPreflightError(
             "Ledger base URL must not contain embedded credentials; use LEDGER_AUTH_TOKEN"
@@ -196,7 +206,60 @@ def build_snapshot(
         snapshot["allocation_status"] = "unavailable" if allocation_error else "not_requested"
         if allocation_error:
             snapshot["warnings"].append(f"Ledger allocation unavailable: {allocation_error}")
+    snapshot["trusted"] = not snapshot["warnings"]
     return snapshot
+
+
+MARKET_CURRENCY = {"US": "USD", "HK": "HKD", "CN": "CNY"}
+
+
+def _normalize_code(code: Any) -> str:
+    return str(code or "").strip().upper().split(".")[0]
+
+
+def portfolio_context_draft(
+    snapshot: dict[str, Any],
+    ticker: str,
+    *,
+    rates_payload: Any | None = None,
+) -> dict[str, Any]:
+    """Draft a Spec ``portfolio_context`` for one ticker.
+
+    Weights are computed only when every input is verified: the snapshot is
+    trusted, allocation net assets are present, and a Ledger exchange rate
+    exists for the position currency. Target weight is never inferred; the
+    user must state it. Anything unverified resolves to ``unknown`` so the
+    compiler gates the executable action to REVIEW.
+    """
+    wanted = _normalize_code(ticker)
+    matches = [item for item in snapshot.get("positions", []) if _normalize_code(item.get("code")) == wanted]
+    base = {
+        "as_of": str(snapshot.get("retrieved_at", ""))[:10],
+        "source": f"Ledger /api/stocks snapshot {snapshot.get('retrieved_at', '')}",
+        "target_weight": None,
+        "tax_friction": "unknown",
+        "constraints": "目标权重需由用户确认；Ledger 仅提供大类配置目标。",
+    }
+    if not snapshot.get("trusted"):
+        return {**base, "position_status": "unknown", "confidence": "low", "current_weight": None,
+                "constraints": "Ledger 快照存在告警，持仓未验证：" + "；".join(snapshot.get("warnings", []))}
+    if not matches:
+        return {**base, "position_status": "not_held", "confidence": "high", "current_weight": None}
+    position = matches[0]
+    allocation = snapshot.get("allocation_snapshot")
+    net_assets = _number(allocation.get("netAssets")) if isinstance(allocation, dict) else None
+    currency = str(position.get("currency") or MARKET_CURRENCY.get(str(position.get("market") or "").upper(), "")).upper()
+    rate = D_ONE if currency == "CNY" else None
+    if currency in {"USD", "HKD"} and isinstance(rates_payload, dict):
+        rate = _number(rates_payload.get(f"{currency}_CNY"))
+    if not net_assets or net_assets <= 0 or rate is None:
+        return {**base, "position_status": "held", "confidence": "medium", "current_weight": None,
+                "constraints": "已确认持仓，但缺少净资产或汇率，无法计算当前权重；目标权重需由用户确认。"}
+    weight = position["holding_value"] * rate / net_assets
+    return {**base, "position_status": "held", "confidence": "high", "current_weight": f"{weight:.4f}"}
+
+
+D_ONE = 1.0
 
 
 def fetch_snapshot(
@@ -232,20 +295,17 @@ def main(argv: list[str] | None = None) -> int:
         default=os.environ.get("LEDGER_API_BASE_URL", "http://localhost:3000"),
         help="Ledger API base URL (or LEDGER_API_BASE_URL)",
     )
-    parser.add_argument(
-        "--token",
-        default=os.environ.get("LEDGER_AUTH_TOKEN", ""),
-        help="Bearer token; prefer LEDGER_AUTH_TOKEN so it is not stored in shell history",
-    )
     parser.add_argument("--timeout", type=float, default=10.0)
     parser.add_argument("--max-price-age-hours", type=float, default=72.0)
     parser.add_argument("--include-allocation", action="store_true")
+    parser.add_argument("--ticker", help="also emit a portfolio_context draft for this ticker (implies --include-allocation)")
     args = parser.parse_args(argv)
+    token = os.environ.get("LEDGER_AUTH_TOKEN", "")
 
-    if not args.token:
+    if not token:
         print(
             "Ledger authentication token is required. Set LEDGER_AUTH_TOKEN; "
-            "the script never writes it to disk.",
+            "the script never accepts it as an argument or writes it to disk.",
             file=sys.stderr,
         )
         return 2
@@ -253,11 +313,18 @@ def main(argv: list[str] | None = None) -> int:
     try:
         snapshot = fetch_snapshot(
             args.base_url,
-            args.token,
+            token,
             args.timeout,
-            args.include_allocation,
+            args.include_allocation or bool(args.ticker),
             args.max_price_age_hours,
         )
+        if args.ticker:
+            rates = None
+            try:
+                rates = fetch_json(args.base_url, "/api/exchange-rates", token, args.timeout)
+            except LedgerPreflightError as error:
+                snapshot["warnings"].append(f"Ledger exchange rates unavailable: {error}")
+            snapshot["portfolio_context_draft"] = portfolio_context_draft(snapshot, args.ticker, rates_payload=rates)
     except LedgerPreflightError as error:
         print(f"Ledger preflight failed: {error}", file=sys.stderr)
         return 1

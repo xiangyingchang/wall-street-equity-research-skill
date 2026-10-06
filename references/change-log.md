@@ -1,5 +1,41 @@
 # Wall Street Equity Research Skill Change Log
 
+## v3.2 — Decision guidance — 2026-10-06
+
+- 新增 `scripts/decision_sensitivity.py`：经营利润率、EPS 增长、退出 PE 三个变量各自达到门槛所需值、与 Base 的距离、上下一步冲击后的 IRR 与估值候选动作；复用 Bundle 同一估值引擎。
+- Reader 首屏显示现价距目标回报价、安全边际价的距离；新增“什么会改变结论”表；删除每个主题的固定套话。
+- `valuation_math.py` 的 IRR 与目标回报价改为调用 `valuation_runtime`，消除股息复利/单利两套口径；新增 `safety_price`。
+- Ledger 预检：非本机禁止 http；token 只读环境变量；负持仓告警；新增 `trusted` 与 `--ticker` 生成 `portfolio_context_draft`（当前权重仅在快照可信、净资产与汇率齐全时计算，目标权重不推断）。
+- `现金流确认价` 标签检查收紧为完整标签。
+- SKILL 执行步骤加入 Reader 质量自检，Output Contract 增加价格距离与最脆弱假设。
+- 计价货币：每股价格使用上市市场货币（港股 HKD）。新增可选 `report.price_currency` 与 `report.fx_fact_id`；FX Fact 单位为 `A/B`，两个方向都接受，编译器只在 EPS→价格比较处换算一次（情景 IRR、目标回报价、参考价、回本测试、决策敏感性同步）。Bundle 的 `derived.fx`、`eps_bridge.eps_price_currency`、`ttm.eps.price_currency_value` 披露换算结果。价格与 EPS 币种不同且缺 FX Fact 时 build 失败。模板新增 `price` 格式（报价币种），`money` 按报告币种前缀而非硬编码 `$`；审计渲染器同步。
+- 模块 1 恢复：v3 Reader 此前用投资主线整段覆盖了模块 1，导致商业模式、分部、Key Forces、本次财报全部丢失。现标题为 `## 1. Overview：商业模式与本次财报`，依次输出商业模式、核心判断、分部收入表（收入/占比/同比/怎么赚钱）、`### Key Forces`、`### 本次财报：{period}`（改变了什么/没有改变什么）、Variant View，之后接 `### 决定回报的投资主线`。
+- Spec：`research.overview` 新增 `business_model`（必需）、`earnings_update`（必需，period/changed/unchanged）、`segments`（可选，≥2，需 revenue_fact_id）。缺前两项时 build 失败，旧 Spec 需补齐后才能重编译。lint 与 pipeline 的必需标题同步更新。
+- 决策支持层回补（`research.decision_support`，build 必需）：v3 Reader 曾丢失大量对决策有用的内容，现以 Spec 契约强制恢复，缺任何一块 build 失败。
+  - `valuation.cash_valuation`：现金口径估值（Non-IFRS / IFRS 两个盈利口径 + FCF yield 与门槛对比 + 现金确认价 = 每股 FCF ÷ 目标收益率），以及三口径回本测试与 5 年税后股息（`dividend.growth`、`withholding`）。
+  - `valuation.price_ladder`：新资金价格阶梯，每档 `floor_multiplier` 必须递减；`ladder_premises` 为每档写明经营前提；目标回报价以上的档位新资金仓位必须为 0，买入价以上的档位仓位不得超过 `watch_trial_cap`；Reader 用 `◀ 当前` 恰好标记一档。
+  - 风险至少 5 项，每项必须含 probability、damage、leading_indicators、action。
+  - Action Triggers 五类（price、valuation、operating、cash_flow、thesis_break），缺 cash_flow 失败；Pre-Mortem 写失败路径与最早预警信号。
+  - 同业对比至少 3 家；正常化桥必须含 normalized 层；Bull/Base/Bear 情景经营前提；CapEx、研发、PPE、资产负债表、回购、SBC、股数；5 年趋势；流动性；最小复核清单。
+- lint 与 CI 新增上述全部必需标题检查及 `◀ 当前` 唯一性检查；`tests/test_decision_support_v32.py` 16 项覆盖缺块、数学与删章回归。
+- Reader 主要来源按 Tier 排序后展示上限由 8 条提高到 16 条。
+- 修复：价格阶梯舍入漏洞。floor 舍入后可能略低于未舍入的目标价（如 456.67 < 456.6702），导致“目标价以上仓位为 0”的校验被跳过；现改用未舍入的 `raw_floor` 比较。
+- 决策一致性层（通用）：新增 `scripts/report_decision_coherence_v32.py`，把估值、阶梯、升级表、触发器、首页合成唯一可执行答案，矛盾即 build 失败。新增 Spec 契约：`decisive_basis`/`decisive_reason`、`accounting_basis`、`normalized_fcf`、`ladder_premises[].conditions`（met/unmet/unknown，前提不满足自动降档）、`cash_flow_escalation`、`roic`、peers `basis`、normalized `method`、触发器 `existing_action`、`cash_gate_waiver`；增长上限与机会成本须绑定数字。
+- Reader：首页新增“执行检查”表（现金门槛 / 阶梯可执行上限 / 现金流升级级别）；阶梯表增加“前提状态”，用 `◀ 价格所在` + `✓ 可执行` 区分价格档与可执行档（取代 `◀ 当前`）；新增现金流升级表、ROIC 与增量 ROIC、利润率 × 退出市盈率二维网格（`decision-sensitivity-v2`）；Action Matrix 买入行区分“观察”与“不买入”；同业表增加口径列；触发器表拆分新资金与已有仓位动作；来源列表不再截断；价格距离改为“该线高于现价 X%”。
+- lint/CI：`◀ 价格所在` 唯一、`◀ 当前级` 唯一，新增上述标题检查；lint 接受 `Compiler Reader v3.2` 标记。新增 `tests/test_decision_coherence_v32.py`（23 项）。
+- Compiler/Verification 版本 3.2.0；Spec schema 名仍为 report-spec-v3.1。
+
+### Verification
+
+- 全量单测 262 项通过；v2.1.2 / v3 两条 build+verify CI 路径与 lint 通过。
+- 0700.HK 重跑（2026-10-06）：build / verify / lint 全部 PASS；首页只给一个可执行答案（新资金观察，可执行仓位 0%），决定口径为正常化 FCF。
+
+### Migration
+
+- 旧 Spec 需补齐 `research.overview.business_model`、`earnings_update` 与 `research.decision_support`（含一致性层字段）后才能重编译。
+- 各 agent 的本地 skill 副本需更新到本版本，否则编译器检查不会作用于实际报告。
+
+
 ## main-integration — 2026-10-06
 
 - 合并 `feat/a99-quality-hardening`，冲突以 main 的 V3.1 架构为基线，保留当前 Spec/Compiler/Reader、唯一 Action Matrix 和完整验证。

@@ -1,11 +1,23 @@
 #!/usr/bin/env python3
-"""Deterministic valuation math used by the legacy Reader report contract."""
+"""Legacy price-line helpers. IRR and target-return price delegate to valuation_runtime.
+
+The active v3 pipeline never calls this module; it exists for the legacy Markdown
+template and must stay numerically identical to the Bundle engine.
+"""
 
 from __future__ import annotations
 
 import argparse
 import json
+import sys
+from decimal import Decimal
+from pathlib import Path
 from typing import Callable
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from scripts.valuation_runtime import return_pair, scenario_irr
 
 
 def _solve_monotonic(target: float, value: Callable[[float], float]) -> float:
@@ -64,23 +76,29 @@ def target_return_price(
     target_return: float,
     dividend_yield: float = 0.0,
     *,
-    dividend_mode: str = "reinvested_yield",
+    dividend_mode: str = "yield",
 ) -> float:
     """Return the price compatible with the stated target return.
 
-    ``reinvested_yield`` treats the stated dividend yield as a compounded
-    return component. ``none`` excludes dividends. The treatment is explicit
-    so a report cannot silently mix price appreciation and total return.
+    Delegates to ``valuation_runtime.return_pair`` so the legacy helper and the
+    v3 Bundle can never disagree. ``yield`` matches the Bundle (simple annual
+    dividend yield on purchase price); ``none`` excludes dividends.
     """
     if target_return <= -1 or dividend_yield <= -1:
         raise ValueError("target_return and dividend_yield must be greater than -100%")
-    if dividend_mode == "reinvested_yield":
-        dividend_factor = (1.0 + dividend_yield) ** years
-    elif dividend_mode == "none":
-        dividend_factor = 1.0
-    else:
+    if dividend_mode not in {"yield", "none"}:
         raise ValueError(f"unsupported dividend_mode: {dividend_mode}")
-    return terminal_price(starting_eps, eps_cagr, exit_pe, years) * dividend_factor / (1.0 + target_return) ** years
+    terminal_price(starting_eps, eps_cagr, exit_pe, years)
+    result = return_pair(
+        current_price=Decimal("1"),
+        starting_eps=Decimal(str(starting_eps)),
+        eps_cagr=Decimal(str(eps_cagr)),
+        exit_pe=Decimal(str(exit_pe)),
+        years=years,
+        target_return=Decimal(str(target_return)),
+        annual_dividend_yield=Decimal(str(dividend_yield if dividend_mode == "yield" else 0)),
+    )
+    return float(result["target_return_price"])
 
 
 def total_return_irr(
@@ -91,10 +109,26 @@ def total_return_irr(
     years: int,
     dividend_yield: float = 0.0,
 ) -> float:
+    """Delegates to ``valuation_runtime.scenario_irr`` (same engine as the Bundle)."""
     if current_price <= 0:
         raise ValueError("current_price must be positive")
-    terminal = terminal_price(starting_eps, eps_cagr, exit_pe, years)
-    return (terminal / current_price) ** (1.0 / years) * (1.0 + dividend_yield) - 1.0
+    terminal_price(starting_eps, eps_cagr, exit_pe, years)
+    result = scenario_irr(
+        current_price=Decimal(str(current_price)),
+        starting_eps=Decimal(str(starting_eps)),
+        eps_cagr=Decimal(str(eps_cagr)),
+        exit_pe=Decimal(str(exit_pe)),
+        years=years,
+        annual_dividend_yield=Decimal(str(dividend_yield)),
+    )
+    return float(result["irr_pct"]) / 100.0
+
+
+def safety_price(target_return_price_value: float, safety_margin: float) -> float:
+    """Same definition as the Bundle: target-return price x (1 - safety margin)."""
+    if target_return_price_value <= 0 or not 0 <= safety_margin < 1:
+        raise ValueError("target_return_price_value must be positive and safety_margin in [0, 1)")
+    return target_return_price_value * (1.0 - safety_margin)
 
 
 def earnings_reference_price(normalized_eps: float, reference_pe: float) -> float:
@@ -175,7 +209,7 @@ def main() -> int:
     price.add_argument("--years", type=int, required=True)
     price.add_argument("--target-return", type=float, required=True)
     price.add_argument("--dividend-yield", type=float, default=0.0)
-    price.add_argument("--dividend-mode", choices=("reinvested_yield", "none"), default="reinvested_yield")
+    price.add_argument("--dividend-mode", choices=("yield", "none"), default="yield")
 
     irr = subparsers.add_parser("irr")
     irr.add_argument("--current-price", type=float, required=True)

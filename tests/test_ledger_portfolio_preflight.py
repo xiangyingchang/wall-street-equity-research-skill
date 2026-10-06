@@ -12,6 +12,7 @@ from ledger_portfolio_preflight import (  # noqa: E402
     _validate_base_url,
     build_snapshot,
     extract_active_positions,
+    portfolio_context_draft,
 )
 
 
@@ -101,6 +102,53 @@ class LedgerPortfolioPreflightTests(unittest.TestCase):
 
         self.assertEqual(snapshot["active_position_count"], 0)
         self.assertIn("no active positions", snapshot["warnings"][0])
+
+
+class LedgerSafetyAndDraftTests(unittest.TestCase):
+    NOW = datetime(2026, 8, 2, tzinfo=timezone.utc)
+
+    def _snapshot(self, stocks, allocation=None):
+        from unittest import mock
+        with mock.patch("ledger_portfolio_preflight.datetime") as fake:
+            fake.now.return_value = self.NOW
+            fake.fromisoformat = datetime.fromisoformat
+            return build_snapshot(stocks, base_url="http://localhost:3000", allocation_payload=allocation)
+
+    def test_remote_http_is_rejected(self):
+        with self.assertRaises(LedgerPreflightError):
+            _validate_base_url("http://ledger.example.com")
+        self.assertEqual(_validate_base_url("https://ledger.example.com"), "https://ledger.example.com/")
+        self.assertEqual(_validate_base_url("http://127.0.0.1:3000"), "http://127.0.0.1:3000/")
+
+    def test_negative_amount_is_warned_not_hidden(self):
+        positions, warnings, inactive = extract_active_positions([{"code": "META", "amount": -5, "currentPrice": 1}], now=self.NOW)
+        self.assertEqual(positions, [])
+        self.assertEqual(inactive, 0)
+        self.assertTrue(any("negative amount" in item for item in warnings))
+
+    def test_draft_computes_weight_only_when_verified(self):
+        stocks = [{"code": "META", "currency": "USD", "amount": 10, "currentPrice": 700, "priceUpdateTime": "2026-08-01T00:00:00Z"}]
+        snapshot = self._snapshot(stocks, allocation={"netAssets": 100000, "warning": ""})
+        self.assertTrue(snapshot["trusted"])
+        draft = portfolio_context_draft(snapshot, "META.US", rates_payload={"USD_CNY": 7.0})
+        self.assertEqual(draft["position_status"], "held")
+        self.assertEqual(draft["current_weight"], "0.4900")
+        self.assertIsNone(draft["target_weight"])
+
+    def test_draft_is_unknown_when_snapshot_untrusted(self):
+        stocks = [{"code": "META", "currency": "USD", "amount": 10, "currentPrice": 700}]
+        snapshot = self._snapshot(stocks, allocation={"netAssets": 100000})
+        self.assertFalse(snapshot["trusted"])
+        draft = portfolio_context_draft(snapshot, "META", rates_payload={"USD_CNY": 7.0})
+        self.assertEqual(draft["position_status"], "unknown")
+
+    def test_draft_not_held_and_missing_rate(self):
+        stocks = [{"code": "PDD", "currency": "USD", "amount": 1, "currentPrice": 100, "priceUpdateTime": "2026-08-01T00:00:00Z"}]
+        snapshot = self._snapshot(stocks, allocation={"netAssets": 1000})
+        self.assertEqual(portfolio_context_draft(snapshot, "META", rates_payload={})["position_status"], "not_held")
+        held = portfolio_context_draft(snapshot, "PDD", rates_payload={})
+        self.assertEqual(held["position_status"], "held")
+        self.assertIsNone(held["current_weight"])
 
 
 if __name__ == "__main__":

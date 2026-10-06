@@ -134,6 +134,46 @@ def _payback_growth(price: Decimal, start_metric: Decimal, years: int, discount_
         return (low + high) / D(2)
 
 
+def _price_fx(spec: dict[str, Any]) -> dict[str, Any] | None:
+    """Resolve the sourced FX fact that converts reporting-currency EPS into the listing currency.
+
+    ``report.price_currency`` is the listing (quote) currency; ``report.currency`` is the
+    reporting currency of the financial statements. The FX fact unit is ``A/B`` meaning
+    ``value`` units of A per one unit of B. Either direction is accepted, so a published
+    central parity such as ``0.85842 CNY/HKD`` can be used verbatim; the compiler derives
+    the multiplier ``price_ccy per reporting_ccy`` exactly once and uses it everywhere.
+    """
+    report = spec.get("report", {})
+    fact_id = str(report.get("fx_fact_id", "")).strip()
+    if not fact_id:
+        return None
+    item = _fact(spec, fact_id)
+    unit = str(item["unit"]).strip().upper()
+    _require(unit.count("/") == 1, f"fx fact {fact_id} unit must be CCY/CCY")
+    numer, denom = (part.strip() for part in unit.split("/"))
+    _require(numer and denom and numer != denom, f"fx fact {fact_id} unit must name two different currencies")
+    _require(str(item.get("as_of", item.get("period", ""))).strip(), f"fx fact {fact_id} requires as_of")
+    quoted = dec(item["value"])
+    _require(quoted > 0, f"fx fact {fact_id} must be positive")
+    price_ccy = str(report.get("price_currency", "")).strip().upper()
+    reporting_ccy = str(report.get("currency", "")).strip().upper()
+    _require(price_ccy and price_ccy != reporting_ccy, "fx_fact_id requires report.price_currency different from report.currency")
+    _require({numer, denom} == {price_ccy, reporting_ccy}, f"fx fact {fact_id} unit {unit} must pair {price_ccy} and {reporting_ccy}")
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        rate = quoted if numer == price_ccy else D(1) / quoted
+    rate = rate.quantize(D("0.0000000001"), rounding=ROUND_HALF_UP)
+    return {
+        "fact_id": fact_id, "rate": rate, "quoted_value": str(quoted), "quoted_unit": unit,
+        "from": reporting_ccy, "to": price_ccy, "as_of": str(item.get("as_of", item.get("period", ""))),
+    }
+
+
+def _fx_rate(spec: dict[str, Any]) -> Decimal:
+    fx = _price_fx(spec)
+    return fx["rate"] if fx else D(1)
+
+
 def _compile_ttm(spec: dict[str, Any]) -> dict[str, Any]:
     series = spec.get("quarterly_series", {})
     required = {"eps", "revenue", "operating_income", "fcf"}
@@ -151,16 +191,28 @@ def _compile_ttm(spec: dict[str, Any]) -> dict[str, Any]:
     )
     current_price_id = str(spec.get("report", {}).get("current_price_fact_id", ""))
     if current_price_id:
-        _require(
-            str(_fact(spec, current_price_id).get("unit", "")).strip() == units["eps"],
-            "current price and EPS must use the same per-share currency unit",
-        )
+        price_unit = str(_fact(spec, current_price_id).get("unit", "")).strip()
+        if price_unit != units["eps"]:
+            fx = _price_fx(spec)
+            _require(
+                fx is not None,
+                "current price and EPS use different per-share currencies; report.fx_fact_id is required",
+            )
+            _require(
+                price_unit == f"{fx['to']}/share" and units["eps"] == f"{fx['from']}/share",
+                f"fx fact {fx['fact_id']} ({fx['to']}/{fx['from']}) does not convert EPS unit {units['eps']} into price unit {price_unit}",
+            )
 
     def components(name: str) -> list[dict[str, Any]]:
         ids = series[name]
         return [{"id": fid, "period": _fact(spec, fid).get("period", _fact(spec, fid).get("as_of", "")), "value": _fact(spec, fid)["value"]} for fid in ids]
     eps = ttm_derive({"id": "DERIVED-TTM-EPS", "metric": "TTM EPS", "mode": "sum", "components": components("eps")})
     eps["unit"] = units["eps"]
+    fx_rate = _fx_rate(spec)
+    if fx_rate != D(1):
+        fx = _price_fx(spec)
+        eps["price_currency_value"] = q(dec(eps["value"]) * fx_rate)
+        eps["price_currency_unit"] = f"{fx['to']}/share"
     rev = components("revenue")
     oi = components("operating_income")
     margin = ttm_derive({"id": "DERIVED-TTM-OP-MARGIN", "metric": "TTM operating margin", "mode": "ratio", "numerator": oi, "denominator": rev})
@@ -168,6 +220,247 @@ def _compile_ttm(spec: dict[str, Any]) -> dict[str, Any]:
     fcf = ttm_derive({"id": "DERIVED-TTM-FCF", "metric": "TTM FCF", "mode": "sum", "components": components("fcf")})
     fcf["unit"] = units["fcf"]
     return {"eps": eps, "operating_margin": margin, "fcf": fcf}
+
+
+def _ttm_sum(spec: dict[str, Any], ids: Any, label: str) -> tuple[Decimal, str]:
+    _require(isinstance(ids, list) and len(ids) == 4, f"{label} requires four fact IDs")
+    units = {str(_fact(spec, fact_id)["unit"]).strip() for fact_id in ids}
+    _require(len(units) == 1 and "" not in units, f"{label} facts must share one explicit unit")
+    return sum((dec(_fact(spec, fact_id)["value"]) for fact_id in ids), D(0)), units.pop()
+
+
+def _safe_payback(price: Decimal, per_share: Decimal, years: int, rate: Decimal) -> str | None:
+    if per_share <= 0:
+        return None
+    try:
+        return q(_payback_growth(price, per_share, years, rate))
+    except SpecError:
+        return None
+
+
+def _compile_cash_valuation(spec: dict[str, Any], current_price: Decimal, target_return: Decimal) -> dict[str, Any] | None:
+    """Three-basis valuation: earnings bases plus FCF, each with multiple, yield, hurdle gap and payback.
+
+    Every per-share number is converted into the listing currency exactly once with the
+    sourced FX fact, so multiples compare like with like. Market cap uses the sourced
+    point-in-time share count, never a scenario assumption.
+    """
+    report = spec.get("report", {})
+    cfg = report.get("cash_valuation")
+    if cfg is None:
+        return None
+    _require(isinstance(cfg, dict), "report.cash_valuation must be an object")
+    fx = _price_fx(spec)
+    rate = fx["rate"] if fx else D(1)
+    reporting = str(report["currency"]).strip().upper()
+    price_ccy = str(report.get("price_currency") or reporting).strip().upper()
+    shares_id = str(cfg.get("shares_fact_id", "")).strip()
+    _require(shares_id, "cash_valuation requires shares_fact_id")
+    shares_fact = _fact(spec, shares_id)
+    _require(str(shares_fact["unit"]).strip() == "100m shares", f"{shares_id} unit must be '100m shares'")
+    shares = dec(shares_fact["value"])
+    _require(shares > 0, "share count must be positive")
+    years = int(report.get("payback_years", 10))
+    rates = [str(rate_value) for rate_value in report.get("payback_discount_rates", ["0", str(target_return)])]
+    with localcontext() as ctx:
+        ctx.prec = PREC
+        market_cap_price = current_price * shares
+        market_cap_reporting = market_cap_price / rate
+        bases_cfg = cfg.get("earnings_bases")
+        _require(isinstance(bases_cfg, list) and bases_cfg, "cash_valuation requires earnings_bases[]")
+        bases: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for index, raw in enumerate(bases_cfg):
+            _require(isinstance(raw, dict), f"cash_valuation.earnings_bases[{index}] must be an object")
+            basis_id = str(raw.get("basis_id", "")).strip()
+            label = str(raw.get("label", "")).strip()
+            _require(basis_id and basis_id not in seen and label, f"cash_valuation.earnings_bases[{index}] requires unique basis_id and label")
+            seen.add(basis_id)
+            eps, unit = _ttm_sum(spec, raw.get("eps_fact_ids"), f"cash_valuation.{basis_id}")
+            _require(unit == f"{reporting}/share", f"cash_valuation.{basis_id} EPS unit must be {reporting}/share")
+            per_share_price = eps * rate
+            accounting_basis = str(raw.get("accounting_basis", "")).strip() or None
+            _require(accounting_basis in (None, "reported", "adjusted"), f"cash_valuation.{basis_id}.accounting_basis must be reported/adjusted")
+            bases.append({
+                "basis_id": basis_id, "label": label, "kind": "earnings", "accounting_basis": accounting_basis,
+                "ttm_total_reporting": q(eps * shares),
+                "per_share_reporting": q(eps), "per_share_price": q(per_share_price),
+                "multiple": q(current_price / per_share_price) if per_share_price > 0 else None,
+                "yield": q(per_share_price / current_price),
+                "hurdle_gap": q(per_share_price / current_price - target_return),
+                "payback_required_growth": {r: _safe_payback(current_price, per_share_price, years, dec(r)) for r in rates},
+            })
+        fcf_ids = cfg.get("fcf_fact_ids", spec.get("quarterly_series", {}).get("fcf"))
+        fcf_total, fcf_unit = _ttm_sum(spec, fcf_ids, "cash_valuation.fcf")
+        _require(fcf_unit == f"{reporting} bn/10", f"cash_valuation FCF unit must be {reporting} bn/10")
+        fcf_ps = fcf_total / shares
+        fcf_ps_price = fcf_ps * rate
+        fcf_row = {
+            "basis_id": "fcf", "label": str(cfg.get("fcf_label", "自由现金流")), "kind": "cash",
+            "ttm_total_reporting": q(fcf_total),
+            "per_share_reporting": q(fcf_ps), "per_share_price": q(fcf_ps_price),
+            "multiple": q(current_price / fcf_ps_price) if fcf_ps_price > 0 else None,
+            "yield": q(fcf_ps_price / current_price),
+            "hurdle_gap": q(fcf_ps_price / current_price - target_return),
+            "payback_required_growth": {r: _safe_payback(current_price, fcf_ps_price, years, dec(r)) for r in rates},
+        }
+        rows = [*bases, fcf_row]
+        normalized_cfg = cfg.get("normalized_fcf")
+        normalized_row: dict[str, Any] | None = None
+        if normalized_cfg is not None:
+            _require(isinstance(normalized_cfg, dict), "cash_valuation.normalized_fcf must be an object")
+            n_label = str(normalized_cfg.get("label", "")).strip()
+            method = str(normalized_cfg.get("method", "")).strip()
+            _require(len(n_label) >= 2, "cash_valuation.normalized_fcf requires label")
+            _require(len(method) >= 12, "cash_valuation.normalized_fcf requires a concrete method (>=12 chars)")
+            n_total, n_unit = _ttm_sum(spec, normalized_cfg.get("fact_ids"), "cash_valuation.normalized_fcf")
+            _require(n_unit == f"{reporting} bn/10", f"cash_valuation.normalized_fcf unit must be {reporting} bn/10")
+            if n_total == fcf_total:
+                _require(len(str(normalized_cfg.get("same_as_reported_reason", "")).strip()) >= 12,
+                         "normalized FCF equals reported FCF; state same_as_reported_reason or adjust it")
+            n_ps = n_total / shares
+            n_ps_price = n_ps * rate
+            normalized_row = {
+                "basis_id": "normalized_fcf", "label": n_label, "kind": "cash_normalized", "method": method,
+                "fact_ids": [str(x) for x in normalized_cfg["fact_ids"]],
+                "ttm_total_reporting": q(n_total),
+                "per_share_reporting": q(n_ps), "per_share_price": q(n_ps_price),
+                "multiple": q(current_price / n_ps_price) if n_ps_price > 0 else None,
+                "yield": q(n_ps_price / current_price),
+                "hurdle_gap": q(n_ps_price / current_price - target_return),
+                "payback_required_growth": {r: _safe_payback(current_price, n_ps_price, years, dec(r)) for r in rates},
+                "confirmation_price": q(n_ps_price / target_return) if n_ps_price > 0 else None,
+            }
+            rows.append(normalized_row)
+        decisive_id = str(cfg.get("decisive_basis", "")).strip()
+        decisive: dict[str, Any] | None = None
+        if decisive_id:
+            match = next((row for row in rows if row["basis_id"] == decisive_id), None)
+            _require(match is not None, f"cash_valuation.decisive_basis {decisive_id} is not a compiled basis")
+            reason = str(cfg.get("decisive_reason", "")).strip()
+            _require(len(reason) >= 12, "cash_valuation.decisive_basis requires decisive_reason (>=12 chars)")
+            ps_price = dec(match["per_share_price"])
+            decisive = {
+                "basis_id": decisive_id, "label": match["label"], "kind": match["kind"], "reason": reason,
+                "yield": match["yield"], "hurdle_gap": match["hurdle_gap"],
+                "confirmation_price": q(ps_price / target_return) if ps_price > 0 else None,
+                "passes_hurdle": bool(ps_price / current_price >= target_return),
+            }
+        result: dict[str, Any] = {
+            "shares_fact_id": shares_id,
+            "shares_100m": q(shares),
+            "market_cap_price_100m": q(market_cap_price, "0.01"),
+            "market_cap_reporting_100m": q(market_cap_reporting, "0.01"),
+            "price_currency": price_ccy,
+            "reporting_currency": reporting,
+            "target_return": q(target_return),
+            "payback_years": years,
+            "discount_rates": rates,
+            "bases": rows,
+            "fcf": fcf_row,
+            "normalized_fcf": normalized_row,
+            "decisive": decisive,
+            "cash_confirmation_price": q(fcf_ps_price / target_return) if fcf_ps_price > 0 else None,
+            "fcf_passes_hurdle": bool(fcf_ps_price / current_price >= target_return),
+            "dividend": None,
+        }
+        dividend = cfg.get("dividend")
+        if dividend is not None:
+            _require(isinstance(dividend, dict), "cash_valuation.dividend must be an object")
+            dps_fact = _fact(spec, str(dividend.get("dps_fact_id", "")))
+            dps_unit = str(dps_fact["unit"]).strip()
+            dps = dec(dps_fact["value"])
+            if dps_unit == f"{reporting}/share" and price_ccy != reporting:
+                dps = dps * rate
+            else:
+                _require(dps_unit == f"{price_ccy}/share", f"dividend unit must be {price_ccy}/share or {reporting}/share")
+            growth_item = _assumption(spec, str(dividend.get("growth_assumption_id", "")))
+            tax_item = _assumption(spec, str(dividend.get("withholding_assumption_id", "")))
+            growth = dec(growth_item["value"])
+            withholding = dec(tax_item["value"])
+            _require(D(0) <= withholding < D(1), "withholding rate must be in [0, 1)")
+            n = int(dividend.get("years", report.get("return_years", 5)))
+            _require(n >= 1, "dividend years must be positive")
+            gross = sum((dps * (D(1) + growth) ** t for t in range(n)), D(0))
+            net = gross * (D(1) - withholding)
+            result["dividend"] = {
+                "dps_fact_id": str(dividend["dps_fact_id"]),
+                "dps_price": q(dps), "growth": q(growth), "withholding": q(withholding), "years": n,
+                "gross_total": q(gross, "0.001"), "net_total": q(net, "0.001"),
+                "net_total_yield": q(net / current_price),
+                "gross_yield_now": q(dps / current_price),
+            }
+    return result
+
+
+def _compile_price_ladder(spec: dict[str, Any], bundle: dict[str, Any], current_price: Decimal) -> dict[str, Any] | None:
+    cfg = spec.get("decision_policy", {}).get("price_ladder")
+    if cfg is None:
+        return None
+    _require(isinstance(cfg, dict), "decision_policy.price_ladder must be an object")
+    tiers_cfg = cfg.get("tiers")
+    _require(isinstance(tiers_cfg, list) and len(tiers_cfg) >= 3, "price_ladder requires at least three tiers")
+    watch_cap = dec(cfg.get("watch_trial_cap", "0"))
+    _require(D(0) <= watch_cap <= D(1), "price_ladder.watch_trial_cap must be in [0, 1]")
+    buy_price = dec(bundle["scenarios"]["base"]["prices"]["buy"])
+    target_price = dec(bundle["scenarios"]["base"]["prices"]["target_return"])
+    tiers: list[dict[str, Any]] = []
+    previous_floor: Decimal | None = None
+    previous_max = D(0)
+    seen: set[str] = set()
+    for index, raw in enumerate(tiers_cfg):
+        label = f"price_ladder.tiers[{index}]"
+        _require(isinstance(raw, dict), f"{label} must be an object")
+        tier_id = str(raw.get("tier_id", "")).strip()
+        _require(tier_id and tier_id not in seen, f"{label} requires a unique tier_id")
+        seen.add(tier_id)
+        action = str(raw.get("action", "")).strip()
+        _require(len(action) >= 2, f"{label} requires action")
+        floor_ref = raw.get("floor_ref")
+        last = index == len(tiers_cfg) - 1
+        if last:
+            _require(floor_ref in (None, ""), f"{label} last tier must be open-ended (no floor_ref)")
+            floor = None
+            raw_floor = None
+        else:
+            _require(str(floor_ref or "").startswith("BUNDLE:/"), f"{label} requires floor_ref BUNDLE:/ pointer")
+            base_value, _ = _bundle_value(bundle, str(floor_ref))
+            raw_floor = base_value * dec(raw.get("floor_multiplier", "1"))
+            floor = raw_floor.quantize(D("0.01"), rounding=ROUND_HALF_UP)
+            _require(floor > 0, f"{label} floor must be positive")
+            if previous_floor is not None:
+                _require(floor < previous_floor, f"{label} floors must strictly decrease")
+        pmin, pmax = dec(raw.get("position_min", "0")), dec(raw.get("position_max", "0"))
+        _require(D(0) <= pmin <= pmax <= D(1), f"{label} requires 0 <= position_min <= position_max <= 1")
+        _require(pmax >= previous_max, f"{label} position_max must not fall as price falls")
+        # Compare the unrounded floor so a tier anchored exactly on a price is not missed by rounding.
+        if floor is not None and raw_floor >= buy_price:
+            _require(pmax <= watch_cap, f"{label} sits above the Base buy price; position_max cannot exceed watch_trial_cap")
+        if floor is not None and raw_floor >= target_price:
+            _require(pmax == 0, f"{label} sits above the Base target-return price; new money must be zero")
+        tiers.append({
+            "tier_id": tier_id, "action": action,
+            "ceiling": q(previous_floor, "0.01") if previous_floor is not None else None,
+            "floor": q(floor, "0.01") if floor is not None else None,
+            "floor_ref": str(floor_ref) if floor_ref else None,
+            "position_min": q(pmin), "position_max": q(pmax),
+            "above_buy_price": bool(floor is not None and raw_floor >= buy_price),
+            "current": False,
+        })
+        previous_floor = floor if floor is not None else previous_floor
+        previous_max = pmax
+    for tier in tiers:
+        if tier["floor"] is None or current_price >= dec(tier["floor"]):
+            tier["current"] = True
+            break
+    return {
+        "watch_trial_cap": q(watch_cap),
+        "buy_price": q(buy_price),
+        "target_return_price": q(target_price),
+        "position_basis": "fraction_of_target_position",
+        "suspended": bool(bundle["decision"]["thesis_break"]["triggered"]),
+        "tiers": tiers,
+    }
 
 
 def _compile_scenario(spec: dict[str, Any], scenario: str, current_price: Decimal, target_return: Decimal) -> dict[str, Any]:
@@ -187,16 +480,21 @@ def _compile_scenario(spec: dict[str, Any], scenario: str, current_price: Decima
         tax_rate=values["tax_rate"],
         diluted_shares=values["diluted_shares"],
     )
+    fx_rate = _fx_rate(spec)
+    price_eps = dec(eps["eps"]) * fx_rate
+    if fx_rate != D(1):
+        eps["eps_price_currency"] = q(price_eps)
+        eps["fx_rate"] = str(fx_rate)
     returns = return_pair(
         current_price=current_price,
-        starting_eps=dec(eps["eps"]),
+        starting_eps=price_eps,
         eps_cagr=values["eps_cagr"],
         exit_pe=values["exit_pe"],
         years=int(spec.get("report", {}).get("return_years", 5)),
         target_return=target_return,
         annual_dividend_yield=values["dividend_yield"],
     )
-    reference = dec(eps["eps"]) * values["reference_multiple"]
+    reference = price_eps * values["reference_multiple"]
     target_price = dec(returns["target_return_price"])
     buy_price = target_price * (D(1) - values["safety_margin"])
     return {
@@ -499,9 +797,14 @@ def compile_spec(spec: dict[str, Any]) -> dict[str, Any]:
     _require(current_price > 0 and target_return > 0, "price and target return must be positive")
     ttm = _compile_ttm(spec)
     scenarios = {name: _compile_scenario(spec, name, current_price, target_return) for name in SCENARIOS}
+    fx = _price_fx(spec)
+    price_ccy = str(report.get("price_currency", "")).strip().upper()
+    if price_ccy and not fx:
+        _require(price_ccy == str(report["currency"]).strip().upper(), "report.price_currency differs from report.currency; report.fx_fact_id is required")
+    payback_eps = dec(ttm["eps"]["value"]) * _fx_rate(spec)
     payback_rates = report.get("payback_discount_rates", ["0", str(target_return)])
     payback = {
-        str(rate): q(_payback_growth(current_price, dec(ttm["eps"]["value"]), int(report.get("payback_years", 10)), dec(rate)))
+        str(rate): q(_payback_growth(current_price, payback_eps, int(report.get("payback_years", 10)), dec(rate)))
         for rate in payback_rates
     }
     bundle: dict[str, Any] = {
@@ -510,12 +813,21 @@ def compile_spec(spec: dict[str, Any]) -> dict[str, Any]:
         "report": deepcopy(report),
         "facts": deepcopy(spec["facts"]),
         "target_return": q(target_return),
-        "derived": {"ttm": ttm, "payback_required_growth": payback},
+        "derived": {
+            "ttm": ttm,
+            "payback_required_growth": payback,
+            "fx": (
+                {"fact_id": fx["fact_id"], "rate": str(fx["rate"]), "quoted_value": fx["quoted_value"], "quoted_unit": fx["quoted_unit"], "from": fx["from"], "to": fx["to"], "as_of": fx["as_of"]}
+                if fx else None
+            ),
+            "cash_valuation": _compile_cash_valuation(spec, current_price, target_return),
+        },
         "scenarios": scenarios,
         "narrative": deepcopy(spec.get("narrative", {})),
         "sources": deepcopy(spec.get("sources", [])),
     }
     bundle["decision"] = _evaluate_policy(spec, bundle)
+    bundle["price_ladder"] = _compile_price_ladder(spec, bundle, current_price)
     base_prices = scenarios["base"]["prices"]
     bundle["price_zones"] = [
         {"max": base_prices["buy"], "name": "安全边际买入区", "action": "BUY"},

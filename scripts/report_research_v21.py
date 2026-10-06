@@ -19,7 +19,8 @@ MODULES = (
 )
 CONFIDENCE = {"low", "medium", "high"}
 EVIDENCE_ROLES = {"supports", "context", "counter_evidence"}
-VALUE_FORMATS = {"money", "percent", "multiple", "number", "integer", "text"}
+VALUE_FORMATS = {"money", "price", "percent", "multiple", "number", "integer", "text"}
+_CURRENCY_PREFIX = {"USD": "$", "HKD": "HK$", "CNY": "CNY ", "RMB": "RMB ", "KRW": "KRW "}
 SOURCE_FIELDS = {"title", "publisher", "date", "tier", "document_type", "locator", "scope"}
 NUMERIC_PATTERN = re.compile(r"(?:[$€¥£]\s*\d|\d+(?:\.\d+)?\s*%|\d+(?:\.\d+)?\s*[xX倍]|\b\d{3,}(?:\.\d+)?\b)")
 PLACEHOLDER_PATTERN = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
@@ -46,17 +47,23 @@ def _json_pointer(root: Any, pointer: str) -> Any:
     return current
 
 
-def _validate_text(text: Any, label: str, *, allow_placeholders: bool = False) -> str:
+def _validate_text(text: Any, label: str, *, allow_placeholders: bool = False, minimum: int = 12) -> str:
     value = str(text or "").strip()
-    _require(len(value) >= 12, f"{label} is too thin")
+    _require(len(value) >= minimum, f"{label} is too thin")
     inspected = PLACEHOLDER_PATTERN.sub("", value) if allow_placeholders else value
     _require(not NUMERIC_PATTERN.search(inspected), f"{label} contains unbound numeric content")
     return value
 
 
-def _format_value(value: Any, fmt: str) -> str:
-    if fmt == "money":
-        return f"${float(value):,.2f}"
+def _format_value(value: Any, fmt: str, bundle: dict[str, Any] | None = None) -> str:
+    report = (bundle or {}).get("report", {})
+    if fmt in {"money", "price"}:
+        # money = reporting currency (per-share EPS etc.); price = listing-market currency.
+        code = str(report.get("currency") or "USD").upper()
+        if fmt == "price":
+            code = str(report.get("price_currency") or code).upper()
+        prefix = _CURRENCY_PREFIX.get(code, f"{code} ")
+        return f"{prefix}{float(value):,.2f}"
     if fmt == "percent":
         numeric = float(value)
         if abs(numeric) <= 1:
@@ -89,7 +96,7 @@ def _bind_text(item: dict[str, Any], label: str, bundle: dict[str, Any], text_fi
         fmt = str(raw.get("format", ""))
         _require(fmt in VALUE_FORMATS, f"{label}.value_refs.{name} invalid format")
         value = _json_pointer(bundle, path)
-        rendered = rendered.replace("{" + name + "}", _format_value(value, fmt))
+        rendered = rendered.replace("{" + name + "}", _format_value(value, fmt, bundle))
         normalized[name] = {"path": path, "format": fmt, "value": value}
     _require(not PLACEHOLDER_PATTERN.search(rendered), f"{label} has unresolved placeholders")
     return rendered, normalized
@@ -193,6 +200,33 @@ def _validate_research(spec: dict[str, Any], bundle: dict[str, Any]) -> tuple[di
         "key_forces": [_claim(x, spec, bundle, f"overview.key_forces[{i}]") for i, x in enumerate(key_forces)],
         "variant_view": _claim(overview.get("variant_view"), spec, bundle, "overview.variant_view", text_field="text"),
     }
+    if "business_model" in overview:
+        out["overview"]["business_model"] = _claim(overview["business_model"], spec, bundle, "overview.business_model", text_field="text")
+    if "segments" in overview:
+        segments = overview["segments"]
+        _require(isinstance(segments, list) and len(segments) >= 2, "overview.segments requires at least two segments")
+        facts = spec.get("facts", {})
+        normalized_segments = []
+        for i, item in enumerate(segments):
+            label = f"overview.segments[{i}]"
+            _require(isinstance(item, dict), f"{label} must be an object")
+            normalized = _claim(item, spec, bundle, label)
+            normalized["name"] = _validate_text(item.get("name"), f"{label}.name", minimum=2)
+            for key in ("revenue_fact_id", "yoy_fact_id"):
+                if key in item:
+                    fact_id = str(item[key])
+                    _require(fact_id in facts, f"{label}.{key} references undefined fact {fact_id}")
+                    normalized[key] = fact_id
+            _require("revenue_fact_id" in normalized, f"{label} requires revenue_fact_id")
+            normalized_segments.append(normalized)
+        out["overview"]["segments"] = normalized_segments
+    if "earnings_update" in overview:
+        update = overview["earnings_update"]
+        _require(isinstance(update, dict), "overview.earnings_update must be an object")
+        out["overview"]["earnings_update"] = {
+            key: _claim(update.get(key), spec, bundle, f"overview.earnings_update.{key}", text_field="text")
+            for key in ("period", "changed", "unchanged")
+        }
 
     financial = research["financial_autopsy"]
     _require(isinstance(financial, dict), "financial_autopsy must be an object")

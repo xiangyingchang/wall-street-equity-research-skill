@@ -53,9 +53,17 @@ jobs:
           grep -q "### Action Matrix（唯一执行口径）" /tmp/report-v3/meta.md
           grep -q "### 三条原投资原则" /tmp/report-v3/meta.md
           grep -q "### Base 情景关键假设" /tmp/report-v3/meta.md
-          grep -q "## 1. 决定回报的投资主线" /tmp/report-v3/meta.md
+          grep -q "## 1. Overview：商业模式与本次财报" /tmp/report-v3/meta.md
+          grep -q "### Key Forces" /tmp/report-v3/meta.md
+          grep -q "本次财报改变了什么" /tmp/report-v3/meta.md
+          grep -q "### 决定回报的投资主线" /tmp/report-v3/meta.md
           grep -q "### 最强正反证据与裁决" /tmp/report-v3/meta.md
           grep -q "### 真正决定估值的变量" /tmp/report-v3/meta.md
+          grep -q "### 什么会改变结论" /tmp/report-v3/meta.md
+          for heading in "### 现金口径估值" "### 三口径回本测试" "### 同业对比" "### 情景经营前提" "### 正常化桥" "### CapEx、研发与资产负债表" "### 新资金价格阶梯" "### Action Triggers" "### Pre-Mortem" "### 最小复核清单" "年税后股息" "年趋势" "**流动性：**" "### 现金流升级表" "### ROIC 与增量 ROIC" "利润率 × 退出市盈率" "可执行新资金上限" "决定买点的口径"; do grep -qF "$heading" /tmp/report-v3/meta.md || { echo "missing v3.2 section: $heading"; exit 1; }; done
+          test "$(grep -c "◀ 价格所在" /tmp/report-v3/meta.md)" -eq 1
+          test "$(grep -c "◀ 当前级" /tmp/report-v3/meta.md)" -eq 1
+          grep -q "### Decision Sensitivity (quantified)" /tmp/report-v3/meta.audit.md
           grep -q "## Research Graph v3.1" /tmp/report-v3/meta.audit.md
           grep -q "](https://" /tmp/report-v3/meta.md
           test "$(grep -c "### Action Matrix（唯一执行口径）" /tmp/report-v3/meta.md)" -eq 1

@@ -12,7 +12,7 @@ from typing import Any
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from scripts.report_compiler_v3 import compile_report_v3
+from scripts.report_compiler_v3 import COMPILER_VERSION, compile_report_v3
 from scripts.report_lint import lint_text
 from scripts.report_pipeline_v2 import artifact_paths, load_json, write_json
 from scripts.report_renderer_v3 import render_audit_markdown, render_reader_markdown
@@ -38,10 +38,18 @@ def _reader_errors(markdown: str, bundle: dict[str, Any] | None = None) -> list[
         "### 三条原投资原则",
         "### Base 情景关键假设",
         "### 与上次报告相比",
-        "## 1. 决定回报的投资主线",
+        "## 1. Overview：商业模式与本次财报",
         "### 最强正反证据与裁决",
+        "### Key Forces",
+        "### 决定回报的投资主线",
         "### 真正决定估值的变量",
         "## 8. 组合约束与执行边界",
+        "### 现金口径估值",
+        "### 三口径回本测试",
+        "### 新资金价格阶梯",
+        "### Action Triggers",
+        "### Pre-Mortem",
+        "### 最小复核清单",
         "## 主要来源",
     )
     for token in required:
@@ -58,7 +66,7 @@ def _reader_errors(markdown: str, bundle: dict[str, Any] | None = None) -> list[
         if "不能直接执行" not in markdown or bundle["decision"]["existing_position_action"] != "REVIEW":
             errors.append("reader report must disclose blocked portfolio execution and resolve to REVIEW")
     line_count = len(markdown.splitlines())
-    if line_count > 360:
+    if line_count > 520:
         errors.append(f"reader report exceeds v3.1 readability ceiling: {line_count}")
     return errors
 
@@ -92,6 +100,13 @@ def _calculation_check(bundle: dict[str, Any]) -> str:
             return "FAIL"
         if not bundle.get("derived", {}).get("payback_required_growth"):
             return "FAIL"
+        cash = bundle.get("derived", {}).get("cash_valuation")
+        if not cash or not bundle.get("price_ladder"):
+            return "FAIL"
+        current = Decimal(str(bundle["facts"][bundle["report"]["current_price_fact_id"]]["value"]))
+        for row in cash["bases"]:
+            if row["multiple"] is not None and abs(Decimal(row["multiple"]) * Decimal(row["per_share_price"]) - current) > Decimal("0.05"):
+                return "FAIL"
     except (KeyError, TypeError, InvalidOperation):
         return "FAIL"
     return "PASS"
@@ -115,6 +130,7 @@ def _verification(bundle: dict[str, Any], spec_path: Path, output: Path, audit_p
         "prior_report_context": bundle["data_quality"]["prior_report_context"]["status"],
         "research_quality": bundle["research_quality"]["status"],
         "research_graph": graph_quality["status"],
+        "decision_support": bundle.get("decision_support", {}).get("quality", {}).get("status", "FAIL"),
         "theme_narrative": "PASS" if graph_quality["themes"] >= 2 and graph_quality["observations"] >= 2 else "FAIL",
         "investment_debate": "PASS" if graph_quality["bull_arguments"] >= 2 and graph_quality["bear_arguments"] >= 2 else "FAIL",
         "sensitivity_explanation": "PASS" if graph_quality["sensitivity_drivers"] >= 2 and graph_quality["high_importance_drivers"] >= 1 else "FAIL",
@@ -125,7 +141,7 @@ def _verification(bundle: dict[str, Any], spec_path: Path, output: Path, audit_p
     }
     return {
         "schema_version": "report-verification-v3.1",
-        "compiler_version": "3.1.0",
+        "compiler_version": COMPILER_VERSION,
         "spec_file": str(spec_path),
         "report_file": str(output),
         "audit_file": str(audit_path),

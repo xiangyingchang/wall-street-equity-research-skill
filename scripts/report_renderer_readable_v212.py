@@ -17,6 +17,30 @@ def _money(value: Any, currency: Any = "USD") -> str:
         return str(value)
 
 
+def _price_currency(report: dict[str, Any]) -> str:
+    """Listing-market currency for per-share prices; falls back to the reporting currency."""
+    return str(report.get("price_currency") or report.get("currency", ""))
+
+
+def _fx_note(bundle: dict[str, Any]) -> str:
+    fx = bundle.get("derived", {}).get("fx")
+    if not fx:
+        return ""
+    return (
+        f"每股价格、目标价和买入价按上市市场货币 {fx['to']} 计价；财报 EPS 为 {fx['from']}，"
+        f"由编译器按 {fx['as_of']} 汇率 {fx['quoted_value']} {fx['quoted_unit']}（折合 1 {fx['from']} = {float(fx['rate']):.4f} {fx['to']}）换算后再与股价比较。"
+        f"收入、利润等绝对金额保留财报货币。"
+    )
+
+
+def _scenario_eps(item: dict[str, Any], currency: Any, price_currency: Any) -> str:
+    bridge = item["eps_bridge"]
+    text = _money(bridge["eps"], currency)
+    if "eps_price_currency" in bridge:
+        text += f"（≈{_money(bridge['eps_price_currency'], price_currency)}）"
+    return text
+
+
 def _pct_decimal(value: Any) -> str:
     try:
         return f"{float(value) * 100:.2f}%"
@@ -38,23 +62,35 @@ def _number(value: Any, digits: int = 2) -> str:
         return str(value)
 
 
-def _discount_rate_label(rate: Any, target_return: Any) -> str:
+def _discount_rate_label(rate: Any, target_return: Any, ten_year: Any = None) -> str:
     try:
         numeric = float(rate)
         target = float(target_return)
+        base_yield = float(ten_year) if ten_year is not None else target / 2
     except Exception:
         return str(rate)
     if abs(numeric) < 1e-12:
         return "名义（0.00%）"
-    if abs(numeric - target / 2) < 0.00005:
+    if abs(numeric - base_yield) < 0.00005:
         return f"10Y 国债 ×1（{numeric * 100:.2f}%）"
-    if abs(numeric - target) < 0.00005:
+    if abs(numeric - base_yield * 2) < 0.00005:
         return f"10Y 国债 ×2（{numeric * 100:.2f}%）"
+    suffix = "，目标回报" if abs(numeric - target) < 0.00005 else ""
     if abs(numeric - 0.08) < 0.00005:
-        return "8%"
+        return f"8%{suffix}"
     if abs(numeric - 0.10) < 0.00005:
-        return "10%"
-    return f"{numeric * 100:.2f}%"
+        return f"10%{suffix}"
+    return f"{numeric * 100:.2f}%{suffix}"
+
+
+def _ten_year_yield(bundle: dict[str, Any]) -> Any:
+    fact_id = bundle.get("report", {}).get("risk_free_fact_id")
+    if not fact_id:
+        return None
+    fact = bundle.get("facts", {}).get(fact_id)
+    if not isinstance(fact, dict) or "value" not in fact:
+        raise ValueError(f"risk_free_fact_id references undefined fact {fact_id}")
+    return fact["value"]
 
 
 def _absolute_money(value: Any, currency: Any) -> str:
@@ -175,6 +211,7 @@ def _reason_label(reason: str) -> str:
 def render_reader_markdown(bundle: dict[str, Any]) -> str:
     report = bundle["report"]
     currency = report.get("currency", "")
+    price_currency = _price_currency(report)
     company = report["company"]
     return_years = report["return_years"]
     payback_years = report["payback_years"]
@@ -198,12 +235,12 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
         "| 项目 | 判断 |", "|---|---|",
         f"| 新资金 | **{_action_label(decision['new_money_action'])}** |",
         f"| 已有仓位 | **{_action_label(decision['existing_position_action'])}** |",
-        f"| 当前价格 | {_money(current_price, currency)} |",
+        f"| 当前价格 | {_money(current_price, price_currency)} |",
         f"| Base {return_years}年 IRR | {_pct_decimal(decision['valuation']['base_irr'])} |",
         f"| 最低目标回报 | {_pct_decimal(decision['valuation']['target_return'])} |",
-        f"| 目标回报价格 | {_money(base['prices']['target_return'], currency)} |",
-        f"| 安全边际买入价 | {_money(base['prices']['buy'], currency)} |",
-        f"| Forward reference | {_money(base['prices']['forward_reference'], currency)} |", "",
+        f"| 目标回报价格 | {_money(base['prices']['target_return'], price_currency)} |",
+        f"| 安全边际买入价 | {_money(base['prices']['buy'], price_currency)} |",
+        f"| Forward reference | {_money(base['prices']['forward_reference'], price_currency)} |", "",
         f"**核心判断：** {_claim_text(thesis)}", "",
         f"现价下，新资金应选择**{_action_label(decision['new_money_action'])}**，已有仓位建议**{_action_label(decision['existing_position_action'])}**。直接原因是{_reason_label(str(decision['reason']))}：Base IRR 只有 {_pct_decimal(decision['valuation']['base_irr'])}，低于 {_pct_decimal(decision['valuation']['target_return'])} 的最低目标回报。", "",
         "### 三个核心矛盾", "",
@@ -224,7 +261,7 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
     ttm = derived["ttm"]
     lines.extend([
         "## 2. 财务剖析", "",
-        f"过去四个季度，{company} 的 TTM EPS 为 {_money(ttm['eps']['value'], currency)}，TTM 经营利润率为 {_pct_number(ttm['operating_margin']['value_pct'])}，TTM FCF 为 {_absolute_money(ttm['fcf']['value'], currency)}。", "",
+        f"过去四个季度，{company} 的 TTM EPS 为 {_money(ttm['eps']['value'], currency)}{('（≈' + _money(ttm['eps']['price_currency_value'], price_currency) + '）') if 'price_currency_value' in ttm['eps'] else ''}，TTM 经营利润率为 {_pct_number(ttm['operating_margin']['value_pct'])}，TTM FCF 为 {_absolute_money(ttm['fcf']['value'], currency)}。", "",
         _paragraph(financial["revenue"]), "",
         _paragraph(financial["margin"]), "",
         _paragraph(financial["cash_flow"]), "",
@@ -252,16 +289,17 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
     lines.extend([
         f"## 4. 极限估值与{payback_years}年回本", "",
         _paragraph(valuation["base_case"]), "",
-        f"| 场景 | Forward revenue | EPS | {return_years}年 IRR | 目标回报价格 | 安全边际买入价 |", "|---|---:|---:|---:|---:|---:|",
-        f"| Bear | {_absolute_money(bear['revenue']['forward_revenue'], currency)} | {_money(bear['eps_bridge']['eps'], currency)} | {_pct_number(bear['returns']['irr']['irr_pct'])} | {_money(bear['prices']['target_return'], currency)} | {_money(bear['prices']['buy'], currency)} |",
-        f"| Base | {_absolute_money(base['revenue']['forward_revenue'], currency)} | {_money(base['eps_bridge']['eps'], currency)} | {_pct_number(base['returns']['irr']['irr_pct'])} | {_money(base['prices']['target_return'], currency)} | {_money(base['prices']['buy'], currency)} |",
-        f"| Bull | {_absolute_money(bull['revenue']['forward_revenue'], currency)} | {_money(bull['eps_bridge']['eps'], currency)} | {_pct_number(bull['returns']['irr']['irr_pct'])} | {_money(bull['prices']['target_return'], currency)} | {_money(bull['prices']['buy'], currency)} |", "",
+        f"| 场景 | 前瞻收入 | EPS | {return_years}年 IRR | 目标回报价格 | 安全边际买入价 |", "|---|---:|---:|---:|---:|---:|",
+        f"| Bear | {_absolute_money(bear['revenue']['forward_revenue'], currency)} | {_scenario_eps(bear, currency, price_currency)} | {_pct_number(bear['returns']['irr']['irr_pct'])} | {_money(bear['prices']['target_return'], price_currency)} | {_money(bear['prices']['buy'], price_currency)} |",
+        f"| Base | {_absolute_money(base['revenue']['forward_revenue'], currency)} | {_scenario_eps(base, currency, price_currency)} | {_pct_number(base['returns']['irr']['irr_pct'])} | {_money(base['prices']['target_return'], price_currency)} | {_money(base['prices']['buy'], price_currency)} |",
+        f"| Bull | {_absolute_money(bull['revenue']['forward_revenue'], currency)} | {_scenario_eps(bull, currency, price_currency)} | {_pct_number(bull['returns']['irr']['irr_pct'])} | {_money(bull['prices']['target_return'], price_currency)} | {_money(bull['prices']['buy'], price_currency)} |", "",
         _paragraph(valuation["reverse_expectations"]), "",
         _paragraph(valuation["payback_interpretation"]), "",
         f"| 贴现率 | {payback_years}年回本所需 EPS 增长 |", "|---:|---:|",
     ])
+    ten_year = _ten_year_yield(bundle)
     for rate, growth in derived["payback_required_growth"].items():
-        lines.append(f"| {_discount_rate_label(rate, bundle['target_return'])} | {_pct_decimal(growth)} |")
+        lines.append(f"| {_discount_rate_label(rate, bundle['target_return'], ten_year)} | {_pct_decimal(growth)} |")
     lines.extend(["", f"**最关键假设：** {_paragraph(valuation['critical_assumption'])}", ""])
     lines += _source_note(bundle, valuation.values())
 
@@ -286,7 +324,7 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
     lines.extend(["## 7. 机构视角与机会成本", "", _paragraph(opportunity["interpretation"]), ""])
     for item in opportunity["comparators"]:
         lines.append(f"- {_claim_text(item, 'claim')} {_claim_text(item, 'implication')}")
-    lines.extend(["", f"Base IRR 为 {_pct_decimal(decision['valuation']['base_irr'])}，而最低目标回报为 {_pct_decimal(decision['valuation']['target_return'])}。因此争议不是 {company} 是否是一家好公司，而是当前价格是否给出了足够的风险补偿。", ""])
+    lines.extend(["", f"争议不是 {company} 是否是一家好公司，而是当前价格是否给出了足够的风险补偿（Base IRR 与门槛对比见第一页）。", ""])
     lines += _source_note(bundle, [opportunity["interpretation"], *opportunity["comparators"]])
 
     positioning = research["positioning"]
@@ -301,11 +339,11 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
     ])
     for zone in bundle["price_zones"]:
         if "min" not in zone:
-            price_range = f"≤ {_money(zone['max'], currency)}"
+            price_range = f"≤ {_money(zone['max'], price_currency)}"
         elif "max" not in zone:
-            price_range = f"> {_money(zone['min'], currency)}"
+            price_range = f"> {_money(zone['min'], price_currency)}"
         else:
-            price_range = f"({_money(zone['min'], currency)}, {_money(zone['max'], currency)}]"
+            price_range = f"({_money(zone['min'], price_currency)}, {_money(zone['max'], price_currency)}]"
         lines.append(f"| {_escape(zone['name'])} | {price_range} | {_action_label(zone['action'])} |")
     lines.extend([""])
     lines += _source_note(bundle, positioning.values())
@@ -321,7 +359,9 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
         f"**反证条件：** {_paragraph(final['falsification'])}", "",
         "## 主要来源", "",
     ])
-    for source in list(bundle["source_registry"].values())[:8]:
+    registry = list(bundle["source_registry"].values())
+    registry.sort(key=lambda s: str(s.get("tier", "3")).replace("Tier ", ""))
+    for source in registry:
         title = _escape(source["title"])
         url = str(source.get("url", "")).strip()
         source_label = f"[{title}]({url})" if url else title

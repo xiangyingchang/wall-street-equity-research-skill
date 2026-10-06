@@ -34,7 +34,7 @@ agent_created: true
 > 出自 V4 资产配置备忘录，是凌驾于所有华尔街分析框架之上的判断准绳。
 
 1. **持有 = 买入**：每天的持仓 = 用今天现价重新买一次。**不值得现价买的，卖。**
-2. **机会成本才是真成本**：本金锁在低效资产里错过的复利，比浮亏可怕。永远跟对应计价货币的 10 年期国债收益率 × 2（USD 资产默认 10Y UST × 2；人民币资产默认中国 10Y 国债 × 2）、红利垄断（中海油 6-7x / 神华 8-9x / 招行 5.5-6.5x PE）、纳指/标普做对比。
+2. **机会成本才是真成本**：本金锁在低效资产里错过的复利，比浮亏可怕。永远跟对应计价货币的 10 年期国债收益率 × 2（计价货币 = 上市市场货币：美股 USD 默认 10Y UST × 2；港股 HKD 默认香港 10Y 政府债 × 2；A 股 CNY 默认中国 10Y 国债 × 2）、红利垄断（中海油 6-7x / 神华 8-9x / 招行 5.5-6.5x PE）、纳指/标普做对比。
 3. **十年回本压力测试**：未来 10 年累计利润倍数与当前估值做零终值压力测试，$M = \frac{(1+g)^{10}-1}{g}$。若所需 g 不具物理可达性，必须提高回报门槛并解释；但不得脱离 Scenario IRR 与 Reverse Expectations 单独一票否决。
 
 ---
@@ -443,6 +443,8 @@ Obsidian/股票/[公司名]/[TICKER]-[公司名]-华尔街式分析报告-YYYY-M
 
 ### 2. 元数据位置（强制）
 
+**计价货币规则**：每股价格、目标价、买入价一律使用上市市场货币（港股用港元，不用人民币柜台）。财报币种不同（如腾讯以人民币报告）时，只能通过有一手来源和日期的汇率 Fact 由编译器把 EPS 换算到上市货币，并在报告中披露汇率；收入、利润等绝对金额保留财报币种。
+
 报告正文**不得**以 YAML frontmatter 开头。Ticker、公司名、市场、日期、评级、动作等元数据放在文件名、标题、First-Page Verdict 和 Evidence Ledger 中；当前价格、汇率、油价、PE、股息率等易过期数据只放 Evidence Ledger。
 
 **原因**：最终报告优先服务阅读，不把机器元数据暴露给用户；同时避免 frontmatter 里的价格、估值、汇率变成过期噪音。
@@ -517,6 +519,8 @@ Obsidian/股票/[公司名]/[TICKER]-[公司名]-华尔街式分析报告-YYYY-M
 - 第 4 模块必须额外跑 EV/FCF 口径（高 capex 公司可能漏判）
 - 第 4 模块必须跑四档贴现（10Y 国债×1 / 10Y 国债×2 / 8% / 10%）
 - 第 8 模块必须输出仓位、Pre-Mortem，以及唯一 Action Matrix；条件交易和阈值不得出现在矩阵外
+- v3.2 Reader 报告额外必须包含（由 `research.decision_support` 编译，缺块 build 失败）：现金口径估值与现金确认价、三口径回本测试、同业对比（≥3）、Bull/Base/Bear 经营前提、正常化桥、CapEx/研发/PPE 与资产负债表（现金、债务、回购、SBC、股数）、5 年趋势、≥5 项带概率/损害/预警指标/动作的风险、新资金价格阶梯（floor 递减、目标价以上仓位为 0、唯一 `◀ 价格所在` 标记、最多一个 `✓ 可执行` 标记、“前提状态”列）、现金流升级表、ROIC 与增量 ROIC、利润率 × 退出市盈率二维网格、五类 Action Triggers（price/valuation/operating/cash_flow/thesis_break）、流动性、5 年税后股息、最小复核清单；此时 Action Triggers 取代 Action Matrix 作为条件交易载体
+- v3.2 决策一致性层（`scripts/report_decision_coherence_v32.py`，通用、与公司无关）：编译器把估值、价格阶梯、现金流升级表、触发器和首页合成一个可执行答案，互相矛盾时 build 失败。Spec 必填：`report.cash_valuation.decisive_basis` + `decisive_reason`（盈利口径 id、`fcf` 或 `normalized_fcf`）；每个盈利口径标 `accounting_basis`（reported/adjusted）；可选 `normalized_fcf`（label、method、4 个季度 fact_ids，与报告值相同时需 `same_as_reported_reason`）；分配新资金的阶梯档必须写 `ladder_premises[tier].conditions`（`{label, ref, unit?, operator, threshold}` 或 `{label, status:"unknown", pending}`），满足/未满足/待验证由编译器判定，前提未满足或待验证时自动退回上一档；仓位下限 ≥ 50% 的档在决定口径下必须过门槛（建议 floor 锚定 `BUNDLE:/derived/cash_valuation/decisive/confirmation_price`），否则写 `price_ladder.cash_gate_waiver`；`decision_support.cash_flow_escalation`（counter_ref 单位为 quarters，min_count 递增、上限不递增，最高级上限 0 且与 thesis_break 阈值一致）；`decision_support.roic`（≥2 年，税后经营利润 ÷ 投入资本 + 增量 ROIC）；peers 必须标 `basis`（reported/adjusted/market），盈利倍数要有同口径自家基准；normalized 层必须写 `method` 且不能只复用其他层引用；触发器必须写 `existing_action`（thesis_break=SELL，valuation≠SELL）；`growth_limits.ceiling` 与至少 2 个 `opportunity_cost.comparators` 必须绑定数字。不变量：DO_NOT_BUY 时可执行仓位为 0，WATCH 时 ≤ `watch_trial_cap`。
 - 第 9 模块必须显式回答 Musk 三条纪律
 - 评级只能是 Buy / Hold-Index / Watchlist / Avoid 四选一
 - 所有关键数字必须标注来源层级、日期、口径、单位

@@ -66,7 +66,9 @@ Immediately below this table, add one compact `### Researchability Record`, incl
 
 ## Key Forces
 
-Inside `## 1. 华尔街式全景扫描 Overview`, include a dedicated subsection named `### Key Forces` before the general business overview. Do not create an extra top-level `## Key Forces` section that interrupts the 9-module structure.
+Inside module 1 (v3.2 Reader title: `## 1. Overview：商业模式与本次财报`; legacy title `## 1. 华尔街式全景扫描 Overview`), include a dedicated subsection named `### Key Forces`. Do not create an extra top-level `## Key Forces` section that interrupts the 9-module structure.
+
+v3.2 Spec requirement: `research.overview.business_model` (who pays and how the company makes money) and `research.overview.earnings_update` (`period` / `changed` / `unchanged`) are mandatory; `research.overview.segments` (≥2, each bound to a revenue Fact) is strongly recommended so the Reader can render the segment revenue/mix/YoY table.
 
 Rules:
 
@@ -203,6 +205,18 @@ When a research pack is present and its `action_matrix` is non-empty, Audit v5 c
 
 All executable conditional trades and thresholds belong only in this matrix. First-Page Verdict and Final Verdict may state the current action and summarize price ranges, but must not define a conditional trade. The legacy `Action Triggers` heading is not allowed.
 
+### v3.2 Reader override
+
+In v3.2 Reader reports (compiled from `research.decision_support`), the rule above is superseded:
+
+- `### Action Triggers` is required in module 8 and must cover five types: price, valuation, operating, cash_flow, thesis_break. Every numeric threshold is bound through `value_refs`, never typed as free text.
+- `### Pre-Mortem` is required in module 8: most likely failure path, earliest observable signal, and what action that signal triggers.
+- `### 新资金价格阶梯` is required: floors strictly descending, each tier with position range and operating premise; tiers at or above the target-return price must allocate zero new money, tiers at or above the buy price are capped at `watch_trial_cap`; exactly one row is marked `◀ 价格所在` and at most one row `✓ 可执行`; the table has a `前提状态` column and is followed by the sentence `可执行新资金仓位上限 X%`.
+- The first page (before `## 1.`) must contain the execution-check table with `现金门槛` and `可执行新资金上限`.
+- Required v3.2 coherence sections: `### 现金流升级表` (header contains `触发计数（季度）`, current row `◀ 当前级`), `### ROIC 与增量 ROIC` (with `增量 ROIC`), `#### 利润率 × 退出市盈率（Base IRR）`, and `**决定买点的口径：…**` in cash valuation. Action Triggers header: `| 类别 | 触发条件 | 新资金动作 | 已有仓位 |`; the peers table has an `口径` column.
+- Also required: 现金口径估值, 三口径回本测试, 同业对比 (≥3), 情景经营前提, 正常化桥, CapEx/研发与资产负债表, 5 年趋势, 风险 (≥5, each with probability, damage, leading indicator, action), 流动性, 5 年税后股息, 最小复核清单.
+- Missing any block fails build; deleting any heading fails lint.
+
 ## Semantic Lint Gates
 
 `scripts/report_lint.py` enforces three semantic gates in addition to its structural checks:
@@ -228,7 +242,7 @@ For cyclical or high-CapEx companies, add a dedicated `### Price Discipline 价�
 | **目标回报价**（`Target-return price`） | 由估值程序倒推 | 满足目标回报门槛时的最高可接受价 |
 | **现金流确认价**（`Cash-confirmation price`） | 常态 FCF/股 ÷ 现金收益率门槛 | 现金回报确认线 |
 | **联合新资金价**（`Joint new-money price`） | `min(active executable gates)` | 所有有效执行闸门中的最低价 |
-| **安全边际价**（`Safety price`） | 目标回报价 ×（1 - 安全边际） | 在目标回报价下方增加缓冲 |
+| **安全边际价**（`Safety price`） | 目标回报价 ×（1 - 安全边际），`valuation_math.safety_price` | 在目标回报价下方增加缓冲；与 v3 Bundle 的 buy price 同一定义 |
 
 The first column must use the Chinese reader-facing labels above; English identifiers stay in parentheses only to preserve reproducibility. Add one plain-language reading guide: the reference price is for valuation context, the target-return price is the return ceiling, the cash-confirmation price is the cash gate, the joint price is the strictest active gate, and the safety price adds another discount. The subsection must disclose scenario labels, normalized EPS/FCF inputs, reference PE and cash-hurdle rationale, confidence and action mapping. Reference PE bands may be company-specific; never turn a single company's PE or FCF-yield thresholds into global constants. A conditional, low-confidence, or unconfirmed cash case may produce a calculated cash price but must keep the new-money action at `Review`.
 

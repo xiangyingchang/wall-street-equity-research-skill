@@ -3,9 +3,14 @@ from __future__ import annotations
 from typing import Any, Iterable
 
 
-def _money(value: Any) -> str:
+_CURRENCY_PREFIX = {"USD": "$", "HKD": "HK$", "CNY": "CNY ", "RMB": "RMB ", "KRW": "KRW "}
+
+
+def _money(value: Any, currency: Any = "USD") -> str:
+    code = str(currency or "USD").upper()
+    prefix = _CURRENCY_PREFIX.get(code, f"{code} ")
     try:
-        return f"${float(value):,.2f}"
+        return f"{prefix}{float(value):,.2f}"
     except Exception:
         return str(value)
 
@@ -94,6 +99,9 @@ def render_markdown(bundle: dict[str, Any]) -> str:
     base = scenarios["base"]
     research = bundle["research"]
     quality = bundle["research_quality"]
+    rcur = report.get("currency", "USD")
+    pcur = report.get("price_currency") or rcur
+    fx = bundle.get("derived", {}).get("fx")
     lines: list[str] = []
 
     lines.extend([
@@ -109,9 +117,9 @@ def render_markdown(bundle: dict[str, Any]) -> str:
         f"| 动作原因 | {_escape(decision['reason'])} |",
         f"| Base IRR | {_pct_decimal(decision['valuation']['base_irr'])} |",
         f"| 股票最低目标回报 | {_pct_decimal(decision['valuation']['target_return'])} |",
-        f"| Base target-return price | {_money(base['prices']['target_return'])} |",
-        f"| Base buy price | {_money(base['prices']['buy'])} |",
-        f"| Base forward reference | {_money(base['prices']['forward_reference'])} |", "",
+        f"| Base target-return price | {_money(base['prices']['target_return'], pcur)} |",
+        f"| Base buy price | {_money(base['prices']['buy'], pcur)} |",
+        f"| Base forward reference | {_money(base['prices']['forward_reference'], pcur)} |", "",
         research["overview"]["thesis"]["text"], "",
         f"证据：`{_refs(research['overview']['thesis'])}` · 置信度：{research['overview']['thesis']['confidence']}", "",
         "## Source Registry", "", "| Source ID | Title | Publisher | Date | Tier | Type | Scope | Locator | URL |", "|---|---|---|---|---:|---|---|---|---|",
@@ -131,9 +139,12 @@ def render_markdown(bundle: dict[str, Any]) -> str:
     for row in _quarter_rows(bundle):
         lines.append("| " + " | ".join(_escape(x) for x in row) + " |")
     lines.extend(["", "| TTM Metric | Value | Runtime source |", "|---|---:|---|",
-        f"| TTM EPS | {_money(bundle['derived']['ttm']['eps']['value'])} | ttm-derive |",
+        f"| TTM EPS | {_money(bundle['derived']['ttm']['eps']['value'], rcur)} | ttm-derive |",
         f"| TTM operating margin | {bundle['derived']['ttm']['operating_margin']['value_pct']}% | ttm-derive |",
-        f"| TTM FCF | {bundle['derived']['ttm']['fcf']['value']} | ttm-derive |", "",
+        f"| TTM FCF | {bundle['derived']['ttm']['fcf']['value']} | ttm-derive |",
+        *([f"| FX ({fx['quoted_unit']}, {fx['as_of']}) | {fx['quoted_value']} → 1 {fx['from']} = {fx['rate']} {fx['to']} | {fx['fact_id']} |",
+           f"| TTM EPS in {fx['to']} | {_money(bundle['derived']['ttm']['eps']['price_currency_value'], pcur)} | ttm-derive × FX |"] if fx else []),
+        "",
         "## Scenario Assumptions and Valuation", ""])
     for name in ("bear", "base", "bull"):
         lines.extend([f"### {name.title()} assumptions", "", "| Role | Assumption ID | Value/payload | Rationale | Confidence |", "|---|---|---|---|---|"])
@@ -143,7 +154,7 @@ def render_markdown(bundle: dict[str, Any]) -> str:
     lines.extend(["| Scenario | Forward revenue | EPS | 5Y IRR | Required EPS CAGR | Forward reference | Target-return price | Buy price |", "|---|---:|---:|---:|---:|---:|---:|---:|"])
     for name in ("bear", "base", "bull"):
         item = scenarios[name]
-        lines.append(f"| {name.title()} | {item['revenue']['forward_revenue']} | {_money(item['eps_bridge']['eps'])} | {item['returns']['irr']['irr_pct']}% | {item['returns']['reverse']['required_eps_cagr_pct']}% | {_money(item['prices']['forward_reference'])} | {_money(item['prices']['target_return'])} | {_money(item['prices']['buy'])} |")
+        lines.append(f"| {name.title()} | {item['revenue']['forward_revenue']} | {_money(item['eps_bridge']['eps'], rcur)} | {item['returns']['irr']['irr_pct']}% | {item['returns']['reverse']['required_eps_cagr_pct']}% | {_money(item['prices']['forward_reference'], pcur)} | {_money(item['prices']['target_return'], pcur)} | {_money(item['prices']['buy'], pcur)} |")
 
     lines.extend(["", "## Payback Stress Test", "", "| Discount rate | Required EPS growth |", "|---:|---:|"])
     for rate, growth in bundle["derived"]["payback_required_growth"].items():
@@ -159,11 +170,11 @@ def render_markdown(bundle: dict[str, Any]) -> str:
     lines.extend(["", "### Robustness", "", f"- Shock: {_pct_decimal(decision['robustness']['shock'])}", f"- Stable: {str(decision['robustness']['stable']).lower()}", f"- Shocked actions: {', '.join(decision['robustness']['shocked_actions'])}", "", "## Price Zones", "", "| Zone | Range | New-money meaning |", "|---|---|---|"])
     for zone in bundle["price_zones"]:
         if "min" not in zone:
-            price_range = f"≤ {_money(zone['max'])}"
+            price_range = f"≤ {_money(zone['max'], pcur)}"
         elif "max" not in zone:
-            price_range = f"> {_money(zone['min'])}"
+            price_range = f"> {_money(zone['min'], pcur)}"
         else:
-            price_range = f"({_money(zone['min'])}, {_money(zone['max'])}]"
+            price_range = f"({_money(zone['min'], pcur)}, {_money(zone['max'], pcur)}]"
         lines.append(f"| {_escape(zone['name'])} | {price_range} | {_escape(zone['action'])} |")
 
     overview = research["overview"]

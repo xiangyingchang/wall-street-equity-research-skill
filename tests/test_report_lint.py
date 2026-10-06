@@ -32,6 +32,10 @@ class PriceDisciplineLabelTests(unittest.TestCase):
             report_lint.price_discipline_label_errors(report),
         )
 
+    def test_price_discipline_rejects_shortened_cash_label(self):
+        bad = self.good.replace("**现金流确认价**", "**现金确认价**")
+        self.assertTrue(any("cash-confirmation" in error for error in report_lint.price_discipline_label_errors(bad)))
+
     def test_price_discipline_accepts_plain_chinese_first_column(self):
         report = self.good.replace(
             "**盈利参考价**（`Earnings reference price`）", "盈利参考价"

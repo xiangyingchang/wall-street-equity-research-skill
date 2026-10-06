@@ -594,7 +594,7 @@ def unit_standardization_errors(text: str) -> list[str]:
     return []
 
 
-V31_READER_MARKER = re.compile(r"报告契约\s*=\s*Compiler Reader v3\.1", re.I)
+V31_READER_MARKER = re.compile(r"报告契约\s*=\s*Compiler Reader v3\.[12]", re.I)
 
 
 def _table_has_headers(table: dict, expected: set[str]) -> bool:
@@ -627,7 +627,9 @@ def lint_v31_reader(text: str) -> list[str]:
         "### 三条原投资原则",
         "### Base 情景关键假设",
         "### 与上次报告相比",
-        "## 1. 决定回报的投资主线",
+        "## 1. Overview：商业模式与本次财报",
+        "### Key Forces",
+        "### 决定回报的投资主线",
         "### 真正决定估值的变量",
         "## 8. 组合约束与执行边界",
         "### 最强正反证据与裁决",
@@ -684,7 +686,7 @@ def lint_v31_reader(text: str) -> list[str]:
     if len(assumption_tables) != 1 or len(_table_rows(assumption_tables[0])) < 4:
         errors.append("v3.1 Reader must expose at least four Base assumptions")
 
-    scenario_tables = [table for table in tables if _table_has_headers(table, {"场景", "Forward revenue", "EPS"})]
+    scenario_tables = [table for table in tables if _table_has_headers(table, {"场景", "前瞻收入", "EPS"}) or _table_has_headers(table, {"场景", "Forward revenue", "EPS"})]
     if not scenario_tables or not {"Bear", "Base", "Bull"} <= {row[0] for row in _table_rows(scenario_tables[0]) if row}:
         errors.append("v3.1 Reader requires Bear/Base/Bull valuation outputs")
 
@@ -724,8 +726,107 @@ def lint_v31_reader(text: str) -> list[str]:
     for token in forbidden:
         if token in text:
             errors.append(f"v3.1 Reader exposes forbidden audit/repetitive token: {token}")
-    if len(text.splitlines()) > 360:
-        errors.append("v3.1 Reader exceeds 360-line readability ceiling")
+    errors.extend(v32_decision_support_errors(text, tables))
+    if len(text.splitlines()) > READER_LINE_CEILING:
+        errors.append(f"v3.1 Reader exceeds {READER_LINE_CEILING}-line readability ceiling")
+    return errors
+
+
+READER_LINE_CEILING = 520
+V32_REQUIRED_HEADINGS = (
+    ("2.", "### 正常化桥（Reported / Adjusted / Normalized）"),
+    ("2.", "### CapEx、研发与资产负债表"),
+    ("4.", "### 现金口径估值"),
+    ("4.", "### 三口径回本测试"),
+    ("4.", "### 同业对比"),
+    ("4.", "### 情景经营前提（未来 12-24 个月）"),
+    ("8.", "### 新资金价格阶梯"),
+    ("8.", "### Action Triggers"),
+    ("8.", "### Pre-Mortem"),
+    ("9.", "### 最小复核清单"),
+)
+
+
+def v32_decision_support_errors(text: str, tables: list[dict] | None = None) -> list[str]:
+    """Module completeness gate: every module must answer its decision question."""
+    errors: list[str] = []
+    tables = list(iter_markdown_tables(text)) if tables is None else tables
+    for module, heading in V32_REQUIRED_HEADINGS:
+        body = section_body(text, re.escape(module))
+        if heading not in body:
+            errors.append(f"v3.2 module {module} missing {heading}")
+    module2 = section_body(text, r"2\.")
+    if not re.search(r"^### \d+年趋势\s*$", module2, re.M):
+        errors.append("v3.2 module 2. missing multi-year trend table")
+    history = [t for t in tables if t.get("headers") and t["headers"][0] == "指标" and len(t["headers"]) >= 4]
+    if not history or len(_table_rows(history[0])) < 3:
+        errors.append("v3.2 multi-year trend requires >=3 metrics across >=3 years")
+
+    bridge = [t for t in tables if _table_has_headers(t, {"口径", "项目", "数值", "怎么用"})]
+    if not bridge or not all(any(row and row[0].startswith(layer) for row in _table_rows(bridge[0])) for layer in ("Reported", "Adjusted", "Normalized")):
+        errors.append("v3.2 normalization bridge must show Reported, Adjusted and Normalized rows")
+
+    cash = [t for t in tables if _table_has_headers(t, {"口径", "倍数", "收益率", "相对门槛"})]
+    if not cash or len(_table_rows(cash[0])) < 2:
+        errors.append("v3.2 cash valuation requires at least one earnings basis plus FCF")
+    if "现金确认价" not in section_body(text, r"4\.") and "为负" not in section_body(text, r"4\."):
+        errors.append("v3.2 cash valuation must state the cash-confirmation price")
+
+    payback = [t for t in tables if t.get("headers") and t["headers"][0] == "贴现率" and len(t["headers"]) >= 3]
+    if not payback:
+        errors.append("v3.2 payback test must compare at least two bases")
+
+    peers = [t for t in tables if _table_has_headers(t, {"公司", "指标", "数值", "截至", "判断"})]
+    if not peers or len(_table_rows(peers[0])) < 4:
+        errors.append("v3.2 peer table requires the company plus at least three peers")
+
+    premises = [t for t in tables if _table_has_headers(t, {"情景", "需要看到的经营事实"})]
+    if not premises or {row[0] for row in _table_rows(premises[0]) if row} != {"Bull", "Base", "Bear"}:
+        errors.append("v3.2 scenario premises must cover Bull/Base/Bear")
+
+    risks = [t for t in tables if _table_has_headers(t, {"排名", "风险", "概率", "损害", "触发与动作"})]
+    if not risks or len(_table_rows(risks[0])) < 5:
+        errors.append("v3.2 risk table requires >=5 risks with probability, impact and action")
+
+    ladder = [t for t in tables if _table_has_headers(t, {"价格区间", "动作", "新资金仓位（占目标仓位）", "经营前提", "前提状态", "当前"})]
+    if not ladder or len(_table_rows(ladder[0])) < 3:
+        errors.append("v3.2 price ladder requires >=3 tiers with position, operating premise and premise status")
+    else:
+        rows = _table_rows(ladder[0])
+        if sum(1 for row in rows if row and "价格所在" in row[-1]) != 1:
+            errors.append("v3.2 price ladder must mark exactly one price tier (◀ 价格所在)")
+        if sum(1 for row in rows if row and "可执行" in row[-1]) > 1:
+            errors.append("v3.2 price ladder must mark at most one executable tier")
+        if "可执行新资金仓位上限" not in section_body(text, r"8\."):
+            errors.append("v3.2 price ladder must state the executable new-money cap")
+    module1_page = text.split("## 1.", 1)[0]
+    if "可执行新资金上限" not in module1_page or "现金门槛" not in module1_page:
+        errors.append("v3.2 first page must show the cash hurdle and executable new-money cap")
+    escalation = [t for t in tables if _table_has_headers(t, {"级别", "触发计数（季度）", "动作", "当前"})]
+    if not escalation or len(_table_rows(escalation[0])) < 2:
+        errors.append("v3.2 cash-flow escalation table missing")
+    roic = [t for t in tables if _table_has_headers(t, {"年度", "税后经营利润", "投入资本", "ROIC"})]
+    if not roic or "增量 ROIC" not in text:
+        errors.append("v3.2 ROIC and incremental ROIC table missing")
+    if "利润率 × 退出市盈率" not in text:
+        errors.append("v3.2 two-variable sensitivity grid missing")
+
+    triggers = [t for t in tables if _table_has_headers(t, {"类别", "触发条件", "新资金动作", "已有仓位"})]
+    if not triggers:
+        errors.append("v3.2 Action Triggers table missing")
+    else:
+        categories = {row[0] for row in _table_rows(triggers[0]) if row}
+        missing = {"价格", "估值", "经营", "现金流", "逻辑失效"} - categories
+        if missing:
+            errors.append(f"v3.2 Action Triggers missing categories: {', '.join(sorted(missing))}")
+    module8 = section_body(text, r"8\.")
+    for token in ("失败路径", "最危险的分析错误", "最早能看到的信号", "流动性"):
+        if token not in module8:
+            errors.append(f"v3.2 Pre-Mortem/liquidity missing {token}")
+    module9 = section_body(text, r"9\.")
+    checklist = re.search(r"### 最小复核清单(.*?)(?=^##|\Z)", module9, re.S | re.M)
+    if not checklist or len(re.findall(r"^\d+\. ", checklist.group(1), re.M)) < 3:
+        errors.append("v3.2 minimum review checklist requires >=3 items")
     return errors
 
 
@@ -741,7 +842,7 @@ def price_discipline_label_errors(text: str) -> list[str]:
     for label, pattern in [
         ("Chinese earnings reference label", r"盈利参考价"),
         ("Chinese target-return label", r"目标回报价"),
-        ("Chinese cash-confirmation label", r"现金(?:流)?确认价"),
+        ("Chinese cash-confirmation label", r"现金流确认价"),
         ("Chinese joint new-money label", r"联合新资金价"),
         ("Chinese safety label", r"安全边际价"),
     ]:
