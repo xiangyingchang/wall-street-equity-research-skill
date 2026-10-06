@@ -164,15 +164,15 @@ With `dividend treatment = reinvested_yield`, `dividend_factor = (1 + dividend_y
 
 For cyclical or high-CapEx companies, add a dedicated `### Price Discipline 价格纪律` subsection. It must separate:
 
-| Price line | Formula | Meaning |
+| 价格线 | 公式 | 作用 |
 |---|---|---|
-| Earnings reference price | normalized EPS × reference PE | Valuation context, not automatically an entry price |
-| Target-return price | valuation runtime | Price compatible with the stated return hurdle |
-| Cash-confirmation price | normalized FCF/share ÷ cash hurdle | Cash-return confirmation |
-| Joint new-money price | min(active executable gates) | Highest price at which new money can pass all enabled gates |
-| Safety price | target-return price × (1 - safety margin) | Additional margin below the target-return line |
+| **盈利参考价**（`Earnings reference price`） | 常态 EPS × 参考 PE | 估值位置参考，不自动等于买入价 |
+| **目标回报价**（`Target-return price`） | 由估值程序倒推 | 满足目标回报门槛时的最高可接受价 |
+| **现金流确认价**（`Cash-confirmation price`） | 常态 FCF/股 ÷ 现金收益率门槛 | 现金回报确认线 |
+| **联合新资金价**（`Joint new-money price`） | `min(active executable gates)` | 所有有效执行闸门中的最低价 |
+| **安全边际价**（`Safety price`） | 目标回报价 ×（1 - 安全边际） | 在目标回报价下方增加缓冲 |
 
-The subsection must disclose scenario labels, normalized EPS/FCF inputs, reference PE and cash-hurdle rationale, confidence and action mapping. Reference PE bands may be company-specific; never turn a single company's PE or FCF-yield thresholds into global constants. A conditional, low-confidence, or unconfirmed cash case may produce a calculated cash price but must keep the new-money action at `Review`.
+The first column must use the Chinese reader-facing labels above; English identifiers stay in parentheses only to preserve reproducibility. Add one plain-language reading guide: the reference price is for valuation context, the target-return price is the return ceiling, the cash-confirmation price is the cash gate, the joint price is the strictest active gate, and the safety price adds another discount. The subsection must disclose scenario labels, normalized EPS/FCF inputs, reference PE and cash-hurdle rationale, confidence and action mapping. Reference PE bands may be company-specific; never turn a single company's PE or FCF-yield thresholds into global constants. A conditional, low-confidence, or unconfirmed cash case may produce a calculated cash price but must keep the new-money action at `Review`.
 
 Run EPS and FCF/share where possible. For cyclical companies, add normalized mid-cycle earnings and do not rely on peak-cycle PE.
 

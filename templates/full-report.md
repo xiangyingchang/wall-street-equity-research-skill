@@ -78,13 +78,15 @@ TODO
 
 ### Price Discipline 价格纪律
 
-| 价格线 | 公式 | 数值 | 情景 / 置信度 | 动作含义 |
+| 价格线 | 怎么算 | 数值 | 情景 / 置信度 | 动作含义 |
 |---|---|---:|---|---|
-| Earnings reference price | normalized EPS × reference PE | TODO | TODO | 估值参考，不自动买入 |
-| Target-return price | valuation runtime | TODO | TODO | 满足目标回报的价格 |
-| Cash-confirmation price | normalized FCF/share ÷ cash hurdle | TODO | TODO | 现金流确认线 |
-| Joint new-money price | min(active executable gates) | TODO | TODO | Buy/Add 的最高价格 |
-| Safety price | target-return price × (1 - safety margin) | TODO | TODO | 更高安全边际价格 |
+| **盈利参考价**（`Earnings reference price`） | 常态 EPS × 参考 PE | TODO | TODO | 只看估值位置，不自动买入 |
+| **目标回报价**（`Target-return price`） | 由估值程序计算：目标回报倒推买入价 | TODO | TODO | 达到目标回报时的最高可接受价 |
+| **现金流确认价**（`Cash-confirmation price`） | 常态 FCF/股 ÷ 现金收益率门槛 | TODO | TODO | 现金回报确认线 |
+| **联合新资金价**（`Joint new-money price`） | 所有有效执行门槛中的最低价 | TODO | TODO | 新资金 Buy/Add 的最高执行上限 |
+| **安全边际价**（`Safety price`） | 目标回报价 ×（1 - 安全边际） | TODO | TODO | 额外缓冲参考，不能替代现金闸门 |
+
+阅读顺序：盈利参考价看估值位置；目标回报价看目标回报上限；现金流确认价看现金闸门；联合新资金价取有效闸门中的最低价；安全边际价是在目标回报价上继续打折。
 
 Price Discipline 输入：情景 TODO；Normalized EPS TODO；reference PE 及理由 TODO；Normalized FCF/share TODO；cash hurdle 及理由 TODO；现金流置信度 TODO；joint action status TODO。
 

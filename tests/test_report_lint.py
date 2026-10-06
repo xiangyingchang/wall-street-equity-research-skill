@@ -77,6 +77,38 @@ class ReportLintContractTests(unittest.TestCase):
         report = self.good.replace("### Price Discipline 价格纪律", "### 价格参考")
         self.assert_fails(report, "price discipline must be explicit")
 
+    def test_price_discipline_requires_chinese_reader_labels(self):
+        for label in ("盈利参考价", "目标回报价", "现金流确认价", "联合新资金价", "安全边际价"):
+            with self.subTest(label=label):
+                report = self.good.replace(label, "English-only label")
+                self.assertTrue(any(
+                    "Chinese reader-facing" in error
+                    for error in report_lint.lint_text(report)
+                ))
+
+    def test_price_discipline_rejects_chinese_label_in_later_column(self):
+        report = self.good.replace(
+            "| **盈利参考价**（`Earnings reference price`） | 常态 EPS × 参考 PE |",
+            "| Earnings reference price | **盈利参考价** 常态 EPS × 参考 PE |",
+        )
+        self.assertIn(
+            "Price Discipline must use a Chinese reader-facing Chinese earnings reference label",
+            report_lint.lint_text(report),
+        )
+
+    def test_price_discipline_rejects_label_prefix_only(self):
+        report = self.good.replace("盈利参考价", "盈利参考价错误标签")
+        self.assertIn(
+            "Price Discipline must use a Chinese reader-facing Chinese earnings reference label",
+            report_lint.lint_text(report),
+        )
+
+    def test_price_discipline_accepts_plain_chinese_first_column(self):
+        report = self.good.replace(
+            "**盈利参考价**（`Earnings reference price`）", "盈利参考价"
+        )
+        self.assertEqual(report_lint.lint_text(report), [])
+
     def test_joint_price_requires_cash_confidence(self):
         report = self.good.replace("现金流置信度 medium", "现金流情况已考虑")
         self.assert_fails(report, "price discipline must disclose cash confidence")

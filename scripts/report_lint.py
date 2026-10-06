@@ -231,6 +231,21 @@ def lint_text(text: str) -> list[str]:
         ]:
             if not re.search(pattern, price_discipline, re.I):
                 errors.append(f"Price Discipline missing {label}")
+        for label, pattern in [
+            ("Chinese earnings reference label", r"盈利参考价"),
+            ("Chinese target-return label", r"目标回报价"),
+            ("Chinese cash-confirmation label", r"现金(?:流)?确认价"),
+            ("Chinese joint new-money label", r"联合新资金价"),
+            ("Chinese safety label", r"安全边际价"),
+        ]:
+            # Match the complete first cell, not a label in another column
+            # or a longer phrase that merely starts with the required label.
+            first_cell = (
+                rf"^[ \t]*\|[ \t]*\*{{0,2}}{pattern}\*{{0,2}}[ \t]*"
+                rf"(?:[（(][^|\n]*[）)][ \t]*)?\|"
+            )
+            if not re.search(first_cell, price_discipline, re.I | re.M):
+                errors.append(f"Price Discipline must use a Chinese reader-facing {label}")
         if not re.search(r"公式|formula|\*|×|/|÷|min\(", price_discipline, re.I):
             errors.append("Price Discipline must disclose formulas")
         if not re.search(r"reference\s*PE|reference\s*pe|参考\s*PE|cash\s*hurdle|现金.*门槛|FCF.*yield", price_discipline, re.I):
@@ -369,13 +384,13 @@ EV/FCF 与中周期估值。
 目标回报价格：$9。起始 EPS $10，EPS CAGR 8%，退出 PE 18x，持有 5 年，目标回报 9.5%，股息处理为 reinvested_yield。股数口径为加权平均稀释股数。由 `scripts/valuation_math.py` 的 terminal_price / target_price 公式计算。
 
 ### Price Discipline 价格纪律
-| 价格线 | 公式 | 数值 | 情景 / 置信度 | 动作含义 |
+| 价格线 | 怎么算 | 数值 | 情景 / 置信度 | 动作含义 |
 |---|---|---:|---|---|
-| Earnings reference price | normalized EPS × reference PE | $10 | Base / 中 | 估值参考，不自动买入 |
-| Target-return price | valuation runtime | $9 | Base / 中 | 目标回报 |
-| Cash-confirmation price | normalized FCF/share ÷ cash hurdle | $8 | Base / 中 | 现金确认 |
-| Joint new-money price | min(active executable gates) | $8 | Base / 中 | Review / Buy gate |
-| Safety price | target-return price × (1 - safety margin) | $6 | Base / 中 | 安全边际 |
+| **盈利参考价**（`Earnings reference price`） | 常态 EPS × 参考 PE | $10 | Base / 中 | 估值参考，不自动买入 |
+| **目标回报价**（`Target-return price`） | 目标回报倒推买入价 | $9 | Base / 中 | 目标回报 |
+| **现金流确认价**（`Cash-confirmation price`） | 常态 FCF/股 ÷ 现金收益率门槛 | $8 | Base / 中 | 现金确认 |
+| **联合新资金价**（`Joint new-money price`） | 所有有效执行门槛中的最低价 | $8 | Base / 中 | Review / Buy gate |
+| **安全边际价**（`Safety price`） | 目标回报价 ×（1 - 安全边际） | $6 | Base / 中 | 安全边际 |
 Price Discipline 输入：Base 情景；Normalized EPS $10；reference PE 18x；Normalized FCF/share $2；cash hurdle 6%，现金流置信度 medium；joint action Review。公式由 `scripts/valuation_math.py` 计算，动作映射为 Review。
 
 ### 名义 10 年回本测试
