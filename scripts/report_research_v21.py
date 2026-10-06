@@ -19,7 +19,7 @@ MODULES = (
 )
 CONFIDENCE = {"low", "medium", "high"}
 EVIDENCE_ROLES = {"supports", "context", "counter_evidence"}
-VALUE_FORMATS = {"money", "price", "percent", "multiple", "number", "integer", "text"}
+VALUE_FORMATS = {"money", "price", "percent", "multiple", "number", "integer", "text", "action"}
 _CURRENCY_PREFIX = {"USD": "$", "HKD": "HK$", "CNY": "CNY ", "RMB": "RMB ", "KRW": "KRW "}
 SOURCE_FIELDS = {"title", "publisher", "date", "tier", "document_type", "locator", "scope"}
 NUMERIC_PATTERN = re.compile(r"(?:[$€¥£]\s*\d|\d+(?:\.\d+)?\s*%|\d+(?:\.\d+)?\s*[xX倍]|\b\d{3,}(?:\.\d+)?\b)")
@@ -57,6 +57,12 @@ def _validate_text(text: Any, label: str, *, allow_placeholders: bool = False, m
 
 def _format_value(value: Any, fmt: str, bundle: dict[str, Any] | None = None) -> str:
     report = (bundle or {}).get("report", {})
+    if fmt == "action":
+        labels = {"BUY": "买入", "WATCH": "观察", "DO_NOT_BUY": "不买入", "ADD": "加仓",
+                  "HOLD": "持有", "REDUCE": "降低暴露", "SELL": "退出", "REVIEW": "复核",
+                  "NOT_APPLICABLE": "不适用"}
+        _require(value in labels, f"unknown compiled action: {value}")
+        return labels[value]
     if fmt in {"money", "price"}:
         # money = reporting currency (per-share EPS etc.); price = listing-market currency.
         code = str(report.get("currency") or "USD").upper()

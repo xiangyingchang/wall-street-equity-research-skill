@@ -1,5 +1,17 @@
 # Report Contract
 
+## 变更目的约定
+
+所有变更的目的，都是得出更加准确、科学的研究报告，帮助用户理解风险、收益和行动条件，指导实际投资。不要为了完善而完善；始终围绕投资判断保持目标意识。
+
+每项变更先说明要减少哪类研究错误、改善哪项投资判断，再用相应证据或测试验证。不能提高研究准确性、可验证性或决策清晰度的改动，不因增加功能、检查或流程而推进。事实、解释与假设分开；结论不确定时明确说明，不制造确定性。
+
+## Actual TTM and action consistency
+
+实际 TTM 必须使用四个不同且连续的季度，与基线 `quarterly_series` 的 EPS 季度窗口一致，并且每个季度结束日不晚于 `report.as_of`。非自然年财务季度必须填写 ISO 日期 `period_end`；预测数据不能作为实际 TTM。
+
+V3 的 `research.final_verdict.summary`、`hold_equals_buy`、`research_graph.debate.adjudication` 和每个 Theme 的 `decision_impact` 必须使用 `text_template` + `value_refs`，以 `format: action` 绑定 `/decision/new_money_action`。已有仓位动作可绑定 `/decision/existing_position_action` 或 `/decision/existing_position_candidate_action`。旧 Spec 的静态动作结论必须迁移；公司研究理由保留，但明确的动作词必须来自计算结果。此约束检查指定字段的绑定及明确动作词，不代替对全部研究文字的人工判断。上期评级对比由旧动作和当前动作生成，旧说明保留在审计数据中。
+
 ## Default Inputs
 
 If the user says "按默认", state this near the top:

@@ -164,6 +164,7 @@ class DecisionCoherenceV32Tests(unittest.TestCase):
         spec = deepcopy(self.spec)
         tiers = spec["decision_policy"]["price_ladder"]["tiers"]
         tiers[2]["position_min"] = "0.5"
+        tiers[2]["position_max"] = "0.6"
         tiers[2]["floor_ref"] = "BUNDLE:/scenarios/base/prices/buy"
         tiers[2]["floor_multiplier"] = "0.95"
         self.assertCompileFails(spec, "cash_gate_waiver")

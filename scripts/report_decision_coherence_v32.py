@@ -237,7 +237,7 @@ def compile_decision_coherence(spec: dict[str, Any], bundle: dict[str, Any]) -> 
         tier["premise_conditions"] = status["conditions"]
         top = _dec(tier["ceiling"], "tier ceiling") if tier.get("ceiling") is not None else None
         tier["decisive_yield_at_ceiling"] = _q(decisive_ps / top) if top and top > 0 else None
-        if top is not None and _dec(tier["position_min"], "position_min") >= MAJORITY_POSITION and decisive_ps / top < target_return - D("0.0001"):
+        if top is not None and _dec(tier["position_max"], "position_max") >= MAJORITY_POSITION and decisive_ps / top < target_return - D("0.0001"):
             gate_failures.append(tier["tier_id"])
     if gate_failures:
         _require(len(waiver) >= 20, (
@@ -279,6 +279,7 @@ def compile_decision_coherence(spec: dict[str, Any], bundle: dict[str, Any]) -> 
     if new_money == "WATCH":
         _require(executable_max <= watch_cap, "coherence: new money WATCH but executable position exceeds watch_trial_cap")
     if new_money == "BUY":
+        _require(executable_max > 0, "coherence: new money BUY but executable position cap is zero; resolve the unmet or unknown premises before buying")
         _require(not price_tier["above_buy_price"], "coherence: new money BUY but current price sits in a tier above the buy price")
     triggers = bundle["decision_support"]["action_triggers"]
     for trigger in triggers:

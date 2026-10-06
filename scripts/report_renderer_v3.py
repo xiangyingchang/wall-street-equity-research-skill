@@ -100,7 +100,8 @@ def _prior_report_reader(bundle: dict[str, Any]) -> str:
         f"| 新资金 | {_action(prior['previous_new_money_action'])} | {_action(decision['new_money_action'])} |",
         f"| 已有仓位 | {_action(prior['previous_existing_position_action'])} | 研究候选 {_action(decision['existing_position_candidate_action'])}；可执行 {_action(decision['existing_position_action'])} |",
         f"| Base IRR | {prior_irr} | {_pct_decimal(decision['valuation']['base_irr'])} |", "",
-        f"- **评级变化：** {prior['rating_delta']}",
+        f"- **评级变化：** 新资金从“{_action(prior['previous_new_money_action'])}”到“{_action(decision['new_money_action'])}”；"
+        f"已有仓位由“{_action(prior['previous_existing_position_action'])}”到当前可执行“{_action(decision['existing_position_action'])}”。",
         f"- **关键指标变化：** {prior['metric_delta']}",
         f"- **投资逻辑变化：** {prior['thesis_delta']}",
         f"- **方法变化：** {prior['methodology_delta']}",

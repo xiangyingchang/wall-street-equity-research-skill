@@ -12,7 +12,7 @@ from scripts.report_compiler_v21 import compile_report_v21
 from scripts.report_decision_support_v32 import compile_decision_support
 from scripts.report_decision_coherence_v32 import compile_decision_coherence
 from scripts.report_research_graph_v3 import compile_research_graph
-from scripts.report_spec_v2 import SpecError, sha256
+from scripts.report_spec_v2 import SpecError, _ttm_sum, sha256
 from scripts.valuation_runtime import return_pair
 
 COMPILER_VERSION = "3.2.0"
@@ -86,7 +86,37 @@ def _validate_v31_contract(spec: dict[str, Any]) -> dict[str, Any]:
     _require(isinstance(report["cash_valuation"].get("dividend"), dict), "v3.2 requires report.cash_valuation.dividend (after-tax dividend math)")
     _require(isinstance(policy.get("price_ladder"), dict), "v3.2 requires decision_policy.price_ladder (new-money price tiers)")
     _require(isinstance(spec.get("decision_support"), dict), "v3.2 requires decision_support (triggers, pre-mortem, history, bridges)")
+    # The baseline also contains actuals: validate every series, not only the
+    # optional cash-valuation override, before it drives a decision.
+    for name in ("eps", "revenue", "operating_income", "fcf"):
+        _ttm_sum(spec, spec.get("quarterly_series", {}).get(name), f"quarterly_series.{name}")
     prior_report = _validate_prior_report(spec)
+    final = spec.get("research", {}).get("final_verdict", {})
+    action_claims = [(f"final_verdict.{key}", final.get(key)) for key in ("summary", "hold_equals_buy")]
+    action_claims.append(("research_graph.debate.adjudication",
+                         spec.get("research_graph", {}).get("debate", {}).get("adjudication")))
+    action_claims += [(f"research_graph.themes[{index}].decision_impact", item.get("decision_impact"))
+                     for index, item in enumerate(spec.get("research_graph", {}).get("themes", []))]
+    for label, claim in action_claims:
+        _require(isinstance(claim, dict), f"{label} must be an action-bound claim")
+        template = claim.get("text_template")
+        refs = claim.get("value_refs", {})
+        _require(isinstance(template, str) and isinstance(refs, dict),
+                 f"{label} requires text_template with compiled action bindings; migrate static conclusions")
+        _require(any(isinstance(ref, dict) and ref.get("path") == "/decision/new_money_action"
+                     and ref.get("format") == "action" for ref in refs.values()),
+                 f"{label} must bind the compiled new-money action with format action")
+        for ref in refs.values():
+            if isinstance(ref, dict) and ref.get("format") == "action":
+                _require(ref.get("path") in {"/decision/new_money_action", "/decision/existing_position_action",
+                                               "/decision/existing_position_candidate_action"},
+                         f"{label} action binding must use a compiled decision action")
+        # In these explicit conclusion fields, action words come from bindings,
+        # while the author supplies company-specific reasons. This is a bounded
+        # contract, not a claim to understand arbitrary prose.
+        for field, text in (("text_template", template), ("implication", claim.get("implication", ""))):
+            _require(not re.search(r"买入|减仓|卖出|暂不买|新增资金应回避|\b(?:BUY|SELL|REDUCE|DO_NOT_BUY)\b", str(text), re.I),
+                     f"{label}.{field} contains an unbound action conclusion; use compiled action bindings")
     return {"source_urls": source_count, "operating_metrics": len(metrics), "prior_report": prior_report}
 
 

@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+import calendar
 from copy import deepcopy
+from datetime import date
 from decimal import Decimal, ROUND_HALF_UP, localcontext
 from typing import Any
 
+from scripts.financial_formulas import evaluate_formula
 from scripts.valuation_runtime import revenue_bridge, return_pair, scenario_eps_bridge, ttm_derive
 
 D = Decimal
@@ -224,9 +228,43 @@ def _compile_ttm(spec: dict[str, Any]) -> dict[str, Any]:
 
 def _ttm_sum(spec: dict[str, Any], ids: Any, label: str) -> tuple[Decimal, str]:
     _require(isinstance(ids, list) and len(ids) == 4, f"{label} requires four fact IDs")
+    _require(len(set(ids)) == 4, f"{label} requires four unique fact IDs")
     units = {str(_fact(spec, fact_id)["unit"]).strip() for fact_id in ids}
     _require(len(units) == 1 and "" not in units, f"{label} facts must share one explicit unit")
-    return sum((dec(_fact(spec, fact_id)["value"]) for fact_id in ids), D(0)), units.pop()
+    def canonical_period(fact: dict[str, Any]) -> str:
+        period = str(fact.get("period", "")).strip()
+        match = re.fullmatch(r"Q([1-4])\s+(\d{4})", period)
+        return f"FY{match[2]}-Q{match[1]}" if match else period
+
+    try:
+        cutoff = date.fromisoformat(str(spec["report"]["as_of"]))
+    except (KeyError, ValueError) as exc:
+        raise SpecError(f"{label} requires report.as_of as ISO YYYY-MM-DD") from exc
+    baseline = spec.get("quarterly_series", {}).get("eps", [])
+    expected_periods = {canonical_period(_fact(spec, fid)) for fid in baseline}
+    inputs = []
+    for fact_id in ids:
+        fact = _fact(spec, fact_id)
+        period = canonical_period(fact)
+        match = re.fullmatch(r"FY(\d{4})-Q([1-4])", period)
+        if match:
+            # Explicit period_end supports non-calendar fiscal years. Otherwise
+            # the quarter label uses the calendar-year convention.
+            year, month = int(match[1]), int(match[2]) * 3
+            try:
+                end = (date.fromisoformat(str(fact["period_end"])) if fact.get("period_end")
+                       else date(year, month, calendar.monthrange(year, month)[1]))
+            except ValueError as exc:
+                raise SpecError(f"{label}.{fact_id} has an invalid quarter end") from exc
+            _require(end <= cutoff, f"{label}.{fact_id} quarter ends after report.as_of; forecasts cannot be actual TTM")
+        inputs.append({"name": fact_id, "value": dec(fact["value"]), "period": period})
+    try:
+        total = evaluate_formula("ttm_sum_v1", inputs).value
+    except ValueError as exc:
+        raise SpecError(f"{label}: {exc}") from exc
+    _require({item["period"] for item in inputs} == expected_periods,
+             f"{label} TTM window must match the baseline quarterly_series EPS window")
+    return total, units.pop()
 
 
 def _safe_payback(price: Decimal, per_share: Decimal, years: int, rate: Decimal) -> str | None:

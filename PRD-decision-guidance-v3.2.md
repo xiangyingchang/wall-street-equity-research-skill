@@ -1,5 +1,11 @@
 # Decision guidance v3.2 — 2026-10-06
 
+## 变更目的约定
+
+所有变更的目的，都是得出更加准确、科学的研究报告，帮助用户理解风险、收益和行动条件，指导实际投资。不要为了完善而完善；始终围绕投资判断保持目标意识。
+
+每项变更先说明要减少哪类研究错误、改善哪项投资判断，再用相应证据或测试验证。不能提高研究准确性、可验证性或决策清晰度的改动，不因增加功能、检查或流程而推进。事实、解释与假设分开；结论不确定时明确说明，不制造确定性。
+
 ## Goal
 
 Make the v3 Reader answer what an investor acts on: what to do now, at what price or
@@ -74,3 +80,17 @@ Iteration 5 — decision coherence (company-agnostic)
 No live research, Ledger fetch, or trading action. Break-even values are single-variable; the
 two-dimensional grid covers only margin × exit PE. Spec schema name stays `report-spec-v3.1`; old
 Specs must add the new required blocks before recompiling.
+
+## Review fixes — 2026-10-06
+
+- Reject BUY when the compiled executable new-money position cap is zero; build and verify must fail closed.
+- Apply the majority-position cash gate to position_max, the amount actually permitted, not position_min.
+- Require cash-valuation TTM inputs to use four distinct facts from consecutive fiscal quarters; retain exact Decimal sums and reject missing/invalid periods.
+- Preserve listing markets in Ledger ticker matching and normalize Hong Kong leading-zero aliases. Multiple matching records require review rather than choosing one silently.
+- Validate the four original reproductions and positive controls, full unit suite, lint/self-tests and both pipeline build/verify paths.
+
+## Follow-up review fixes — 2026-10-06
+
+- Align actual cash-valuation TTM windows with the baseline quarterly series and report cutoff, rejecting future or stale windows. Explicit quarter-end dates support non-calendar fiscal years.
+- Bind material action conclusions to compiled actions using the existing text-template mechanism; reject static action claims in these conclusion fields. Keep company-specific reasoning and historical comparisons.
+- Verify both original reproductions, changed-price BUY and unchanged-price DO_NOT_BUY outputs, and migration errors with build/verify tests.

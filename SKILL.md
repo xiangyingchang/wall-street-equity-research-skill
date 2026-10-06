@@ -7,6 +7,12 @@ metadata:
   version: "3.2.0"
 ---
 
+## 变更目的约定
+
+所有变更的目的，都是得出更加准确、科学的研究报告，帮助用户理解风险、收益和行动条件，指导实际投资。不要为了完善而完善；始终围绕投资判断保持目标意识。
+
+每项变更先说明要减少哪类研究错误、改善哪项投资判断，再用相应证据或测试验证。不能提高研究准确性、可验证性或决策清晰度的改动，不因增加功能、检查或流程而推进。事实、解释与假设分开；结论不确定时明确说明，不制造确定性。
+
 ## Activation Contract
 
 Use for a listed equity when the user requests valuation, a buy/hold/sell judgment, or a full report. In an Obsidian stock vault, a ticker plus 跑一下/分析下 means a complete saved report unless the user asks for a quick take.
@@ -26,6 +32,8 @@ python3 scripts/report_pipeline_v3.py verify --spec <spec.json> --output <report
 - The Bundle owns every calculation and action. Narrative may explain but never override it.
 - Never invent facts, prices, holdings, sources, assumptions, evidence, graph nodes, or arguments. Prefer Tier 1 evidence; Tier 2 market data must be labeled.
 - Every Source requires a real HTTPS URL, date, precise locator, scope, and publisher. Generic source placeholders fail build. TTM inputs must share currency, scale, and per-share units where applicable.
+- Actual TTM inputs must be four distinct consecutive quarters matching the baseline EPS window and ending by `report.as_of`; non-calendar fiscal quarters require explicit ISO `period_end`. Forecasts cannot be actual TTM.
+- Bind final summary, 持有=买入, debate adjudication, and each Theme decision impact with `text_template` and `value_refs` using `format: action` on `/decision/new_money_action`. Bind other action labels to compiled existing-position actions; migrate static action conclusions before building.
 - Bind research numbers through JSON Pointer `value_refs`. Keep Sources, Facts, assumptions, policy, research, and Graph in the Spec.
 - Quote every per-share price (current, target-return, buy, forward reference, price zones) in the listing-market currency: HK-listed → HKD, US-listed → USD, A-share → CNY. Never use a secondary counter (e.g. HK RMB counter 80700) to avoid FX. When the reporting currency differs, set `report.price_currency` and `report.fx_fact_id`; the FX Fact must have a Tier 1 source (e.g. CFETS central parity) and an as-of date, and only the compiler converts EPS. Absolute money stays in the reporting currency (`report.currency`) plus `亿`. No other cross-currency conversion.
 - The opportunity-cost hurdle follows the price currency: use that currency's 10Y government yield × 2 (HKD → HK 10Y, USD → UST 10Y, CNY → China 10Y) and include an explicit 8% row in the payback table.

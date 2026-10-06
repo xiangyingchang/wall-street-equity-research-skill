@@ -184,6 +184,34 @@ def make_spec() -> dict[str, Any]:
     comparators[3] = {"claim_template": "同业比较之前，本公司 Base IRR 为 {base}，需先跟同业的增长质量和资本强度对照。",
                       "value_refs": {"base": {"path": "/decision/valuation/base_irr", "format": "percent"}},
                       "evidence_refs": ["SRC-PEER", "BUNDLE:/decision/valuation/base_irr"], "implication": "机会成本应同时考虑质量和估值。", "confidence": "medium"}
+    # Action statements are bound to the decision, while company reasons stay explicit.
+    action_ref = {"path": "/decision/new_money_action", "format": "action"}
+    candidate_ref = {"path": "/decision/existing_position_candidate_action", "format": "action"}
+    impact_reasons = [
+        "资本回报尚待财报验证，当前新资金动作为{new_money}；已有仓位研究候选为{existing}。",
+        "主业仍有韧性，当前新资金动作为{new_money}；已有仓位研究候选为{existing}，并需组合信息确认执行。",
+        "价格与机会成本由同一回报模型决定，当前新资金动作为{new_money}；已有仓位研究候选为{existing}。",
+    ]
+    for theme, template in zip(spec["research_graph"]["themes"], impact_reasons):
+        claim = theme["decision_impact"]
+        claim.pop("text", None)
+        claim["text_template"] = template
+        claim["value_refs"] = {"new_money": dict(action_ref), "existing": dict(candidate_ref)}
+    adjudication = spec["research_graph"]["debate"]["adjudication"]
+    adjudication.pop("text", None)
+    adjudication["text_template"] = "主业质量与资本强度共同影响风险补偿；当前新资金动作是{new_money}，已有仓位研究候选为{existing}。"
+    adjudication["value_refs"] = {"new_money": dict(action_ref), "existing": dict(candidate_ref)}
+    adjudication["implication"] = "公司质量不能替代价格和现金回报，实际执行仍需组合信息确认。"
+    final = spec["research"]["final_verdict"]
+    for key, template in {
+        "summary": "公司主业质量仍需与现金回报一起评估；当前新资金动作为{new_money}，已有仓位研究候选为{existing}。",
+        "hold_equals_buy": "若今天没有仓位，按同一组价格、经营和执行条件，当前新资金动作是{new_money}。",
+    }.items():
+        final[key].pop("text", None)
+        final[key]["text_template"] = template
+        final[key]["value_refs"] = {"new_money": dict(action_ref)}
+        if key == "summary":
+            final[key]["value_refs"]["existing"] = dict(candidate_ref)
     return spec
 
 
@@ -247,7 +275,7 @@ def add_v32_decision_support(spec: dict[str, Any]) -> None:
         "tiers": [
             {"tier_id": "no-chase", "action": "不新增", "floor_ref": "BUNDLE:/scenarios/base/prices/target_return", "position_min": "0", "position_max": "0"},
             {"tier_id": "trial", "action": "试探建仓", "floor_ref": "BUNDLE:/scenarios/base/prices/buy", "position_min": "0", "position_max": "0.25"},
-            {"tier_id": "build", "action": "分批建仓", "floor_ref": "BUNDLE:/derived/cash_valuation/decisive/confirmation_price", "position_min": "0.25", "position_max": "0.60"},
+            {"tier_id": "build", "action": "分批建仓", "floor_ref": "BUNDLE:/derived/cash_valuation/decisive/confirmation_price", "position_min": "0.25", "position_max": "0.49"},
             {"tier_id": "full", "action": "接近目标仓", "position_min": "0.60", "position_max": "1"},
         ],
     }

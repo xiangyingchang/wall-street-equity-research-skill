@@ -213,8 +213,21 @@ def build_snapshot(
 MARKET_CURRENCY = {"US": "USD", "HK": "HKD", "CN": "CNY"}
 
 
-def _normalize_code(code: Any) -> str:
-    return str(code or "").strip().upper().split(".")[0]
+def _normalize_code(code: Any, market: Any = None) -> tuple[str, str]:
+    """Keep market identity; accept bare symbols and Hong Kong padding aliases."""
+    symbol = str(code or "").strip().upper()
+    listing_market = str(market or "").strip().upper()
+    suffixes = {"US": "US", "HK": "HK", "CN": "CN", "SH": "CN", "SZ": "CN"}
+    if "." in symbol:
+        base, suffix = symbol.rsplit(".", 1)
+        if suffix in suffixes:
+            symbol, listing_market = base, suffixes[suffix]
+    listing_market = suffixes.get(listing_market, listing_market)
+    if not listing_market:
+        listing_market = ("HK" if len(symbol) <= 5 else "CN") if symbol.isdigit() else "US"
+    if symbol.isdigit() and listing_market == "HK":
+        symbol = symbol.zfill(5)
+    return symbol, listing_market
 
 
 def portfolio_context_draft(
@@ -232,7 +245,7 @@ def portfolio_context_draft(
     compiler gates the executable action to REVIEW.
     """
     wanted = _normalize_code(ticker)
-    matches = [item for item in snapshot.get("positions", []) if _normalize_code(item.get("code")) == wanted]
+    matches = [item for item in snapshot.get("positions", []) if _normalize_code(item.get("code"), item.get("market")) == wanted]
     base = {
         "as_of": str(snapshot.get("retrieved_at", ""))[:10],
         "source": f"Ledger /api/stocks snapshot {snapshot.get('retrieved_at', '')}",
@@ -245,6 +258,9 @@ def portfolio_context_draft(
                 "constraints": "Ledger 快照存在告警，持仓未验证：" + "；".join(snapshot.get("warnings", []))}
     if not matches:
         return {**base, "position_status": "not_held", "confidence": "high", "current_weight": None}
+    if len(matches) > 1:
+        return {**base, "position_status": "unknown", "confidence": "low", "current_weight": None,
+                "constraints": "Ledger 中同一市场的股票有多条匹配记录，需核对后才能计算持仓。"}
     position = matches[0]
     allocation = snapshot.get("allocation_snapshot")
     net_assets = _number(allocation.get("netAssets")) if isinstance(allocation, dict) else None
