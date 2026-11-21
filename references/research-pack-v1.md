@@ -184,3 +184,24 @@ python3 scripts/research_pack.py status --pack <pack.json>
 `status` emits deterministic JSON with each stage marked `CURRENT`, `MISSING`, or `STALE`, plus `next_checkpoint`. It returns nonzero when the pack is invalid. Exit codes are stable: `0` for valid success or `UNCHANGED`, `1` for a valid-state conflict such as stale/undefined upstream inputs, and `2` for malformed structure, invalid usage/input, non-strict JSON, or I/O. Malformed-but-parseable types produce a stable `ERROR:` on stderr without a traceback.
 
 Resume from the first missing or stale checkpoint, but re-open the cited sources before making a current investment decision. A valid pack proves internal structure and continuity, not real-world freshness or provenance.
+
+## V3 production adapter (P0-2)
+
+The existing v1 schema and checkpoints remain unchanged. `scripts/evidence_pack_v3.py` reuses v1 hashing, locking, atomic writes and telemetry rejection with a separately versioned `evidence-pack-v3` envelope. It stores native v3 `sources` and `facts` verbatim, so build/verify/challenge all use the same Fact IDs. `apply` materializes those two registries into a **new** Spec; it never overwrites an existing Spec.
+
+```bash
+python3 scripts/evidence_pack_v3.py create --spec spec.json --manifest evidence-manifest.json --pack evidence-v1.json
+python3 scripts/evidence_pack_v3.py check --spec spec.json --pack evidence-v1.json
+python3 scripts/evidence_pack_v3.py apply --spec draft.json --pack evidence-v1.json --out new-spec.json
+python3 scripts/report_pipeline_v3.py build --spec spec.json --output report.md --evidence-pack evidence-v1.json
+python3 scripts/report_pipeline_v3.py verify --spec spec.json --output report.md --evidence-pack evidence-v1.json
+python3 scripts/report_lint.py report.md
+```
+
+Manifest: `latest_period_end` (ISO date), `snapshots` keyed by every Source ID. Each snapshot requires: `path` (absolute saved raw response or extracted source), `sha256`, `retrieved_at`, `verified_at`, `expires_at` (timezone ISO instants), `published_or_quoted_at` (evidence date), `locator`, `kind` (`filing`, `historical_quote`, `current_quote`, `rate`, `holdings`, `other`), `verification_status` (`verified` only opens reuse), `observed_sha256` (hash observed when source last reopened), `latest_period_end` (latest reporting period checked for this issuer, not necessarily period of the historical document). Compute raw hashes with SHA256; do not invent them.
+
+`create` is not fetching or fact verification. Researchers must reopen the source at expiry, compare downloaded content, check the IR latest-release index, and preserve the old snapshot before publishing a revision. Adapter blocks unknown/unverified, expiry, local/reopened content mismatch, changed four-quarter series, differing native facts and a newer filing window. It cannot discover a new remote quarter without a fetch: never call local CURRENT proof of live freshness. Maximum revalidation intervals: current quotes 4 days, rates 8 days, holdings 1 day, filings/historical quotes 93 days, other 31 days; use shorter expiries for the requested task. Separate downloaded, source-verified and current validity in the manifest and research notes. Do not persist credentials or private account components.
+
+Evidence/fact changes require a new immutable pack path, then full build/verify/lint. Telemetry belongs only in `run-metrics.jsonl`, never in either evidence schema.
+
+V3 新鲜度补充：当前报价/利率/持仓的 published_or_quoted_at 也按上述期限检查，重新下载旧观察不能刷新数据日；historical_quote 保留原日期供历史对比。verified_at 不得早于 retrieved_at。

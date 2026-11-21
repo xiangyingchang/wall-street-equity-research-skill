@@ -223,8 +223,12 @@ def main(argv: list[str] | None = None) -> int:
         cmd = sub.add_parser(name)
         cmd.add_argument("--spec", type=Path, required=True)
         cmd.add_argument("--output", type=Path, required=True)
+        cmd.add_argument("--evidence-pack", type=Path, help="Validate the shared immutable v3 evidence snapshot before full compilation")
     args = parser.parse_args(argv)
     try:
+        if args.evidence_pack is not None:
+            from scripts.evidence_pack_v3 import require_pack
+            require_pack(args.evidence_pack, load_json(args.spec))
         result = build(args.spec, args.output) if args.command == "build" else verify(args.spec, args.output)
     except (SpecError, ValueError, KeyError, json.JSONDecodeError) as exc:
         print(f"FAIL: {exc}")

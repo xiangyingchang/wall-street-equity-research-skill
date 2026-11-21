@@ -1,0 +1,7 @@
+# 投研报告交付
+
+1. 在 `~/research-runs/<job-id>/` 建本轮专用目录，完成证据包、Spec、build、全文语义审阅、verify 和独立 lint。build 和 verify 使用绝对路径，或以本轮目录为工作目录使用相对路径；交付脚本从任意工作目录执行时，会在本轮目录按 build 记录的路径复验。新 Spec 默认带 `report.delivery_target: notion`。失败时保留中间资料供恢复。
+2. 读取 Agent Operating Guide，调用 Codex 原生 `codex_apps/notion` MCP，所有 Notion 调用带 `instructions_version="0.0.6"`。在[投研报告库](https://app.notion.com/p/6b84ebe52e8f461586750a234d732379)（`collection://e861dd30-8bb5-4eb8-a0ba-4bbf411a845c`）按标的、市场、报告日期和标题查重。新一期创建一行，状态设为「初版未核验」，正文提交完整 Reader Markdown。发现同一期已有页面时先回读并判断是否为同一次交付，避免重试产生重复行。
+3. 原生 MCP 回读确认目标库、日期、状态、正文首尾、各节、表格和链接。Notion 会改写 Markdown 表示，按内容核对。状态是投研库的编辑标记，本地 verify 与 lint 结果另行报告。
+4. 人工检查待归档的 Spec、证据包、Audit、Bundle、Verification 和语义审阅，确保没有密钥、完整个人持仓及其他敏感信息；自动检测只作补充，不能代替人工检查。无法安全归档时停止交付清理，保留恢复材料。计算实际比较过的本地 Reader SHA-256。运行 `python3 scripts/notion_delivery.py --reader <绝对路径> --notion-url <回读页面链接，不含查询参数> --readback-reader-sha256 <哈希> --evidence-pack <包文件名> --privacy-reviewed --remove evidence`。`--remove` 可重复，用来列出本轮专有的额外中间文件、日志与子目录。每一步必须检查退出状态；组合 shell 命令启用 `set -e`，不得用后续成功掩盖失败。
+5. 命令复查本地校验后生成 `audit-package.zip`，包含 Spec、证据包、Audit、Bundle、Verification、语义审阅、来源清单、回读核验摘要和阶段事件；清单记录各成员 SHA-256 与编译器版本。只接收必要文本产物，单文件上限 2 MiB，不打包原始抓取文件。先读取并验证压缩包清单和哈希，再清理其他列出的本轮产物。保留 Reader、`delivery.json` 和压缩包。事件记录各阶段时间、结果、失败类别及重试结果，不保存异常输出、密钥或完整个人持仓；失败时事件和可恢复材料留在本轮目录，成功后事件并入压缩包。完成信号仍为原约定的极简五字段。清理中断时用同一页、同一哈希及同一清单重跑；回执存在时必须先重新检查压缩包。压缩包可能依赖外部来源及对应编译器，不能保证将来完全复现。

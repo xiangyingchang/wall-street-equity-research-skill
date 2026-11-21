@@ -12,7 +12,7 @@ from scripts.report_compiler_v21 import compile_report_v21
 from scripts.report_decision_support_v32 import compile_decision_support
 from scripts.report_decision_coherence_v32 import compile_decision_coherence
 from scripts.report_research_graph_v3 import compile_research_graph
-from scripts.report_spec_v2 import SpecError, _ttm_sum, sha256
+from scripts.report_spec_v2 import SpecError, _ttm_sum, _annual_cash_basis, sha256
 from scripts.valuation_runtime import return_pair
 
 COMPILER_VERSION = "3.2.0"
@@ -88,7 +88,10 @@ def _validate_v31_contract(spec: dict[str, Any]) -> dict[str, Any]:
     _require(isinstance(spec.get("decision_support"), dict), "v3.2 requires decision_support (triggers, pre-mortem, history, bridges)")
     # The baseline also contains actuals: validate every series, not only the
     # optional cash-valuation override, before it drives a decision.
+    annual = _annual_cash_basis(spec)
     for name in ("eps", "revenue", "operating_income", "fcf"):
+        if name == "fcf" and annual:
+            continue
         _ttm_sum(spec, spec.get("quarterly_series", {}).get(name), f"quarterly_series.{name}")
     prior_report = _validate_prior_report(spec)
     final = spec.get("research", {}).get("final_verdict", {})
@@ -132,7 +135,7 @@ def _validate_prior_report(spec: dict[str, Any]) -> dict[str, Any]:
 
     required = (
         "path", "as_of", "previous_new_money_action", "previous_existing_position_action",
-        "previous_base_irr_reported", "calculation_status", "rating_delta", "metric_delta",
+        "calculation_status", "rating_delta", "metric_delta",
         "thesis_delta", "methodology_delta",
     )
     for field in required:
@@ -145,13 +148,15 @@ def _validate_prior_report(spec: dict[str, Any]) -> dict[str, Any]:
     _require(prior_date <= report_date, "prior_report_context.as_of cannot be later than report.as_of")
     calculation_status = str(raw["calculation_status"]).lower()
     _require(calculation_status in {"verified", "recalculated", "unverified"}, "prior_report_context invalid calculation_status")
+    _require("previous_base_irr_reported" in raw, "prior_report_context missing previous_base_irr_reported; use explicit null when undisclosed")
     try:
-        reported = Decimal(str(raw["previous_base_irr_reported"]))
+        reported = Decimal(str(raw["previous_base_irr_reported"])) if raw.get("previous_base_irr_reported") is not None else None
         declared_recalculated = Decimal(str(raw["previous_base_irr_recalculated"])) if raw.get("previous_base_irr_recalculated") is not None else None
     except (InvalidOperation, ValueError) as exc:
         raise SpecError("prior_report_context IRR values must be finite decimals") from exc
-    _require(reported.is_finite() and (declared_recalculated is None or declared_recalculated.is_finite()), "prior_report_context IRR values must be finite decimals")
-    _require(reported > Decimal("-1") and (declared_recalculated is None or declared_recalculated > Decimal("-1")), "prior_report_context IRR values must be greater than -100%")
+    _require(reported is not None or calculation_status == "unverified", "missing prior reported IRR requires unverified calculation_status")
+    _require((reported is None or reported.is_finite()) and (declared_recalculated is None or declared_recalculated.is_finite()), "prior_report_context IRR values must be finite decimals")
+    _require((reported is None or reported > Decimal("-1")) and (declared_recalculated is None or declared_recalculated > Decimal("-1")), "prior_report_context IRR values must be greater than -100%")
     _require(str(raw["previous_new_money_action"]) in {"BUY", "WATCH", "DO_NOT_BUY"}, "prior_report_context invalid previous_new_money_action")
     _require(str(raw["previous_existing_position_action"]) in {"HOLD", "REVIEW", "REDUCE", "SELL", "NOT_APPLICABLE"}, "prior_report_context invalid previous_existing_position_action")
     recalculated: Decimal | None = None
@@ -195,7 +200,7 @@ def _validate_prior_report(spec: dict[str, Any]) -> dict[str, Any]:
         "as_of": str(raw["as_of"]),
         "previous_new_money_action": str(raw["previous_new_money_action"]),
         "previous_existing_position_action": str(raw["previous_existing_position_action"]),
-        "previous_base_irr_reported": str(reported),
+        "previous_base_irr_reported": str(reported) if reported is not None else None,
         "previous_base_irr_recalculated": str(recalculated) if recalculated is not None else None,
         "calculation_status": calculation_status,
         "recalculation_inputs": recalculation_inputs,
@@ -240,9 +245,10 @@ def compile_report_v3(spec: dict[str, Any]) -> dict[str, Any]:
     portfolio_quality = "PASS" if bundle["portfolio_context"]["complete"] else "REVIEW"
     prior_quality = bundle["prior_report_context"]["quality"]
     bundle["data_quality"] = {
-        "status": "REVIEW" if "REVIEW" in {portfolio_quality, prior_quality} else "PASS",
+        "status": "REVIEW" if "REVIEW" in {portfolio_quality, prior_quality} or spec.get("decision_support", {}).get("cash_flow_escalation", {}).get("status") == "unknown" else "PASS",
         "source_urls": {"status": "PASS", "count": validated["source_urls"]},
         "ttm_units": {"status": "PASS"},
+        "cash_flow_basis": {"status": "REVIEW" if spec.get("decision_support", {}).get("cash_flow_escalation", {}).get("status") == "unknown" else "PASS", "basis": deepcopy(bundle["derived"]["ttm"]["fcf"])},
         "operating_metrics": {"status": "PASS", "count": validated["operating_metrics"]},
         "portfolio_context": {
             "status": portfolio_quality,

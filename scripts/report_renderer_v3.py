@@ -55,13 +55,26 @@ def _format_assumption(role: str, item: dict[str, Any]) -> str:
 
 def _payback_principle(bundle: dict[str, Any]) -> tuple[str, str]:
     target = float(bundle["target_return"])
-    rates = bundle["derived"]["payback_required_growth"]
+    cash = bundle["derived"].get("cash_valuation", {})
+    decisive = cash.get("decisive")
+    row = next((item for item in cash.get("bases", []) if decisive and item["basis_id"] == decisive["basis_id"]), None)
+    rates = row["payback_required_growth"] if row else bundle["derived"]["payback_required_growth"]
     rate = min(rates, key=lambda value: abs(float(value) - target))
-    required = float(rates[rate])
+    required = float(rates[rate]) if rates[rate] is not None else None
     _, base_growth = _assumption(bundle, "eps_cagr")
     expected = float(base_growth["value"])
+    label = row["label"] if row else "EPS"
+    if required is None:
+        return "不通过", f"决定口径为{label}；按 {_pct_decimal(rate)} 贴现，该口径无法求得回本增长要求。"
+    cash_basis = row is not None and row["kind"] in {"cash", "cash_normalized"}
+    unknown = bundle.get("decision_coherence", {}).get("escalation", {}).get("status") == "unknown"
+    if cash_basis:
+        explanation = f"决定口径为{label}；按 {_pct_decimal(rate)} 贴现，回本要求现金每股年增 {_pct_decimal(required)}。Base EPS 年增 {_pct_decimal(expected)} 仅作对照，不能替代独立现金增长假设。"
+        if unknown or row.get("frequency") == "annual":
+            return "待核实（当前不通过）", explanation + "最新现金流尚未核验，历史年度现金不能支持回本通过。"
+        return ("不通过" if expected < required else "待核实"), explanation + "需另行核验现金增长假设后重编译。"
     result = "通过" if expected >= required else "不通过"
-    explanation = f"按 {_pct_decimal(rate)} 贴现，回本要求 EPS 年增 {_pct_decimal(required)}；Base 仅假设 {_pct_decimal(expected)}。"
+    explanation = f"决定口径为{label}；按 {_pct_decimal(rate)} 贴现，回本要求每股盈利年增 {_pct_decimal(required)}；Base 假设 {_pct_decimal(expected)}。"
     return result, explanation
 
 
@@ -75,10 +88,38 @@ def _portfolio_limit(bundle: dict[str, Any]) -> str:
     current = context.get("current_weight")
     target = context.get("target_weight")
     if current is None:
-        return "已确认持仓，但当前权重缺失；不能计算调仓幅度。"
+        stock_pool = context.get("stock_pool_weight")
+        if stock_pool is not None:
+            diagnostics = str(context.get("constraints") or "")
+            if "UNAVAILABLE" in diagnostics:
+                return diagnostics
+            quote_start = str(context.get("stock_pool_weight_quote_range_start") or "")[:10]
+            quote_end = str(context.get("stock_pool_weight_quote_range_end") or "")[:10]
+            fx_as_of = str(context.get("stock_pool_weight_fx_as_of") or "")[:10]
+            if quote_start and quote_end and quote_start != quote_end:
+                date_parts = [f"股票报价日期：{quote_start} 至 {quote_end}"]
+            elif quote_start:
+                date_parts = [f"股票报价日期：{quote_start}"]
+            else:
+                as_of = str(context.get("stock_pool_weight_as_of") or "")[:10]
+                date_parts = [f"股票报价截至 {as_of}"] if as_of else []
+            if fx_as_of:
+                date_parts.append(f"汇率日期：{fx_as_of}")
+            as_of_text = f"（{'；'.join(date_parts)}）" if date_parts else ""
+            return (
+                f"这只股票占全部股票市值的 {_pct_decimal(stock_pool)}{as_of_text}；"
+                "这个比例只比较股票，不含现金、期权、加密资产和负债。"
+                "该股票占全部资产净值的比例和目标仓位都未核实，当前只能复核，不能据此加仓或减仓。"
+            )
+        return "已确认持仓，但净资产权重缺失；不能直接执行调仓，也不能计算调仓幅度。"
     if target is None:
-        return f"当前权重为 {_pct_decimal(current)}，但目标权重缺失；不能执行减仓。"
-    return f"当前权重 {_pct_decimal(current)}，目标权重 {_pct_decimal(target)}；税务/摩擦为 {context['tax_friction']}。"
+        as_of = str(context.get("net_assets_as_of") or "")[:10]
+        date_text = f"，净资产估值截至 {as_of}" if as_of else ""
+        return f"当前权重约为组合净资产的 {_pct_decimal(current)}{date_text}，但目标权重缺失；不能执行减仓。"
+    return (
+        f"当前权重约为组合净资产的 {_pct_decimal(current)}，目标权重 {_pct_decimal(target)}；"
+        f"税务/摩擦为 {context['tax_friction']}。"
+    )
 
 
 def _prior_report_reader(bundle: dict[str, Any]) -> str:
@@ -88,7 +129,7 @@ def _prior_report_reader(bundle: dict[str, Any]) -> str:
         lines.append(f"未找到可比的上一份报告：{prior['reason']}")
         return "\n".join(lines)
     decision = bundle["decision"]
-    reported = _pct_decimal(prior["previous_base_irr_reported"])
+    reported = _pct_decimal(prior["previous_base_irr_reported"]) if prior["previous_base_irr_reported"] is not None else "未披露"
     recalculated = prior.get("previous_base_irr_recalculated")
     prior_irr = f"报告写为 {reported}"
     if recalculated is not None:
@@ -143,6 +184,8 @@ def _action_matrix_rows(bundle: dict[str, Any]) -> list[tuple[str, str, str, str
     executable = decision["existing_position_action"]
     new_money = decision["new_money_action"]
     context = bundle["portfolio_context"]
+    cash_unknown = bundle.get("decision_coherence", {}).get("escalation", {}).get("status") == "unknown"
+    cash_condition = "最新现金流已核验、连续负现金流季度数已确认且新资金闸门已重新通过；" if cash_unknown else ""
 
     def state(action: str) -> str:
         labels: list[str] = []
@@ -163,17 +206,17 @@ def _action_matrix_rows(bundle: dict[str, Any]) -> list[tuple[str, str, str, str
     return [
         (
             "买入", "price + operating",
-            f"现价 ≤ {_money(base['prices']['buy'], currency)}，全部经营闸门支持持有，且投资逻辑未破坏。",
+            f"{cash_condition}现价 ≤ {_money(base['prices']['buy'], currency)}，全部经营闸门支持持有，且投资逻辑未破坏。",
             "新资金分步建仓，不因公司质量跳过安全边际。", state("BUY"),
         ),
         (
             "加仓", "price + portfolio",
-            f"已持仓、现价 ≤ {_money(base['prices']['buy'], currency)}，且组合目标权重高于当前权重。",
+            f"{cash_condition}已持仓、现价 ≤ {_money(base['prices']['buy'], currency)}，且组合目标权重高于当前权重。",
             add_execution, "未由公司模型单独触发",
         ),
         (
             "持有", "valuation + operating",
-            f"Base IRR 缺口 ≤ {_pct_decimal(hold_boundary)}，经营闸门无降低暴露或复核信号，且投资逻辑未破坏。",
+            f"{cash_condition}Base IRR 缺口 ≤ {_pct_decimal(hold_boundary)}，经营闸门无降低暴露或复核信号，且投资逻辑未破坏。",
             "维持经组合确认的仓位；不把历史成本当理由。", state("HOLD"),
         ),
         (
@@ -275,16 +318,24 @@ def _execution_summary(bundle: dict[str, Any]) -> list[str]:
     decisive = coherence["decisive"]
     escalation = coherence["escalation"]
     confirm = _money(decisive["confirmation_price"], currency) if decisive.get("confirmation_price") else "无（为负）"
+    cash_price_meaning = (
+        f"按{_escape(decisive['label'])}计算，股价需不高于 {confirm}，现金收益率才达到门槛；"
+        if decisive.get("confirmation_price") else
+        "当前现金流为负，无法给出现金回报达标价；"
+    )
     position = float(coherence["executable_position_max"]) * 100
     lines = [
         "| 执行检查 | 当前 | 含义 |", "|---|---|---|",
-        f"| 现金门槛（{_escape(decisive['label'])}） | 收益率 {_pct_decimal(decisive['yield'])} vs 门槛 {_pct_decimal(bundle['target_return'])}，{'已过' if decisive['passes_hurdle'] else '未过'} | 现金确认价 {confirm}；大仓位只在该价附近成立。 |",
+        f"| 现金门槛（最低现金收益要求） | {_pct_decimal(decisive['yield'])}，最低要求 {_pct_decimal(bundle['target_return'])}，{'已达到' if decisive['passes_hurdle'] else '未达到'} | {cash_price_meaning}这只是现金回报条件，不是自动买入指令。 |",
         f"| 价格阶梯 | 价格所在“{_escape(coherence['price_tier_action'])}”档 | 可执行新资金上限 **{position:.0f}%**（占目标仓位）"
         + (f"；卡点：{_escape('；'.join(coherence['blockers']))}" if coherence["blockers"] else "") + "。 |",
         f"| 现金流升级表 | {_escape(escalation['counter_label'])} {escalation['actual']} 个季度，" + (f"第 {escalation['current_level']} 级" if escalation["current_level"] else "未升级") + " | "
         + (_escape(escalation["levels"][escalation["current_level"] - 1]["action"]) if escalation["current_level"] else "按价格阶梯执行。") + " |",
         "",
     ]
+    if escalation.get("status") == "unknown":
+        lines[2] = f"| 现金门槛（最低现金收益要求） | {_pct_decimal(decisive['yield'])}，最低要求 {_pct_decimal(bundle['target_return'])}，尚未核实 | 最新现金未核验，不能据此建仓；没有可用的现金回报达标价。 |"
+        lines[-2] = f"| 现金流升级表 | 连续负现金流季度数未知，待核实 | {_escape(escalation['pending'])}；新资金上限为零。 |"
     return lines
 
 
@@ -491,11 +542,24 @@ def _portfolio_reader(bundle: dict[str, Any]) -> str:
             {"hold": "支持持有", "review": "需要复核", "reduce": "触发降低暴露"}[item["status"]],
         ]) + " |")
     positioning = bundle["research"]["positioning"]
+    portfolio_constraints = positioning["portfolio_constraints"]
+    if context.get("current_weight") is None and context.get("stock_pool_weight") is not None:
+        diagnostics = str(context.get("constraints") or "")
+        text = diagnostics if "UNAVAILABLE" in diagnostics else str(portfolio_constraints.get("text", ""))
+        for ambiguous, explicit in (
+            ("当前权重无法核算", "占全部资产净值的比例无法核算"),
+            ("当前权重无法计算", "占全部资产净值的比例无法计算"),
+            ("当前权重未知", "占全部资产净值的比例未核实"),
+            ("当前权重缺失", "占全部资产净值的比例未核实"),
+            ("当前权重未核实", "占全部资产净值的比例未核实"),
+        ):
+            text = text.replace(ambiguous, explicit)
+        portfolio_constraints = {**portfolio_constraints, "text": text}
     lines.extend([
-        "", _paragraph(positioning["portfolio_constraints"]), "",
+        "", _paragraph(portfolio_constraints), "",
         _paragraph(positioning["execution"]), "",
     ])
-    lines += _source_note(bundle, [positioning["portfolio_constraints"], positioning["execution"]])
+    lines += _source_note(bundle, [portfolio_constraints, positioning["execution"]])
     return "\n".join(lines)
 
 
@@ -520,7 +584,14 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
         f"投资周期={bundle['report'].get('horizon', '未提供')}；报告契约=Compiler Reader v3.2。\n>\n"
     )
     markdown = markdown.replace("> 数据截至", context_line + "> 数据截至", 1)
-    markdown = markdown.replace("由单一数据源编译生成", "由单一 Spec 编译生成", 1)
+    if bundle["report"].get("delivery_target") == "notion":
+        markdown = markdown.replace(
+            "。本报告由单一数据源编译生成；详细证据、假设和验证结果见同名 `.audit.md`。", "。", 1,
+        )
+        markdown = markdown.removesuffix("\n> 完整证据链、模型假设与验证结果见同名 `.audit.md`。\n")
+        markdown = markdown.rstrip() + "\n"
+    else:
+        markdown = markdown.replace("由单一数据源编译生成", "由单一 Spec 编译生成", 1)
     markdown = _replace_section(markdown, "## 一页结论", "## 1. 华尔街式全景扫描", _decision_page(bundle))
     markdown = _replace_section(markdown, "## 1. 华尔街式全景扫描", "## 2. 财务剖析", _overview_reader(bundle) + "\n\n" + _theme_reader(bundle))
     if bundle.get("decision_support"):

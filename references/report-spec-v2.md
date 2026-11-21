@@ -93,8 +93,12 @@ These outputs are reproducible from the Spec. Manual edits invalidate verificati
 - homogeneous currency and scale for revenue, operating income, and FCF TTM series;
 - the same per-share currency unit for EPS and current price.
 
-Facts, calculations, assumptions, and portfolio observations remain distinct. Missing portfolio data is represented as `position_status=unknown`; it is never filled by inference.
+Facts, calculations, assumptions, and portfolio observations remain distinct. Missing portfolio data is represented as `position_status=unknown`; it is never filled by inference. `current_weight` means the stock's market value divided by verified total net assets. A separately verified `stock_pool_weight` means its share of all active listed-stock market value; it excludes cash and other assets and cannot authorize a portfolio trade. When total net assets or the user's target weight is missing, preserve REVIEW even if the stock-pool ratio is available.
 
 Each operating metric's declared unit must equal the unit on its referenced Fact or derived object. Multi-period confirmation must resolve to an explicit non-negative integer Fact/Bundle value; fractional or silently assumed confirmation fails build.
 
 `prior_report_context` is `available` or `not_available`. Available baselines record prior actions, reported Base IRR, rating/metric/thesis/method deltas, and calculation status. `recalculated` status requires the old price, starting EPS, EPS CAGR, exit PE, years, and dividend yield; the Compiler recomputes the old IRR and rejects a mismatching declared value. This preserves historical wording without preserving historical arithmetic errors.
+
+
+### 历史年度现金流例外（v3.2）
+只披露年度现金流的公司可设 `cash_flow_basis={frequency:"annual",fact_id,period_end,reason}`，`quarterly_series.fcf=[]`。年度 Fact 必须有 `period:"FYyyyy"` 和同一 `period_end`；禁止未来数据与季度覆盖。兼容 `/derived/ttm/fcf/value` 仅为历史数值位置，必须同时读取 frequency/label/period_end，不代表最新 TTM。年度基准强制 `decision_support.cash_flow_escalation={status:"unknown",pending:"具体待披露项目"}`；不得提供 counter_ref、把未知计数填零。编译器限制新资金上限零且已有仓位 REVIEW，独立 thesis-break SELL 不受影响。旧报告未给 Base IRR 时允许 null，但 calculation_status 必须 unverified。

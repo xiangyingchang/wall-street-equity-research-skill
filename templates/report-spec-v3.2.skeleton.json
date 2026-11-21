@@ -1,0 +1,3350 @@
+{
+  "schema_version": "report-spec-v3.1",
+  "report": {
+    "delivery_target": "notion",
+    "ticker": null,
+    "company": null,
+    "as_of": null,
+    "currency": null,
+    "tax_identity": null,
+    "horizon": null,
+    "return_years": null,
+    "payback_years": null,
+    "payback_discount_rates": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "current_price_fact_id": "FACT-001",
+    "target_return_assumption_id": "ASM-002",
+    "cash_valuation": {
+      "shares_fact_id": "FACT-003",
+      "earnings_bases": [
+        {
+          "basis_id": "gaap",
+          "label": null,
+          "accounting_basis": "reported",
+          "eps_fact_ids": [
+            "FACT-004",
+            "FACT-005",
+            "FACT-006",
+            "FACT-007"
+          ]
+        }
+      ],
+      "decisive_basis": "fcf",
+      "decisive_reason": null,
+      "fcf_label": null,
+      "dividend": {
+        "dps_fact_id": "FACT-008",
+        "growth_assumption_id": "ASM-009",
+        "withholding_assumption_id": "ASM-010",
+        "years": null
+      }
+    }
+  },
+  "facts": {
+    "FACT-001": {
+      "value": null,
+      "unit": "USD/share",
+      "as_of": null,
+      "source": null,
+      "tier": null,
+      "confidence": "medium",
+      "source_ids": [
+        "SRC-011"
+      ]
+    },
+    "FACT-012": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-013"
+      ]
+    },
+    "FACT-014": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-015"
+      ]
+    },
+    "FACT-016": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-017"
+      ]
+    },
+    "FACT-018": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-019"
+      ]
+    },
+    "FACT-020": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-013"
+      ]
+    },
+    "FACT-021": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-015"
+      ]
+    },
+    "FACT-022": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-017"
+      ]
+    },
+    "FACT-023": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-019"
+      ]
+    },
+    "FACT-004": {
+      "value": null,
+      "unit": "USD/share",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-013"
+      ]
+    },
+    "FACT-005": {
+      "value": null,
+      "unit": "USD/share",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-015"
+      ]
+    },
+    "FACT-006": {
+      "value": null,
+      "unit": "USD/share",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-017"
+      ]
+    },
+    "FACT-007": {
+      "value": null,
+      "unit": "USD/share",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-019"
+      ]
+    },
+    "FACT-024": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-013"
+      ]
+    },
+    "FACT-025": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-015"
+      ]
+    },
+    "FACT-026": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-017"
+      ]
+    },
+    "FACT-027": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-019"
+      ]
+    },
+    "FACT-028": {
+      "value": null,
+      "unit": null,
+      "as_of": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-019"
+      ]
+    },
+    "FACT-003": {
+      "value": null,
+      "unit": null,
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-019"
+      ]
+    },
+    "FACT-008": {
+      "value": null,
+      "unit": "USD/share",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-019"
+      ]
+    },
+    "FACT-029": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-019"
+      ]
+    },
+    "FACT-030": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-019"
+      ]
+    },
+    "FACT-031": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-019"
+      ]
+    },
+    "FACT-032": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-019"
+      ]
+    },
+    "FACT-033": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-019"
+      ]
+    },
+    "FACT-034": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-036": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-037": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-038": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-039": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-040": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-041": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-042": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-043": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-044": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-045": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-046": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-047": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-048": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-049": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-050": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-051": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-052": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-053": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-054": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    },
+    "FACT-055": {
+      "value": null,
+      "unit": "USD bn/10",
+      "period": null,
+      "source": null,
+      "tier": null,
+      "confidence": "high",
+      "source_ids": [
+        "SRC-035"
+      ]
+    }
+  },
+  "quarterly_series": {
+    "revenue": [
+      "FACT-012",
+      "FACT-014",
+      "FACT-016",
+      "FACT-018"
+    ],
+    "operating_income": [
+      "FACT-020",
+      "FACT-021",
+      "FACT-022",
+      "FACT-023"
+    ],
+    "eps": [
+      "FACT-004",
+      "FACT-005",
+      "FACT-006",
+      "FACT-007"
+    ],
+    "fcf": [
+      "FACT-024",
+      "FACT-025",
+      "FACT-026",
+      "FACT-027"
+    ]
+  },
+  "assumptions": {
+    "ASM-056": {
+      "scope": "global",
+      "role": "tax_rate",
+      "value": null,
+      "period": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-057": {
+      "scope": "global",
+      "role": "other_income",
+      "value": null,
+      "period": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-058": {
+      "scope": "global",
+      "role": "dividend_yield",
+      "value": null,
+      "period": null,
+      "rationale": null,
+      "confidence": "high"
+    },
+    "ASM-002": {
+      "scope": "global",
+      "role": "target_return",
+      "value": null,
+      "period": null,
+      "rationale": null,
+      "confidence": "high"
+    },
+    "ASM-059": {
+      "scope": "global",
+      "role": "safety_margin",
+      "value": null,
+      "period": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-060": {
+      "scope": "bear",
+      "role": "revenue",
+      "mode": "yoy",
+      "growth": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-061": {
+      "scope": "bear",
+      "role": "revenue",
+      "mode": "explicit",
+      "value": null,
+      "source": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-062": {
+      "scope": "bear",
+      "role": "revenue",
+      "mode": "explicit",
+      "value": null,
+      "source": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-063": {
+      "scope": "bear",
+      "role": "revenue",
+      "mode": "explicit",
+      "value": null,
+      "source": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-064": {
+      "scope": "bear",
+      "role": "operating_margin",
+      "value": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-065": {
+      "scope": "bear",
+      "role": null,
+      "value": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-066": {
+      "scope": "bear",
+      "role": "eps_cagr",
+      "value": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-067": {
+      "scope": "bear",
+      "role": "exit_pe",
+      "value": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-068": {
+      "scope": "bear",
+      "role": null,
+      "value": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-069": {
+      "scope": "base",
+      "role": "revenue",
+      "mode": "guide_midpoint",
+      "low": null,
+      "high": null,
+      "source": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-070": {
+      "scope": "base",
+      "role": "revenue",
+      "mode": "qoq",
+      "growth": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-071": {
+      "scope": "base",
+      "role": "revenue",
+      "mode": "yoy",
+      "growth": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-072": {
+      "scope": "base",
+      "role": "revenue",
+      "mode": "yoy",
+      "growth": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-073": {
+      "scope": "base",
+      "role": "operating_margin",
+      "value": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-074": {
+      "scope": "base",
+      "role": null,
+      "value": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-075": {
+      "scope": "base",
+      "role": "eps_cagr",
+      "value": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-076": {
+      "scope": "base",
+      "role": "exit_pe",
+      "value": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-077": {
+      "scope": "base",
+      "role": null,
+      "value": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-078": {
+      "scope": "bull",
+      "role": "revenue",
+      "mode": "guide_high",
+      "low": null,
+      "high": null,
+      "source": null,
+      "rationale": null,
+      "confidence": "low"
+    },
+    "ASM-079": {
+      "scope": "bull",
+      "role": "revenue",
+      "mode": "qoq",
+      "growth": null,
+      "rationale": null,
+      "confidence": "low"
+    },
+    "ASM-080": {
+      "scope": "bull",
+      "role": "revenue",
+      "mode": "yoy",
+      "growth": null,
+      "rationale": null,
+      "confidence": "low"
+    },
+    "ASM-081": {
+      "scope": "bull",
+      "role": "revenue",
+      "mode": "yoy",
+      "growth": null,
+      "rationale": null,
+      "confidence": "low"
+    },
+    "ASM-082": {
+      "scope": "bull",
+      "role": "operating_margin",
+      "value": null,
+      "rationale": null,
+      "confidence": "low"
+    },
+    "ASM-083": {
+      "scope": "bull",
+      "role": null,
+      "value": null,
+      "rationale": null,
+      "confidence": "low"
+    },
+    "ASM-084": {
+      "scope": "bull",
+      "role": "eps_cagr",
+      "value": null,
+      "rationale": null,
+      "confidence": "low"
+    },
+    "ASM-085": {
+      "scope": "bull",
+      "role": "exit_pe",
+      "value": null,
+      "rationale": null,
+      "confidence": "low"
+    },
+    "ASM-086": {
+      "scope": "bull",
+      "role": null,
+      "value": null,
+      "rationale": null,
+      "confidence": "low"
+    },
+    "ASM-009": {
+      "scope": "global",
+      "role": null,
+      "value": null,
+      "rationale": null,
+      "confidence": "medium"
+    },
+    "ASM-010": {
+      "scope": "global",
+      "role": null,
+      "value": null,
+      "rationale": null,
+      "confidence": "high"
+    }
+  },
+  "scenarios": {
+    "bear": {
+      "revenue_periods": [
+        {
+          "id": null,
+          "period": null,
+          "mode": "yoy",
+          "base_ref": "FACT-012",
+          "assumption_id": "ASM-060"
+        },
+        {
+          "id": null,
+          "period": null,
+          "mode": "explicit",
+          "assumption_id": "ASM-061"
+        },
+        {
+          "id": null,
+          "period": null,
+          "mode": "explicit",
+          "assumption_id": "ASM-062"
+        },
+        {
+          "id": null,
+          "period": null,
+          "mode": "explicit",
+          "assumption_id": "ASM-063"
+        }
+      ],
+      "assumptions": {
+        "operating_margin": "ASM-064",
+        "tax_rate": "ASM-056",
+        "other_income": "ASM-057",
+        "diluted_shares": "ASM-065",
+        "eps_cagr": "ASM-066",
+        "exit_pe": "ASM-067",
+        "dividend_yield": "ASM-058",
+        "reference_multiple": "ASM-068",
+        "safety_margin": "ASM-059"
+      }
+    },
+    "base": {
+      "revenue_periods": [
+        {
+          "id": null,
+          "period": null,
+          "mode": null,
+          "assumption_id": "ASM-069"
+        },
+        {
+          "id": null,
+          "period": null,
+          "mode": null,
+          "base_ref": null,
+          "assumption_id": "ASM-070"
+        },
+        {
+          "id": null,
+          "period": null,
+          "mode": "yoy",
+          "base_ref": "FACT-016",
+          "assumption_id": "ASM-071"
+        },
+        {
+          "id": null,
+          "period": null,
+          "mode": "yoy",
+          "base_ref": "FACT-018",
+          "assumption_id": "ASM-072"
+        }
+      ],
+      "assumptions": {
+        "operating_margin": "ASM-073",
+        "tax_rate": "ASM-056",
+        "other_income": "ASM-057",
+        "diluted_shares": "ASM-074",
+        "eps_cagr": "ASM-075",
+        "exit_pe": "ASM-076",
+        "dividend_yield": "ASM-058",
+        "reference_multiple": "ASM-077",
+        "safety_margin": "ASM-059"
+      }
+    },
+    "bull": {
+      "revenue_periods": [
+        {
+          "id": null,
+          "period": null,
+          "mode": null,
+          "assumption_id": "ASM-078"
+        },
+        {
+          "id": null,
+          "period": null,
+          "mode": null,
+          "base_ref": null,
+          "assumption_id": "ASM-079"
+        },
+        {
+          "id": null,
+          "period": null,
+          "mode": "yoy",
+          "base_ref": "FACT-016",
+          "assumption_id": "ASM-080"
+        },
+        {
+          "id": null,
+          "period": null,
+          "mode": "yoy",
+          "base_ref": "FACT-018",
+          "assumption_id": "ASM-081"
+        }
+      ],
+      "assumptions": {
+        "operating_margin": "ASM-082",
+        "tax_rate": "ASM-056",
+        "other_income": "ASM-057",
+        "diluted_shares": "ASM-083",
+        "eps_cagr": "ASM-084",
+        "exit_pe": "ASM-085",
+        "dividend_yield": "ASM-058",
+        "reference_multiple": "ASM-086",
+        "safety_margin": "ASM-059"
+      }
+    }
+  },
+  "decision_policy": {
+    "valuation": {
+      "reduce_gap": null,
+      "review_band": null,
+      "buy_below": "base.buy_price",
+      "add_below": "base.buy_price"
+    },
+    "operating": {
+      "metrics": [
+        {
+          "metric_id": "OP-087",
+          "label": null,
+          "value_ref": "BUNDLE:/derived/ttm/fcf/value",
+          "unit": "USD bn/10",
+          "direction": "higher_is_better",
+          "hold_threshold": null,
+          "reduce_threshold": null,
+          "tolerance": null,
+          "uncertainty": null,
+          "confirmation_periods": null
+        }
+      ]
+    },
+    "thesis_break": {
+      "logic": null,
+      "conditions": [
+        {
+          "fact_id": "FACT-027",
+          "operator": null,
+          "value": null,
+          "label": null
+        },
+        {
+          "fact_id": "FACT-028",
+          "operator": null,
+          "value": null,
+          "label": null
+        }
+      ]
+    },
+    "robustness_shock": null,
+    "require_portfolio_context": null,
+    "price_ladder": {
+      "watch_trial_cap": null,
+      "tiers": [
+        {
+          "tier_id": null,
+          "action": null,
+          "floor_ref": "BUNDLE:/scenarios/base/prices/target_return",
+          "position_min": null,
+          "position_max": null
+        },
+        {
+          "tier_id": null,
+          "action": null,
+          "floor_ref": "BUNDLE:/scenarios/base/prices/buy",
+          "position_min": null,
+          "position_max": null
+        },
+        {
+          "tier_id": null,
+          "action": null,
+          "floor_ref": "BUNDLE:/derived/cash_valuation/decisive/confirmation_price",
+          "position_min": null,
+          "position_max": null
+        },
+        {
+          "tier_id": null,
+          "action": null,
+          "position_min": null,
+          "position_max": null
+        }
+      ]
+    }
+  },
+  "portfolio": {
+    "current_weight": null
+  },
+  "narrative": {
+    "overview": null,
+    "financial_autopsy": null,
+    "moat": null,
+    "risks": null,
+    "growth_limits": null,
+    "opportunity_cost": null,
+    "positioning": null,
+    "final_verdict": null
+  },
+  "sources": {
+    "SRC-013": {
+      "title": null,
+      "publisher": null,
+      "date": null,
+      "tier": null,
+      "document_type": null,
+      "locator": null,
+      "url": null,
+      "scope": [
+        "revenue",
+        null,
+        "eps",
+        "fcf"
+      ]
+    },
+    "SRC-015": {
+      "title": null,
+      "publisher": null,
+      "date": null,
+      "tier": null,
+      "document_type": null,
+      "locator": null,
+      "url": null,
+      "scope": [
+        "revenue",
+        null,
+        "eps",
+        "fcf"
+      ]
+    },
+    "SRC-017": {
+      "title": null,
+      "publisher": null,
+      "date": null,
+      "tier": null,
+      "document_type": null,
+      "locator": null,
+      "url": null,
+      "scope": [
+        "revenue",
+        null,
+        "eps",
+        "fcf"
+      ]
+    },
+    "SRC-019": {
+      "title": null,
+      "publisher": null,
+      "date": null,
+      "tier": null,
+      "document_type": null,
+      "locator": null,
+      "url": null,
+      "scope": [
+        "revenue",
+        null,
+        "eps",
+        "fcf",
+        null,
+        "shares",
+        null
+      ]
+    },
+    "SRC-088": {
+      "title": null,
+      "publisher": null,
+      "date": null,
+      "tier": null,
+      "document_type": null,
+      "locator": null,
+      "url": null,
+      "scope": [
+        null,
+        null,
+        null
+      ]
+    },
+    "SRC-089": {
+      "title": null,
+      "publisher": null,
+      "date": null,
+      "tier": null,
+      "document_type": null,
+      "locator": null,
+      "url": null,
+      "scope": [
+        null
+      ]
+    },
+    "SRC-011": {
+      "title": null,
+      "publisher": null,
+      "date": null,
+      "tier": null,
+      "document_type": null,
+      "locator": null,
+      "url": null,
+      "scope": [
+        null
+      ]
+    },
+    "SRC-090": {
+      "title": null,
+      "publisher": null,
+      "date": null,
+      "tier": null,
+      "document_type": null,
+      "locator": null,
+      "url": null,
+      "scope": [
+        null
+      ]
+    },
+    "SRC-091": {
+      "title": null,
+      "publisher": null,
+      "date": null,
+      "tier": null,
+      "document_type": null,
+      "locator": null,
+      "url": null,
+      "scope": [
+        null
+      ]
+    },
+    "SRC-035": {
+      "title": null,
+      "publisher": null,
+      "date": null,
+      "tier": null,
+      "document_type": null,
+      "locator": null,
+      "url": null,
+      "scope": [
+        "revenue",
+        null,
+        "fcf",
+        null,
+        null
+      ]
+    }
+  },
+  "research": {
+    "overview": {
+      "thesis": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "FACT-018",
+            "role": "supports"
+          },
+          {
+            "ref": "FACT-027",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/decision/valuation/base_irr",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "key_forces": [
+        {
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-016",
+              "role": "supports"
+            },
+            {
+              "ref": "FACT-018",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "high"
+        },
+        {
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-026",
+              "role": "supports"
+            },
+            {
+              "ref": "FACT-027",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        {
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/scenarios/base/returns/irr/irr_pct",
+              "role": "supports"
+            },
+            {
+              "ref": "BUNDLE:/target_return",
+              "role": "supports"
+            },
+            {
+              "ref": "BUNDLE:/scenarios/base/prices/target_return",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      ],
+      "variant_view": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "SRC-088",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-019",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/scenarios/bull/returns/irr/irr_pct",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "low"
+      },
+      "business_model": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "SRC-088",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-019",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "high"
+      },
+      "earnings_update": {
+        "period": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "high"
+        },
+        "changed": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-027",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "high"
+        },
+        "unchanged": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-018",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "high"
+        }
+      }
+    },
+    "financial_autopsy": {
+      "revenue": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "FACT-012",
+            "role": "supports"
+          },
+          {
+            "ref": "FACT-014",
+            "role": "supports"
+          },
+          {
+            "ref": "FACT-016",
+            "role": "supports"
+          },
+          {
+            "ref": "FACT-018",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "high"
+      },
+      "margin": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "FACT-020",
+            "role": "supports"
+          },
+          {
+            "ref": "FACT-021",
+            "role": "supports"
+          },
+          {
+            "ref": "FACT-022",
+            "role": "supports"
+          },
+          {
+            "ref": "FACT-023",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/derived/ttm/operating_margin/value_pct",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "cash_flow": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "FACT-026",
+            "role": "supports"
+          },
+          {
+            "ref": "FACT-027",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-019",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "one_offs": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "FACT-004",
+            "role": "supports"
+          },
+          {
+            "ref": "FACT-006",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-013",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-017",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      }
+    },
+    "moat": {
+      "trajectory": null,
+      "dimensions": [
+        {
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "high",
+          "name": null,
+          "score": null,
+          "counter_evidence": null
+        },
+        {
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium",
+          "name": null,
+          "score": null,
+          "counter_evidence": null
+        },
+        {
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-091",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium",
+          "name": null,
+          "score": null,
+          "counter_evidence": null
+        },
+        {
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-024",
+              "role": "supports"
+            },
+            {
+              "ref": "FACT-025",
+              "role": "supports"
+            },
+            {
+              "ref": "FACT-026",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "high",
+          "name": null,
+          "score": null,
+          "counter_evidence": null
+        }
+      ]
+    },
+    "valuation": {
+      "base_case": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/scenarios/base/revenue/forward_revenue",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/scenarios/base/eps_bridge/eps",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/scenarios/base/prices/forward_reference",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "reverse_expectations": {
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/scenarios/base/returns/reverse/required_eps_cagr_pct",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/scenarios/base/returns/irr/irr_pct",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/target_return",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium",
+        "text_template": "TODO: {base_irr} {target_return}",
+        "value_refs": {
+          "base_irr": {
+            "path": "/decision/valuation/base_irr",
+            "format": "percent"
+          },
+          "target_return": {
+            "path": "/decision/valuation/target_return",
+            "format": "percent"
+          }
+        }
+      },
+      "payback_interpretation": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/derived/payback_required_growth",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/derived/payback_required_growth",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "critical_assumption": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/scenarios/base/assumption_refs/operating_margin",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/scenarios/base/assumption_refs/eps_cagr",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-019",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      }
+    },
+    "risks": {
+      "items": [
+        {
+          "rank": null,
+          "risk": null,
+          "mechanism": null,
+          "leading_indicators": [
+            null,
+            null
+          ],
+          "trigger": null,
+          "mitigant": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-027",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            }
+          ],
+          "confidence": "high",
+          "probability": null,
+          "impact": null,
+          "action": null
+        },
+        {
+          "rank": null,
+          "risk": null,
+          "mechanism": null,
+          "leading_indicators": [
+            null,
+            null
+          ],
+          "trigger": null,
+          "mitigant": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-091",
+              "role": "supports"
+            }
+          ],
+          "confidence": "medium",
+          "probability": null,
+          "impact": null,
+          "action": null
+        },
+        {
+          "rank": null,
+          "risk": null,
+          "mechanism": null,
+          "leading_indicators": [
+            null,
+            null
+          ],
+          "trigger": null,
+          "mitigant": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            }
+          ],
+          "confidence": "medium",
+          "probability": null,
+          "impact": null,
+          "action": null
+        },
+        {
+          "rank": null,
+          "risk": null,
+          "mechanism": null,
+          "leading_indicators": [
+            null,
+            null
+          ],
+          "trigger": null,
+          "mitigant": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-033",
+              "role": "supports"
+            },
+            {
+              "ref": "FACT-032",
+              "role": "supports"
+            }
+          ],
+          "confidence": "medium",
+          "probability": null,
+          "impact": null,
+          "action": null
+        },
+        {
+          "rank": null,
+          "risk": null,
+          "mechanism": null,
+          "leading_indicators": [
+            null,
+            null
+          ],
+          "trigger": null,
+          "mitigant": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            },
+            {
+              "ref": "FACT-023",
+              "role": "supports"
+            }
+          ],
+          "confidence": "medium",
+          "probability": null,
+          "impact": null,
+          "action": null
+        }
+      ]
+    },
+    "growth_limits": {
+      "growth_engine": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "SRC-088",
+            "role": "supports"
+          },
+          {
+            "ref": "FACT-018",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "constraints": [
+        {
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        {
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-027",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        {
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-091",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      ],
+      "ceiling": {
+        "text_template": "TODO: {base} {target}",
+        "value_refs": {
+          "base": {
+            "path": "/decision/valuation/base_irr",
+            "format": "percent"
+          },
+          "target": {
+            "path": null,
+            "format": "percent"
+          }
+        },
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/decision/valuation/base_irr",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-019",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      }
+    },
+    "opportunity_cost": {
+      "interpretation": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/scenarios/base/returns/irr/irr_pct",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/target_return",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "comparators": [
+        {
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-089",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "high"
+        },
+        {
+          "claim_template": null,
+          "value_refs": {
+            "target": {
+              "path": null,
+              "format": "percent"
+            }
+          },
+          "evidence_refs": [
+            "BUNDLE:/target_return"
+          ],
+          "implication": null,
+          "confidence": "high"
+        },
+        {
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-090",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        {
+          "claim_template": null,
+          "value_refs": {
+            "base": {
+              "path": "/decision/valuation/base_irr",
+              "format": "percent"
+            }
+          },
+          "evidence_refs": [
+            "SRC-091",
+            "BUNDLE:/decision/valuation/base_irr"
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      ]
+    },
+    "positioning": {
+      "new_money": {
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/decision/new_money_action",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/scenarios/base/prices/target_return",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "high",
+        "text_template": "TODO: {target_price}",
+        "value_refs": {
+          "target_price": {
+            "path": "/scenarios/base/prices/target_return",
+            "format": "money"
+          }
+        }
+      },
+      "existing_position": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/decision/existing_position_action",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/decision/valuation/irr_gap",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "portfolio_constraints": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/decision/existing_position_action",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-090",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "execution": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "FACT-027",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-019",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      }
+    },
+    "final_verdict": {
+      "summary": {
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/decision/new_money_action",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/decision/existing_position_action",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/scenarios/base/returns/irr/irr_pct",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "high",
+        "text_template": "TODO: {new_money} {existing}",
+        "value_refs": {
+          "new_money": {
+            "path": "/decision/new_money_action",
+            "format": "action"
+          },
+          "existing": {
+            "path": "/decision/existing_position_candidate_action",
+            "format": "action"
+          }
+        }
+      },
+      "hold_equals_buy": {
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/decision/new_money_action",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/scenarios/base/prices/target_return",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium",
+        "text_template": "TODO: {new_money}",
+        "value_refs": {
+          "new_money": {
+            "path": "/decision/new_money_action",
+            "format": "action"
+          }
+        }
+      },
+      "opportunity_cost": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/target_return",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-090",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-089",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "payback": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/derived/payback_required_growth",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "confidence_boundary": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/scenarios/base/assumption_refs/operating_margin",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/scenarios/base/assumption_refs/eps_cagr",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-019",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "falsification": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "FACT-027",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/scenarios/bull/returns/irr/irr_pct",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      }
+    }
+  },
+  "portfolio_context": {
+    "position_status": "unknown",
+    "as_of": null,
+    "source": null,
+    "confidence": "low",
+    "current_weight": null,
+    "target_weight": null,
+    "tax_friction": "unknown",
+    "constraints": null
+  },
+  "prior_report_context": {
+    "status": "unavailable",
+    "reason": null
+  },
+  "research_graph": {
+    "themes": [
+      {
+        "theme_id": "THEME-092",
+        "title": null,
+        "core_question": null,
+        "observations": [
+          {
+            "observation_id": "OBS-093",
+            "text": null,
+            "evidence_refs": [
+              {
+                "ref": "FACT-027",
+                "role": "supports"
+              },
+              {
+                "ref": "SRC-019",
+                "role": "supports"
+              }
+            ],
+            "implication": null,
+            "confidence": "medium"
+          },
+          {
+            "observation_id": "OBS-094",
+            "text": null,
+            "evidence_refs": [
+              {
+                "ref": "FACT-023",
+                "role": "supports"
+              },
+              {
+                "ref": "BUNDLE:/derived/ttm/operating_margin/value_pct",
+                "role": "supports"
+              }
+            ],
+            "implication": null,
+            "confidence": "medium"
+          }
+        ],
+        "hypothesis": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-026",
+              "role": "supports"
+            },
+            {
+              "ref": "FACT-027",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "challenge": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-027",
+              "role": "counter_evidence"
+            },
+            {
+              "ref": "FACT-026",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "resolution": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-027",
+              "role": "supports"
+            },
+            {
+              "ref": "FACT-026",
+              "role": "counter_evidence"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "decision_impact": {
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/decision/valuation/base_irr",
+              "role": "supports"
+            },
+            {
+              "ref": "BUNDLE:/decision/valuation/target_return",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium",
+          "text_template": "TODO: {new_money} {existing}",
+          "value_refs": {
+            "new_money": {
+              "path": "/decision/new_money_action",
+              "format": "action"
+            },
+            "existing": {
+              "path": "/decision/existing_position_candidate_action",
+              "format": "action"
+            }
+          }
+        },
+        "falsification": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/scenarios/bull/returns/irr/irr_pct",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "module_links": [
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "theme_id": "THEME-095",
+        "title": null,
+        "core_question": null,
+        "observations": [
+          {
+            "observation_id": "OBS-096",
+            "text": null,
+            "evidence_refs": [
+              {
+                "ref": "FACT-016",
+                "role": "supports"
+              },
+              {
+                "ref": "FACT-018",
+                "role": "supports"
+              }
+            ],
+            "implication": null,
+            "confidence": "medium"
+          },
+          {
+            "observation_id": "OBS-097",
+            "text": null,
+            "evidence_refs": [
+              {
+                "ref": "SRC-088",
+                "role": "supports"
+              }
+            ],
+            "implication": null,
+            "confidence": "medium"
+          }
+        ],
+        "hypothesis": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            },
+            {
+              "ref": "FACT-018",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "challenge": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-091",
+              "role": "counter_evidence"
+            },
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "resolution": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-018",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-091",
+              "role": "counter_evidence"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "decision_impact": {
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/decision/existing_position_action",
+              "role": "supports"
+            },
+            {
+              "ref": "BUNDLE:/decision/valuation/base_irr",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium",
+          "text_template": "TODO: {new_money} {existing}",
+          "value_refs": {
+            "new_money": {
+              "path": "/decision/new_money_action",
+              "format": "action"
+            },
+            "existing": {
+              "path": "/decision/existing_position_candidate_action",
+              "format": "action"
+            }
+          }
+        },
+        "falsification": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-091",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "module_links": [
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "theme_id": "THEME-098",
+        "title": null,
+        "core_question": null,
+        "observations": [
+          {
+            "observation_id": "OBS-099",
+            "text": null,
+            "evidence_refs": [
+              {
+                "ref": "BUNDLE:/decision/valuation/base_irr",
+                "role": "supports"
+              },
+              {
+                "ref": "BUNDLE:/decision/valuation/target_return",
+                "role": "supports"
+              }
+            ],
+            "implication": null,
+            "confidence": "medium"
+          },
+          {
+            "observation_id": "OBS-100",
+            "text": null,
+            "evidence_refs": [
+              {
+                "ref": "BUNDLE:/scenarios/bull/returns/irr/irr_pct",
+                "role": "supports"
+              },
+              {
+                "ref": "BUNDLE:/scenarios/bear/returns/irr/irr_pct",
+                "role": "supports"
+              }
+            ],
+            "implication": null,
+            "confidence": "medium"
+          }
+        ],
+        "hypothesis": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/scenarios/base/prices/target_return",
+              "role": "supports"
+            },
+            {
+              "ref": "BUNDLE:/scenarios/bull/returns/irr/irr_pct",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "challenge": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/scenarios/bull/prices/forward_reference",
+              "role": "counter_evidence"
+            },
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "resolution": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/decision/valuation/base_irr",
+              "role": "supports"
+            },
+            {
+              "ref": "BUNDLE:/scenarios/bull/returns/irr/irr_pct",
+              "role": "counter_evidence"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "decision_impact": {
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/decision/new_money_action",
+              "role": "supports"
+            },
+            {
+              "ref": "BUNDLE:/decision/existing_position_action",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium",
+          "text_template": "TODO: {new_money} {existing}",
+          "value_refs": {
+            "new_money": {
+              "path": "/decision/new_money_action",
+              "format": "action"
+            },
+            "existing": {
+              "path": "/decision/existing_position_candidate_action",
+              "format": "action"
+            }
+          }
+        },
+        "falsification": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/scenarios/base/returns/irr/irr_pct",
+              "role": "supports"
+            },
+            {
+              "ref": "BUNDLE:/scenarios/base/prices/target_return",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "module_links": [
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    ],
+    "debate": {
+      "bull": [
+        {
+          "argument_id": "ARG-101",
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            },
+            {
+              "ref": "FACT-018",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        {
+          "argument_id": "ARG-102",
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            },
+            {
+              "ref": "BUNDLE:/scenarios/bull/returns/irr/irr_pct",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        {
+          "argument_id": "ARG-103",
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "SRC-088",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-091",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      ],
+      "bear": [
+        {
+          "argument_id": "ARG-104",
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-027",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        {
+          "argument_id": "ARG-105",
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/decision/valuation/base_irr",
+              "role": "supports"
+            },
+            {
+              "ref": "BUNDLE:/decision/valuation/target_return",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        {
+          "argument_id": "ARG-106",
+          "claim": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/scenarios/bull/returns/irr/irr_pct",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      ],
+      "adjudication": {
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/decision/valuation/base_irr",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/scenarios/bull/returns/irr/irr_pct",
+            "role": "counter_evidence"
+          },
+          {
+            "ref": "FACT-027",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium",
+        "accepted_argument_ids": [
+          "ARG-101",
+          "ARG-104",
+          "ARG-105"
+        ],
+        "discounted_argument_ids": [
+          "ARG-103",
+          "ARG-106"
+        ],
+        "remaining_uncertainty": null,
+        "text_template": "TODO: {new_money} {existing}",
+        "value_refs": {
+          "new_money": {
+            "path": "/decision/new_money_action",
+            "format": "action"
+          },
+          "existing": {
+            "path": "/decision/existing_position_candidate_action",
+            "format": "action"
+          }
+        }
+      }
+    },
+    "sensitivity": {
+      "drivers": [
+        {
+          "driver_id": "DRV-107",
+          "variable": null,
+          "base_assumption_path": "/assumptions/scenario/ASM-073/value",
+          "direction": null,
+          "importance": "high",
+          "mechanism": null,
+          "upside_case": null,
+          "downside_case": null,
+          "decision_consequence": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/scenarios/base/eps_bridge/eps",
+              "role": "supports"
+            },
+            {
+              "ref": "FACT-023",
+              "role": "supports"
+            }
+          ]
+        },
+        {
+          "driver_id": "DRV-108",
+          "variable": null,
+          "base_assumption_path": "/assumptions/scenario/ASM-BASE-EPS-CAGR/value",
+          "direction": null,
+          "importance": "high",
+          "mechanism": null,
+          "upside_case": null,
+          "downside_case": null,
+          "decision_consequence": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/scenarios/base/returns/irr/irr_pct",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-019",
+              "role": "supports"
+            }
+          ]
+        },
+        {
+          "driver_id": "DRV-109",
+          "variable": null,
+          "base_assumption_path": "/assumptions/scenario/ASM-076/value",
+          "direction": null,
+          "importance": "medium",
+          "mechanism": null,
+          "upside_case": null,
+          "downside_case": null,
+          "decision_consequence": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/scenarios/base/returns/irr/irr_pct",
+              "role": "supports"
+            },
+            {
+              "ref": "SRC-091",
+              "role": "supports"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "decision_support": {
+    "valuation": {
+      "cash_interpretation": {
+        "text_template": "TODO: {fcf_yield} {target} {confirm}",
+        "value_refs": {
+          "fcf_yield": {
+            "path": "/derived/cash_valuation/fcf/yield",
+            "format": "percent"
+          },
+          "target": {
+            "path": null,
+            "format": "percent"
+          },
+          "confirm": {
+            "path": "/derived/cash_valuation/cash_confirmation_price",
+            "format": "price"
+          }
+        },
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/derived/cash_valuation/fcf/yield",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/target_return",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "peers": [
+        {
+          "name": null,
+          "basis": "reported",
+          "metric": null,
+          "value": null,
+          "source_id": "SRC-091",
+          "as_of": null,
+          "judgement": null
+        },
+        {
+          "name": null,
+          "basis": "reported",
+          "metric": null,
+          "value": null,
+          "source_id": "SRC-091",
+          "as_of": null,
+          "judgement": null
+        },
+        {
+          "name": null,
+          "basis": null,
+          "metric": null,
+          "value": null,
+          "format": "number",
+          "source_id": "SRC-091",
+          "as_of": null,
+          "judgement": null
+        }
+      ],
+      "peer_interpretation": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "SRC-091",
+            "role": "supports"
+          },
+          {
+            "ref": "BUNDLE:/derived/cash_valuation/bases/0/multiple",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      }
+    },
+    "scenario_premises": {
+      "bull": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/scenarios/bull/returns/irr/irr_pct",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "base": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/scenarios/base/returns/irr/irr_pct",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "bear": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/scenarios/bear/returns/irr/irr_pct",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      }
+    },
+    "financial_history": {
+      "years": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "metrics": [
+        {
+          "label": null,
+          "fact_ids": [
+            "FACT-041",
+            "FACT-042",
+            "FACT-043",
+            "FACT-044",
+            "FACT-045"
+          ]
+        },
+        {
+          "label": null,
+          "fact_ids": [
+            "FACT-046",
+            "FACT-047",
+            "FACT-048",
+            "FACT-049",
+            "FACT-050"
+          ]
+        },
+        {
+          "label": null,
+          "fact_ids": [
+            "FACT-051",
+            "FACT-052",
+            "FACT-053",
+            "FACT-054",
+            "FACT-055"
+          ]
+        }
+      ],
+      "interpretation": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "FACT-055",
+            "role": "supports"
+          },
+          {
+            "ref": "FACT-050",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-035",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      }
+    },
+    "normalization": [
+      {
+        "layer": null,
+        "label": null,
+        "value_refs": [
+          {
+            "ref": "BUNDLE:/derived/cash_valuation/bases/0/per_share_reporting",
+            "unit": "USD/share"
+          }
+        ],
+        "note": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-007",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      },
+      {
+        "layer": null,
+        "label": null,
+        "value_refs": [
+          "FACT-027",
+          {
+            "ref": "BUNDLE:/derived/ttm/fcf/value",
+            "unit": "USD bn/10",
+            "caption": null
+          }
+        ],
+        "note": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-027",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      },
+      {
+        "layer": null,
+        "label": null,
+        "value_refs": [
+          "FACT-023"
+        ],
+        "method": null,
+        "note": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-023",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      }
+    ],
+    "capex_balance": [
+      {
+        "category": null,
+        "label": null,
+        "value_refs": [
+          "FACT-029"
+        ],
+        "note": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-029",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      },
+      {
+        "category": null,
+        "label": null,
+        "value_refs": [
+          "FACT-030"
+        ],
+        "note": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-030",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      },
+      {
+        "category": null,
+        "label": null,
+        "value_refs": [
+          "FACT-031"
+        ],
+        "note": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-031",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      },
+      {
+        "category": null,
+        "label": null,
+        "value_refs": [
+          "FACT-032"
+        ],
+        "note": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-032",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      },
+      {
+        "category": null,
+        "label": null,
+        "value_refs": [
+          "FACT-033"
+        ],
+        "note": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-033",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      },
+      {
+        "category": null,
+        "label": null,
+        "value_refs": [
+          "FACT-003"
+        ],
+        "note": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-003",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        }
+      }
+    ],
+    "ladder_premises": {
+      "no-chase": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/scenarios/base/prices/target_return",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "trial": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "BUNDLE:/decision/operating/status",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium",
+        "conditions": [
+          {
+            "label": null,
+            "ref": "BUNDLE:/decision/operating/status",
+            "operator": null,
+            "threshold": null
+          },
+          {
+            "label": null,
+            "status": "unknown",
+            "pending": null
+          }
+        ]
+      },
+      "build": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "FACT-027",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium",
+        "conditions": [
+          {
+            "label": null,
+            "ref": "BUNDLE:/decision/operating/status",
+            "operator": null,
+            "threshold": null
+          },
+          {
+            "label": null,
+            "ref": "FACT-027",
+            "unit": "USD bn/10",
+            "operator": null,
+            "threshold": null
+          }
+        ]
+      },
+      "full": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "SRC-019",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium",
+        "conditions": [
+          {
+            "label": null,
+            "ref": "FACT-027",
+            "unit": "USD bn/10",
+            "operator": null,
+            "threshold": null
+          },
+          {
+            "label": null,
+            "status": "unknown",
+            "pending": null
+          }
+        ]
+      }
+    },
+    "action_triggers": [
+      {
+        "category": null,
+        "condition": {
+          "text_template": "TODO: {buy}",
+          "value_refs": {
+            "buy": {
+              "path": null,
+              "format": "price"
+            }
+          },
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/price_ladder/buy_price",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "action": null,
+        "existing_action": null
+      },
+      {
+        "category": null,
+        "condition": {
+          "text_template": "TODO: {target}",
+          "value_refs": {
+            "target": {
+              "path": null,
+              "format": "percent"
+            }
+          },
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/decision/valuation/irr_gap",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "action": null,
+        "existing_action": "REVIEW"
+      },
+      {
+        "category": null,
+        "condition": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/decision/operating/status",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "action": null,
+        "existing_action": "REVIEW"
+      },
+      {
+        "category": null,
+        "condition": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "FACT-027",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "action": null,
+        "existing_action": "REVIEW"
+      },
+      {
+        "category": null,
+        "condition": {
+          "text": null,
+          "evidence_refs": [
+            {
+              "ref": "BUNDLE:/decision/thesis_break/triggered",
+              "role": "supports"
+            }
+          ],
+          "implication": null,
+          "confidence": "medium"
+        },
+        "action": null,
+        "existing_action": "SELL"
+      }
+    ],
+    "cash_flow_escalation": {
+      "counter_ref": "FACT-028",
+      "counter_label": null,
+      "levels": [
+        {
+          "min_count": null,
+          "new_money_cap": null,
+          "action": null
+        },
+        {
+          "min_count": null,
+          "new_money_cap": null,
+          "action": null
+        },
+        {
+          "min_count": null,
+          "new_money_cap": null,
+          "action": null
+        },
+        {
+          "min_count": null,
+          "new_money_cap": null,
+          "action": null
+        }
+      ]
+    },
+    "roic": {
+      "years": [
+        null,
+        null
+      ],
+      "operating_income_fact_ids": [
+        "FACT-049",
+        "FACT-050"
+      ],
+      "tax_rate_ref": "ASM-056",
+      "invested_capital": [
+        {
+          "label": null,
+          "sign": null,
+          "fact_ids": [
+            "FACT-034",
+            "FACT-036"
+          ]
+        },
+        {
+          "label": null,
+          "sign": null,
+          "fact_ids": [
+            "FACT-037",
+            "FACT-038"
+          ]
+        },
+        {
+          "label": null,
+          "sign": null,
+          "fact_ids": [
+            "FACT-039",
+            "FACT-040"
+          ]
+        }
+      ],
+      "method": null,
+      "interpretation": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "FACT-050",
+            "role": "supports"
+          },
+          {
+            "ref": "FACT-036",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      }
+    },
+    "pre_mortem": {
+      "failure_path": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "FACT-027",
+            "role": "supports"
+          },
+          {
+            "ref": "SRC-019",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "analysis_error": {
+        "text": null,
+        "evidence_refs": [
+          {
+            "ref": "SRC-088",
+            "role": "supports"
+          }
+        ],
+        "implication": null,
+        "confidence": "medium"
+      },
+      "early_signals": [
+        null,
+        null
+      ]
+    },
+    "liquidity": {
+      "text": null,
+      "evidence_refs": [
+        {
+          "ref": "SRC-011",
+          "role": "supports"
+        }
+      ],
+      "implication": null,
+      "confidence": "medium"
+    },
+    "review_checklist": [
+      null,
+      null,
+      null
+    ]
+  }
+}

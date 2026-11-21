@@ -1,11 +1,5 @@
 # Wall-Street Equity Research Skill｜股票脱水质检 Prompt
 
-## 变更目的约定
-
-所有变更的目的，都是得出更加准确、科学的研究报告，帮助用户理解风险、收益和行动条件，指导实际投资。不要为了完善而完善；始终围绕投资判断保持目标意识。
-
-每项变更先说明要减少哪类研究错误、改善哪项投资判断，再用相应证据或测试验证。不能提高研究准确性、可验证性或决策清晰度的改动，不因增加功能、检查或流程而推进。事实、解释与假设分开；结论不确定时明确说明，不制造确定性。
-
 一个用于个人投资研究的股票质检 Prompt / Agent Skill。
 
 它把单只股票分析拆成可执行的研究流程：
@@ -21,7 +15,6 @@
 - 最终四档判决：Buy / Hold-Index / Watchlist / Avoid
 - 单一 Action Matrix：v3.1 Compiler Reader 放在第一页；旧手工报告契约放在第 8 模块；两条路径都禁止第二套交易规则
 - v3.1 Reader：来源直链、Base 假设前置、公司特有经营指标、研究候选与组合可执行动作分离
-- v3.2 决策层：盈亏平衡敏感性、价格距离、上市货币计价、决策支持块（现金估值、价格阶梯、触发器、Pre-Mortem、同业等）与一致性层，首页只给一个可执行答案
 
 > 免责声明：本仓库仅用于个人研究、学习和辅助信息整理，不构成投资建议。所有财务数据、估值和结论都必须回到监管原文、公司公告和可靠数据源复核。
 
@@ -32,7 +25,7 @@
 - [`references/full-methodology.md`](references/full-methodology.md)：9 个固定模块加前置模块区段的方法论
 - [`references/data-validation.md`](references/data-validation.md)：数据验证与可执行审计流程
 - [`references/researchability.md`](references/researchability.md)：A/B/C 与置信度定义
-- [`references/source-map.md`](references/source-map.md)：Obsidian 路径和历史报告定位
+- [`references/source-map.md`](references/source-map.md)：Notion 历史报告定位
 - [`scripts/a_share_prefetch.py`](scripts/a_share_prefetch.py)：A 股预抓取脚本
 - [`scripts/pdf_text_extract.py`](scripts/pdf_text_extract.py)：财报 PDF / earnings deck 文本抽取
 - [`scripts/report_lint.py`](scripts/report_lint.py)：报告交付前的硬约束检查
@@ -74,7 +67,7 @@ Spec 必须提供真实 HTTPS 来源、同量纲 TTM 数据、公司特有 `oper
 3. 9 个固定分析模块
 4. 最终 Buy / Hold-Index / Watchlist / Avoid 判决
 
-完整 Obsidian 报告交付前必须跑：
+完整报告交付前必须跑：
 
 ```bash
 python3 scripts/valuation_consistency.py "/path/to/report.md"
@@ -233,3 +226,7 @@ python3 scripts/pdf_text_extract.py <pdf_or_url>
 - 报告识别预检：占位符骨架也能验证强制决策字段标签；Action Matrix lint 阻止重复条件交易
 - 周期/高 Capex 双估值闸门
 - 四档贴现回本测试：10Y×1 / 10Y×2 / 8% / 10%
+
+### Notion delivery (Skill 3.4.1)
+
+After full verification and independent lint, use the native Notion MCP to create one row per report in 投研报告. Read back the body and status, then keep the local Reader, delivery receipt and verified compact audit archive in the run directory. See [Notion delivery](references/notion-delivery.md) and the [queue configuration](references/spec-v3.2-quickstart.md).

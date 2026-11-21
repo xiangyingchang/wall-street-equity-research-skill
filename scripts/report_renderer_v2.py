@@ -49,9 +49,9 @@ def _quarter_rows(bundle: dict[str, Any]) -> list[tuple[str, str, str, str, str]
     series = bundle["quarterly_series"]
     rows = []
     for index in range(4):
-        ids = {key: series[key][index] for key in ("revenue", "operating_income", "eps", "fcf")}
+        ids = {key: series[key][index] for key in ("revenue", "operating_income", "eps")}
         period = bundle["facts"][ids["revenue"]].get("period", "")
-        rows.append((period, _fact_value(bundle, ids["revenue"]), _fact_value(bundle, ids["operating_income"]), _fact_value(bundle, ids["eps"]), _fact_value(bundle, ids["fcf"])))
+        rows.append((period, _fact_value(bundle, ids["revenue"]), _fact_value(bundle, ids["operating_income"]), _fact_value(bundle, ids["eps"]), _fact_value(bundle, series["fcf"][index]) if series.get("fcf") else "未披露"))
     return rows
 
 
@@ -138,10 +138,10 @@ def render_markdown(bundle: dict[str, Any]) -> str:
     lines.extend(["", "## Quarterly TTM Bridge", "", "| Period | Revenue | Operating income | EPS | FCF |", "|---|---:|---:|---:|---:|"])
     for row in _quarter_rows(bundle):
         lines.append("| " + " | ".join(_escape(x) for x in row) + " |")
-    lines.extend(["", "| TTM Metric | Value | Runtime source |", "|---|---:|---|",
+    lines.extend(["", "| Financial Metric (period in label) | Value | Runtime source |", "|---|---:|---|",
         f"| TTM EPS | {_money(bundle['derived']['ttm']['eps']['value'], rcur)} | ttm-derive |",
         f"| TTM operating margin | {bundle['derived']['ttm']['operating_margin']['value_pct']}% | ttm-derive |",
-        f"| TTM FCF | {bundle['derived']['ttm']['fcf']['value']} | ttm-derive |",
+        f"| {bundle['derived']['ttm']['fcf'].get('label', 'TTM FCF')} | {bundle['derived']['ttm']['fcf']['value']} | {'annual historical Fact' if bundle['derived']['ttm']['fcf'].get('frequency') == 'annual' else 'ttm-derive'} |",
         *([f"| FX ({fx['quoted_unit']}, {fx['as_of']}) | {fx['quoted_value']} → 1 {fx['from']} = {fx['rate']} {fx['to']} | {fx['fact_id']} |",
            f"| TTM EPS in {fx['to']} | {_money(bundle['derived']['ttm']['eps']['price_currency_value'], pcur)} | ttm-derive × FX |"] if fx else []),
         "",

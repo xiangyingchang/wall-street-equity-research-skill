@@ -29,7 +29,7 @@ The tax identity and opportunity-cost benchmark are not optional flavor text: `r
 
 ## Output Mode Defaults
 
-In the user's Obsidian stock vault, these phrases imply a full report saved as Markdown:
+These phrases imply a full report with [Notion delivery](notion-delivery.md):
 
 - "跑一下 + 股票名/代码"
 - "分析下 + 股票名/代码"
@@ -44,7 +44,7 @@ Read `references/data-validation.md` before populating the Evidence Ledger. Auto
 
 Metadata such as ticker, company, market, date, verdict, and action belongs in the filename, title, Evidence Ledger, or internal workflow notes. Do not expose YAML frontmatter in the final report body.
 
-For new reports, start from `templates/full-report.md` or generate a skeleton with `scripts/new_report.py`. Hand-written skeletons are not acceptable for full Obsidian reports. The generator runs recognition automatically and fails closed. For a manually created or copied canonical skeleton, immediately run `python3 scripts/report_audit.py recognize --report <report.md>`. Placeholder values are valid, but every mandatory decision field label must be recognized without ambiguity. Both paths must rerun recognition before extraction.
+For new reports, start from `templates/full-report.md` or generate a skeleton with `scripts/new_report.py`. Hand-written skeletons are not acceptable for full legacy-format reports. The generator runs recognition automatically and fails closed. For a manually created or copied canonical skeleton, immediately run `python3 scripts/report_audit.py recognize --report <report.md>`. Placeholder values are valid, but every mandatory decision field label must be recognized without ambiguity. Both paths must rerun recognition before extraction.
 
 ## Durable Research Pack
 
@@ -225,7 +225,7 @@ In v3.2 Reader reports (compiled from `research.decision_support`), the rule abo
 - `### Pre-Mortem` is required in module 8: most likely failure path, earliest observable signal, and what action that signal triggers.
 - `### 新资金价格阶梯` is required: floors strictly descending, each tier with position range and operating premise; tiers at or above the target-return price must allocate zero new money, tiers at or above the buy price are capped at `watch_trial_cap`; exactly one row is marked `◀ 价格所在` and at most one row `✓ 可执行`; the table has a `前提状态` column and is followed by the sentence `可执行新资金仓位上限 X%`.
 - The first page (before `## 1.`) must contain the execution-check table with `现金门槛` and `可执行新资金上限`.
-- Required v3.2 coherence sections: `### 现金流升级表` (header contains `触发计数（季度）`, current row `◀ 当前级`), `### ROIC 与增量 ROIC` (with `增量 ROIC`), `#### 利润率 × 退出市盈率（Base IRR）`, and `**决定买点的口径：…**` in cash valuation. Action Triggers header: `| 类别 | 触发条件 | 新资金动作 | 已有仓位 |`; the peers table has an `口径` column.
+- Required v3.2 coherence sections: `### 现金流升级表` (header contains `触发计数（季度）`, current row `◀ 当前级`), `### ROIC 与增量 ROIC` (with `增量 ROIC`), `#### 利润率 × 退出市盈率（Base IRR）`, and a plain-language statement of the actual-FCF cash-return hurdle price in the cash valuation section. Action Triggers header: `| 类别 | 触发条件 | 新资金动作 | 已有仓位 |`; the peers table has an `口径` column.
 - Also required: 现金口径估值, 三口径回本测试, 同业对比 (≥3), 情景经营前提, 正常化桥, CapEx/研发与资产负债表, 5 年趋势, 风险 (≥5, each with probability, damage, leading indicator, action), 流动性, 5 年税后股息, 最小复核清单.
 - Missing any block fails build; deleting any heading fails lint.
 

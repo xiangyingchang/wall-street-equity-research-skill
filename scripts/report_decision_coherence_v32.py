@@ -129,6 +129,11 @@ def _premise_status(spec: dict[str, Any], bundle: dict[str, Any], tier: dict[str
 def _escalation(spec: dict[str, Any], bundle: dict[str, Any], raw: Any) -> dict[str, Any]:
     label = "decision_support.cash_flow_escalation"
     _require(isinstance(raw, dict), f"v3.2 requires {label} (consecutive negative cash-flow levels)")
+    if raw.get("status") == "unknown":
+        pending = _validate_text(raw.get("pending"), f"{label}.pending", minimum=12)
+        _require(not raw.get("counter_ref"), "unknown cash-flow count cannot claim a counter_ref")
+        return {"status": "unknown", "pending": pending, "counter_ref": None, "counter_label": "连续负现金流季度数未披露",
+                "actual": None, "current_level": None, "new_money_cap": "0.00000000", "levels": []}
     counter_ref = str(raw.get("counter_ref", "")).strip()
     counter_label = _validate_text(raw.get("counter_label"), f"{label}.counter_label", minimum=4)
     actual_raw, unit = _lookup(spec, bundle, counter_ref, f"{label}.counter_ref")
@@ -268,7 +273,12 @@ def compile_decision_coherence(spec: dict[str, Any], bundle: dict[str, Any]) -> 
             blockers.append(f"{condition['label']}（未满足）")
         elif condition["status"] == "unknown":
             blockers.append(f"{condition['label']}（待{condition['pending']}）")
-    if cap < tier_max:
+    if escalation.get("status") == "unknown":
+        blockers.append(escalation["pending"])
+        for tier in ladder["tiers"]:
+            tier["executable"] = False
+        executable_index = None
+    elif cap < tier_max:
         blockers.append(f"现金流升级表第 {escalation['current_level']} 级限制新资金上限")
 
     # 3. cross-surface invariants

@@ -172,14 +172,14 @@ def _quarter_rows(bundle: dict[str, Any]) -> list[tuple[str, str, str, str, str]
     currency = bundle["report"].get("currency", "")
     rows: list[tuple[str, str, str, str, str]] = []
     for index in range(4):
-        ids = {key: series[key][index] for key in ("revenue", "operating_income", "eps", "fcf")}
+        ids = {key: series[key][index] for key in ("revenue", "operating_income", "eps")}
         period = str(bundle["facts"][ids["revenue"]].get("period", ""))
         rows.append((
             period,
             _absolute_money(bundle["facts"][ids["revenue"]]["value"], currency),
             _absolute_money(bundle["facts"][ids["operating_income"]]["value"], currency),
             _money(bundle["facts"][ids["eps"]]["value"], currency),
-            _absolute_money(bundle["facts"][ids["fcf"]]["value"], currency),
+            _absolute_money(bundle["facts"][series["fcf"][index]]["value"], currency) if series.get("fcf") else "未披露",
         ))
     return rows
 
@@ -259,9 +259,14 @@ def render_reader_markdown(bundle: dict[str, Any]) -> str:
 
     financial = research["financial_autopsy"]
     ttm = derived["ttm"]
+    cash_period_summary = (
+        f"。现金流另用截至 {ttm['fcf']['period_end']} 的历史年度，不是上述四季 TTM；{ttm['fcf']['label']}为 {_absolute_money(ttm['fcf']['value'], currency)}。"
+        if ttm['fcf'].get('frequency') == 'annual'
+        else f"，TTM FCF 为 {_absolute_money(ttm['fcf']['value'], currency)}。"
+    )
     lines.extend([
         "## 2. 财务剖析", "",
-        f"过去四个季度，{company} 的 TTM EPS 为 {_money(ttm['eps']['value'], currency)}{('（≈' + _money(ttm['eps']['price_currency_value'], price_currency) + '）') if 'price_currency_value' in ttm['eps'] else ''}，TTM 经营利润率为 {_pct_number(ttm['operating_margin']['value_pct'])}，TTM FCF 为 {_absolute_money(ttm['fcf']['value'], currency)}。", "",
+        f"过去四个季度，{company} 的 TTM EPS 为 {_money(ttm['eps']['value'], currency)}{('（≈' + _money(ttm['eps']['price_currency_value'], price_currency) + '）') if 'price_currency_value' in ttm['eps'] else ''}，TTM 经营利润率为 {_pct_number(ttm['operating_margin']['value_pct'])}{cash_period_summary}", "",
         _paragraph(financial["revenue"]), "",
         _paragraph(financial["margin"]), "",
         _paragraph(financial["cash_flow"]), "",

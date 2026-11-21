@@ -8,6 +8,7 @@ from scripts.ledger_portfolio_preflight import portfolio_context_draft
 from scripts.report_compiler_v3 import compile_report_v3
 from scripts.report_pipeline_v3 import build, verify
 from scripts.report_renderer_v3 import render_reader_markdown
+from scripts.report_renderer_v32_sections import cash_valuation_reader
 from scripts.report_spec_v2 import SpecError, _ttm_sum
 from tests.meta_v3_spec import make_spec, write_spec
 
@@ -221,8 +222,31 @@ class FollowupReviewTests(unittest.TestCase):
             build(source, output)
             self.assertEqual(verify(source, output)["status"], "PASS")
 
+
     def test_unchanged_price_keeps_no_buy_conclusions(self):
         bundle = compile_report_v3(make_spec())
         self.assertEqual(bundle["decision"]["new_money_action"], "DO_NOT_BUY")
         self.assertIn("不买入", bundle["research"]["final_verdict"]["hold_equals_buy"]["text"])
         self.assertIn("不买入", bundle["research_graph"]["debate"]["adjudication"]["text"])
+
+
+class ReaderPriceLanguageTests(unittest.TestCase):
+    def test_cash_hurdle_and_price_stages_are_explained(self):
+        bundle = compile_report_v3(make_spec())
+        reader = render_reader_markdown(bundle)
+        self.assertIn("按自由现金流计算，股价需不高于", reader)
+        self.assertIn("这只是现金回报条件，不是自动买入指令。", reader)
+        self.assertIn("安全边际价是试探建仓与分批建仓两档的分界", reader)
+        self.assertIn("现金回报达标价用于判断现金收益是否够高，不能单独触发买入", reader)
+        self.assertNotIn("决定买点的口径", reader)
+
+    def test_conditional_cash_price_names_its_assumption(self):
+        bundle = compile_report_v3(make_spec())
+        bundle["derived"]["cash_valuation"]["normalized_fcf"] = {
+            "yield": "0.05",
+            "confirmation_price": "100",
+            "method": "假设算力预付款已收回，但尚无回收证据",
+        }
+        section = cash_valuation_reader(bundle)
+        self.assertIn("若该假设成立，对应的现金回报达标参考价为 $100.00", section)
+        self.assertIn("计算假设：假设算力预付款已收回，但尚无回收证据", section)

@@ -9,6 +9,7 @@ from typing import Any
 
 from scripts.report_renderer_readable_v212 import (
     _absolute_money,
+    _action_label,
     _claim_text,
     _discount_rate_label,
     _escape,
@@ -134,7 +135,7 @@ def cash_valuation_reader(bundle: dict[str, Any]) -> str:
     reporting = cash["reporting_currency"]
     current = bundle["facts"][bundle["report"]["current_price_fact_id"]]["value"]
     same = price_ccy == reporting
-    header = f"| 口径 | TTM 每股（{reporting}） |" + ("" if same else f" 折合 {price_ccy} |") + " 倍数 | 收益率 | 相对门槛 |"
+    header = f"| 口径 | 每股（{reporting}，期间见口径） |" + ("" if same else f" 折合 {price_ccy} |") + " 倍数 | 收益率 | 相对门槛 |"
     lines = [
         "### 现金口径估值", "",
         f"现价 {_money(current, price_ccy)} × 已发行股本 {float(cash['shares_100m']):,.2f}亿股 = 市值 {_absolute_money(cash['market_cap_price_100m'], price_ccy)}"
@@ -154,18 +155,26 @@ def cash_valuation_reader(bundle: dict[str, Any]) -> str:
     verdict = "已达到" if cash["fcf_passes_hurdle"] else "尚未达到"
     line = f"自由现金流收益率 {_pct_decimal(fcf['yield'])}，{verdict}门槛"
     if confirmation is not None:
-        line += f"；只用当前 TTM 自由现金流满足门槛，股价需不高于 {_money(confirmation, price_ccy)}（现金确认价）"
+        line += (
+            f"；按{_escape(fcf['label'])}计算，现金回报达标价是 {_money(confirmation, price_ccy)}，"
+            f"股价不高于此值时，收益率才达到 {_pct_decimal(cash['target_return'])} 的最低要求"
+            "（模型字段名为“现金确认价”）"
+        )
     lines.extend(["", line + "。"])
+    if fcf.get("frequency") == "annual":
+        lines.extend(["", f"历史年度现金流截止 {fcf['period_end']}；{fcf['disclosure_reason']}。此价格仅为历史现金参考，最新现金流待核实，新资金上限为零。"])
     normalized = cash.get("normalized_fcf")
     if normalized:
         n_confirm = normalized.get("confirmation_price")
-        lines.extend(["", f"正常化自由现金流（{_escape(normalized['method'])}）收益率 {_pct_decimal(normalized['yield'])}"
-                      + (f"，对应确认价 {_money(n_confirm, price_ccy)}" if n_confirm else "，为负") + "。"])
+        method = _escape(normalized["method"]).rstrip("。；; ")
+        lines.extend(["", f"条件口径下的自由现金流收益率为 {_pct_decimal(normalized['yield'])}"
+                      + (f"；若该假设成立，对应的现金回报达标参考价为 {_money(n_confirm, price_ccy)}" if n_confirm else "，为负")
+                      + f"。计算假设：{method}。"])
     decisive = cash.get("decisive")
     if decisive:
         verdict = "已过" if decisive["passes_hurdle"] else "未过"
         confirm = _money(decisive["confirmation_price"], price_ccy) if decisive.get("confirmation_price") else "无（为负）"
-        lines.extend(["", f"**决定买点的口径：{_escape(decisive['label'])}**（收益率 {_pct_decimal(decisive['yield'])}，{verdict}门槛；确认价 {confirm}）。{_escape(decisive['reason'])}"])
+        lines.extend(["", f"**现金回报采用的实际口径：{_escape(decisive['label'])}**（收益率 {_pct_decimal(decisive['yield'])}，{verdict}门槛；达标股价 {confirm}）。{_escape(decisive['reason'])}"])
     lines.extend(["", _paragraph(_support(bundle)["valuation"]["cash_interpretation"]), ""])
     return "\n".join(lines)
 
@@ -313,7 +322,8 @@ def ladder_reader(bundle: dict[str, Any]) -> str:
         "### 新资金价格阶梯", "",
         f"仓位按“占目标仓位的比例”表述；Base 目标回报价 {_money(ladder['target_return_price'], currency)}、安全边际价 {_money(ladder['buy_price'], currency)}。"
         f"价格只是必要条件：每档还必须满足经营前提，前提未满足或待验证时自动退回上一档。"
-        f"决定买点的现金口径是“{_escape(decisive['label'])}”，其确认价 {_money(decisive['confirmation_price'], currency) if decisive.get('confirmation_price') else '无（为负）'}。", "",
+        f"安全边际价是试探建仓与分批建仓两档的分界；按{_escape(decisive['label'])}达到现金回报门槛的股价为 {_money(decisive['confirmation_price'], currency) if decisive.get('confirmation_price') else '无（为负）'}。"
+        "现金回报达标价用于判断现金收益是否够高，不能单独触发买入；仓位仍须满足下表经营条件。", "",
         "| 价格区间 | 动作 | 新资金仓位（占目标仓位） | 经营前提 | 前提状态 | 当前 |", "|---|---|---:|---|---|:---:|",
     ]
     for tier in ladder["tiers"]:
@@ -349,6 +359,11 @@ def ladder_reader(bundle: dict[str, Any]) -> str:
 
 def escalation_reader(bundle: dict[str, Any]) -> str:
     escalation = bundle["decision_coherence"]["escalation"]
+    if escalation.get("status") == "unknown":
+        return "\n".join(["### 现金流升级表", "", f"连续负现金流季度数未知：{escalation['pending']}。不得将未披露计数记为零。", "",
+                         "| 级别 | 触发计数（季度） | 新资金上限（占目标仓位） | 动作 | 当前 |", "|---|---|---:|---|---|",
+                         f"| 待核实 | 未知 | 0% | 等最新实际现金流，已有仓位{_action_label(bundle['decision']['existing_position_action'])} | ◀ 当前级 |",
+                         "| 恢复验证 | 等披露后实际计数 | 0% | 补齐证据并重新编译决策 | |", ""])
     lines = [
         "### 现金流升级表", "",
         f"按“{escalation['counter_label']}”逐级收紧新资金；当前为 {escalation['actual']} 个季度。最高一级与投资逻辑破坏条件使用同一阈值。", "",

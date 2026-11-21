@@ -9,7 +9,8 @@ import unittest
 from scripts.report_compiler_v3 import compile_report_v3
 from scripts.report_lint import lint_text
 from scripts.report_pipeline_v3 import _calculation_check, build, verify
-from scripts.report_spec_v2 import SpecError
+from scripts.report_renderer_v3 import render_reader_markdown
+from scripts.report_spec_v2 import SpecError, _portfolio_gate
 from tests.meta_v3_spec import make_spec, write_spec
 
 
@@ -272,6 +273,85 @@ class ResearchGraphV3Tests(unittest.TestCase):
         spec["portfolio_context"].update({"position_status": "not_held", "confidence": "high"})
         absent = compile_report_v3(spec)
         self.assertEqual(absent["decision"]["existing_position_action"], "NOT_APPLICABLE")
+
+    def test_confirmed_holding_without_current_weight_requires_review(self):
+        spec = make_spec()
+        spec["portfolio_context"].update({"position_status": "held", "confidence": "medium"})
+
+        action, reason, context = _portfolio_gate(spec, "HOLD", "valuation candidate is hold")
+
+        self.assertEqual(action, "REVIEW")
+        self.assertIn("current portfolio weight is unknown", reason)
+        self.assertEqual(context["gate"], "blocked_missing_current_weight")
+        self.assertFalse(context["complete"])
+
+        reader = render_reader_markdown(compile_report_v3(spec))
+        self.assertIn("不能直接执行调仓", reader)
+
+    def test_reader_distinguishes_stock_pool_weight_from_missing_net_asset_weight(self):
+        spec = make_spec()
+        spec["portfolio_context"].update({
+            "position_status": "held",
+            "confidence": "medium",
+            "stock_pool_weight": "0.4226",
+            "stock_pool_weight_as_of": "2026-10-21T20:00:00+00:00",
+            "stock_pool_weight_quote_range_start": "2026-10-21",
+            "stock_pool_weight_quote_range_end": "2026-10-22",
+            "stock_pool_weight_fx_as_of": "2026-10-22",
+            "stock_pool_weight_source": "Yahoo Finance 与 Sina 交叉核对",
+        })
+        spec["research"]["positioning"]["portfolio_constraints"]["text"] = (
+            "组合净资产未核实，因此当前权重无法核算。"
+        )
+
+        bundle = compile_report_v3(spec)
+        reader = render_reader_markdown(bundle)
+
+        self.assertEqual(bundle["decision"]["existing_position_action"], "REVIEW")
+        self.assertIsNone(bundle["decision"]["portfolio_context"]["current_weight"])
+        self.assertEqual(bundle["decision"]["portfolio_context"]["stock_pool_weight"], "0.4226")
+        self.assertIn("这只股票占全部股票市值的 42.26%（股票报价日期：2026-10-21 至 2026-10-22；汇率日期：2026-10-22）", reader)
+        self.assertIn("不含现金、期权、加密资产和负债", reader)
+        self.assertIn("该股票占全部资产净值的比例和目标仓位都未核实", reader)
+        self.assertIn("占全部资产净值的比例无法核算", reader)
+        self.assertNotIn("当前权重无法核算", reader)
+
+    def test_reader_surfaces_exact_stale_components_from_ledger(self):
+        spec = make_spec()
+        spec["portfolio_context"].update({
+            "position_status": "held",
+            "confidence": "medium",
+            "stock_pool_weight": "0.4235",
+            "net_assets_as_of": None,
+            "net_assets_freshness_status": "stale",
+            "constraints": (
+                "按最新双源核对的股价计算，腾讯控股占全部股票市值 42.35%；这个比例只比较股票，"
+                "不含现金、期权、加密资产和负债。腾讯控股占全部资产净值的比例无法计算（UNAVAILABLE），原因："
+                "现金数据已过期（日期 2026-07-25）；负债数据已过期（日期 2025-02-16）。"
+                "请在 Ledger 更新列出的数据后重跑；目标权重也需单独确认。"
+                "当前组合动作为复核（REVIEW），不能直接执行加仓或减仓。"
+            ),
+        })
+
+        bundle = compile_report_v3(spec)
+        reader = render_reader_markdown(bundle)
+
+        self.assertIsNone(bundle["portfolio_context"]["net_assets_as_of"])
+        self.assertIn("占全部资产净值的比例无法计算（UNAVAILABLE）", reader)
+        self.assertIn("现金数据已过期（日期 2026-07-25）", reader)
+        self.assertIn("负债数据已过期（日期 2025-02-16）", reader)
+        self.assertIn("请在 Ledger 更新列出的数据后重跑", reader)
+        self.assertIn("当前组合动作为复核（REVIEW）", reader)
+
+    def test_confirmed_holding_can_still_exit_on_thesis_break_without_weight(self):
+        spec = make_spec()
+        spec["portfolio_context"].update({"position_status": "held", "confidence": "medium"})
+
+        action, _reason, context = _portfolio_gate(spec, "SELL", "thesis-break policy triggered")
+
+        self.assertEqual(action, "SELL")
+        self.assertEqual(context["gate"], "passed")
+        self.assertTrue(context["complete"])
 
     def test_thesis_break_blocks_new_money_before_price_rules(self):
         spec = make_spec()

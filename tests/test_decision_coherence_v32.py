@@ -48,7 +48,7 @@ class DecisionCoherenceV32Tests(unittest.TestCase):
         self.assertEqual(len(grid["columns"]), 5)
 
     def test_reader_surfaces(self):
-        for marker in ("### 现金流升级表", "### ROIC 与增量 ROIC", "利润率 × 退出市盈率", "可执行新资金上限", "现金门槛", "前提状态", "决定买点的口径"):
+        for marker in ("### 现金流升级表", "### ROIC 与增量 ROIC", "利润率 × 退出市盈率", "可执行新资金上限", "现金门槛", "前提状态", "现金回报采用的实际口径"):
             self.assertIn(marker, self.reader)
         self.assertEqual(self.reader.count("◀ 价格所在"), 1)
 

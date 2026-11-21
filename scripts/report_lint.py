@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lint an Obsidian equity research report for structure and content discipline."""
+"""Lint an equity research report for structure and content discipline."""
 
 from __future__ import annotations
 

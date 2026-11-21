@@ -2,50 +2,16 @@
 
 This skill was distilled from the user's Obsidian stock research method and prior reports.
 
-## Authority Docs
+## 报告与历史基线
 
-- `/Users/haoshifasheng/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/股票/_方法论/股票脱水质检Prompt-优化版.md`
-- `/Users/haoshifasheng/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/股票/_方法论/2026 资产配置备忘录 (V4).md`
-
-The first file is the current authority for the stock due-diligence prompt. The second file is now a historical allocation memo; use only its durable disciplines, not its holdings, allocation percentages, or dated execution TODOs.
-
-## Obsidian Stock Vault Default
-
-When `cwd` is `/Users/haoshifasheng/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian` and the user says "跑一下 + 股票名/代码", the default output is a full Obsidian Markdown report, not a chat-only quick take.
-
-Use this rule unless the user explicitly says "快评", "简单说下", "不用建文档", "先别写文件", or equivalent.
-
-Default save path:
-
-```text
-股票/<公司名>/<TICKER>-<公司名>-华尔街式分析报告-YYYY-MM-DD.md
-```
-
-For dual-listed companies, prefer the user-requested market in the filename. Add the other listing inside Evidence Ledger and opportunity-cost comparison when it affects valuation.
-
-## Prior Report Locations
-
-Search these folders for examples and continuity:
-
-- `/Users/haoshifasheng/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/股票`
-- `/Users/haoshifasheng/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/股票/_报告`
-- `/Users/haoshifasheng/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/股票/_汇总`
-
-Useful search patterns:
-
-```bash
-rg -n "First-Page Verdict|Evidence Ledger|10 年回本|持有 = 买入|最终评级|安全买入区间" 股票 -S
-rg --files 股票 | rg '华尔街式分析报告'
-```
-
-Before writing a new report, inspect at least one recent comparable report for style and structure, such as a Hong Kong dividend/China asset report for HK stocks or a US tech report for US stocks. Do not copy wording; copy the artifact contract.
+默认交付和历史报告检索均从 Notion 投研报告库开始。见 [Notion 交付](notion-delivery.md)。新一期使用同一标的和市场的最新可取得基线，注明日期、来源和缺项。双重上市时优先用户指定的市场，另一柜台在影响估值时列入对照。
 
 ## A-Share Data Preflight
 
 For A-share reports, run the helper first when network access is available:
 
 ```bash
-python3 /Users/haoshifasheng/.agents/skills/wall-street-equity-research/scripts/a_share_prefetch.py 600900 --peers 600905 600025 600886 600674 600795 601985
+python3 /Users/haoshifasheng/.codex/skills/wall-street-equity-research/scripts/a_share_prefetch.py 600900 --peers 600905 600025 600886 600674 600795 601985
 ```
 
 Use the JSON output to seed:
@@ -65,6 +31,6 @@ Known limitations:
 
 The active installed copy lives at:
 
-- `/Users/haoshifasheng/.agents/skills/wall-street-equity-research/SKILL.md`
+- `/Users/haoshifasheng/.codex/skills/wall-street-equity-research/SKILL.md`
 
 The Git repository remains the editing authority; sync the installed copy only after tests pass.

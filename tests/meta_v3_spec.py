@@ -298,7 +298,7 @@ def add_v32_decision_support(spec: dict[str, Any]) -> None:
     fcf_row = "/derived/cash_valuation/fcf"
     spec["decision_support"] = {
         "valuation": {
-            "cash_interpretation": tnode("自由现金流收益率只有 {fcf_yield}，远低于门槛 {target}；只有回到现金确认价 {confirm} 附近，现金口径才单独支持买入。",
+            "cash_interpretation": tnode("自由现金流收益率只有 {fcf_yield}，低于最低要求 {target}；按实际自由现金流达到门槛的股价为 {confirm}。这个价格只表示现金收益达到要求，不是自动买入指令。",
                                          {"fcf_yield": {"path": f"{fcf_row}/yield", "format": "percent"}, "target": {"path": "/target_return", "format": "percent"},
                                           "confirm": {"path": "/derived/cash_valuation/cash_confirmation_price", "format": "price"}},
                                          [ev(f"BUNDLE:{fcf_row}/yield"), ev("BUNDLE:/target_return")], "现金口径比盈利口径更严，资本开支回落前不能用利润倍数替代。"),

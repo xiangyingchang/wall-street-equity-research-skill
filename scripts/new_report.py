@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Create a new Obsidian equity report from the canonical template."""
+"""Create a new equity report from the canonical template."""
 
 from __future__ import annotations
 
 import argparse
+import json
 from datetime import date
 import os
 from pathlib import Path
@@ -146,6 +147,7 @@ def _write_transaction(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Create a report skeleton from templates/full-report.md.")
+    parser.add_argument("--format", choices=("legacy", "v3-spec"), default="legacy")
     parser.add_argument("--ticker", required=True)
     parser.add_argument("--company", required=True)
     parser.add_argument("--market", required=True)
@@ -190,6 +192,18 @@ def main() -> int:
         reject_symlink(args.out, "report")
         if args.out.exists() and not args.force:
             raise StateConflict(f"output exists, pass --force to overwrite: {args.out}")
+
+        if args.format == "v3-spec":
+            if args.force or args.research_pack is not None or args.previous_report is not None:
+                raise InputError("v3-spec never overwrites; initialize its evidence pack after research using evidence_pack_v3.py")
+            skeleton = json.loads((SKILL_DIR / "templates/report-spec-v3.2.skeleton.json").read_text())
+            skeleton["report"].update(ticker=args.ticker, company=args.company, as_of=args.date)
+            payload = (json.dumps(skeleton, ensure_ascii=False, indent=2) + "\n").encode()
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            with args.out.open("xb") as handle:
+                handle.write(payload)
+            print(args.out)
+            return 0
 
         pack_status = None
         pack_path = None

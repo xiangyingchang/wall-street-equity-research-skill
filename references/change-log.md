@@ -1,10 +1,61 @@
 # Wall Street Equity Research Skill Change Log
 
+## P0 staged — 2026-11-06
+
+- 对应 PRD-skill-optimization-p0.md；生产骨架/汇总预检、v3 证据包适配、顺序断点启动器。
+- 保留事实缺失阻断、完整研究视角、原编译与独立 lint。预期收益仅引用复盘第4节，待对照实测。
+- 验证结果见 /Users/haoshifasheng/skill-optimize-p0-20261106.md。
+
+## v3.2 staged — 2026-10-22 权重阻塞原因与美股盘前报价
+
+- 目的：避免把过期现金/负债数据用于总资产权重，并避免报价源一致但时间落后的收盘价覆盖更新的双源成交价。
+- 改动：预检在总资产比例留空时列出具体过期资产及数据日期；新浪美股按交易时间取价，Nasdaq 支持带 ET 时间的交易记录；选择两家报价一致且共同观测时间最新的一组；限制行情请求并发，并对 Nasdaq 短暂网络/服务错误重试一次。
+- 验证：全量 324/324 单测 PASS；`py_compile`、report lint 自检与 fixtures、financial_rigor、report_audit 自检 PASS。生产只读预检确认腾讯持仓 4,642 股；13:17Z 成功双源核验股票池占比 42.21%。13:20Z 重试未能为全部股票取得一致的双源报价，工具安全地返回 `UNAVAILABLE`；Spec 保留最近一次成功核验值及其日期范围。现金快照日期 2026-07-25、负债快照日期 2025-02-16，故总资产权重明确标为 `UNAVAILABLE`，组合动作保持 `REVIEW`。腾讯报告 build/verify 与 lint PASS；`data_quality` 因过期资产数据按预期为 REVIEW。
+- 风险边界：现金、负债或其他 Ledger 资产快照过期时仍不计算总资产比例，不写回或推测财务数据。
+
 ## 变更目的约定
 
 所有变更的目的，都是得出更加准确、科学的研究报告，帮助用户理解风险、收益和行动条件，指导实际投资。不要为了完善而完善；始终围绕投资判断保持目标意识。
 
 每项变更先说明要减少哪类研究错误、改善哪项投资判断，再用相应证据或测试验证。不能提高研究准确性、可验证性或决策清晰度的改动，不因增加功能、检查或流程而推进。事实、解释与假设分开；结论不确定时明确说明，不制造确定性。
+
+## v3.2 staged — 2026-10-07 年度现金流适配
+
+- 目的：消除“无四季现金流就停止研究”与“伪造季度才能生成”两类错误；真实年度基准仅供历史估值参考。
+- 方案：明确年度来源与截止日；未知现金流计数不设零；新资金上限零、现有仓位复核；Renderer 明示历史年度。
+- 验证：292/292 单测 PASS（新增 7 项年度基准、未知计数、深折价不能开放买入、独立 SELL、未来/错年/错口径和旧 IRR 未披露回归）；语法、3 项自检、fixtures、V2.1.2/V3 原 CI 端到端 build/verify/Reader 断言、git diff --check PASS。
+- 最终复查补齐 FY 年份与截止日一致、年度事实必须为 FCF、历史年度与四季 TTM 分句；保留独立 SELL 优先及审计追踪。未 commit/push/install。
+- 经验：数据披露频率不同应适配真实来源与标签；完整报告可以明确资料缺口并限制行动，不能以编译器通过为理由捏造季度或把未知计数填零。缺失旧 IRR 用 null+unverified，不能假填 0。
+
+## v3.2 staged — 2026-10-22 价格线直白表达
+
+- 目的：避免把试探区、安全边际边界、实际现金流回报门槛和假设性现金流价格混成一条买入线。
+- 改动：Reader 直接说明已披露自由现金流达到最低收益要求所对应的股价；标出它不构成自动买入指令；把条件现金价写成假设参考；说明安全边际价在阶梯中的位置。
+- 测试：新增 Reader 回归，检查现金回报门槛、价格档位和条件价格的假设说明。
+- 验证：295/295 单测 PASS；Python 语法、3 项自检和 fixtures PASS；V2/V3 端到端 build、verify、Reader 断言 PASS；腾讯 0700 build、verify、lint PASS；`git diff --check` PASS。
+- 仅保留本地工作树改动，未提交、推送或安装。
+
+## v3.2 staged — 2026-10-22 Ledger 只读认证
+
+- 目的：消除报告工具依赖短期登录令牌、默认连接 localhost 导致的重复认证失败；避免报价过期时把已核实持仓降成未知。
+- 改动：预检优先读取 macOS Keychain 的只读研究令牌并请求 `/api/research/holdings`；临时 Ledger session 只作回退；默认使用生产 API、30 秒超时并对临时网络失败重试一次。持仓存在与价格/权重可用状态分开记录。编译器在已确认持仓但缺少当前权重时强制标记“复核”，保留独立的逻辑破坏退出规则；Reader 说明缺失权重会阻止直接调仓。
+- 验证：专项单测 19/19；完整单测 302/302；py_compile、自检、fixtures、V2/V3 build+verify、Reader lint、Skill quick_validate 和 `git diff --check` 全部通过。清空 `LEDGER_AUTH_TOKEN` 与 API URL 环境变量后，真实腾讯只读预检通过 HTTP 200，确认 4,642 股；保存价格时间为 2026-09-06，正确标记过期，当前权重保持空值。腾讯修正版 v3.2 报告通过 verify 和 lint。
+- 安全边界：不把 token 写入仓库、命令行参数、输出或报告；不改 Ledger 生产服务配置。
+
+## v3.2 staged — 2026-10-22 持仓权重分母与行情备源
+
+- 原因：Ledger 研究令牌能核实持仓股数，不能读总资产净值；保存股价也会过期。报告因此无法算总资产权重。
+- 改动：另算“单只股票市值 ÷ 全部活跃股票市值”，每只股票要求两家带有效报价时间或交易日期的独立来源，差异不超过 1%；支持 Yahoo、Nasdaq、腾讯、新浪互为备源，拒绝过时报价和未来时间戳。人民币换算从 Frankfurter v2、open.er-api、currency-api 三家每日汇率中择任意两家交叉验证；JSON 接口对短暂断连重试一次。Spec/Reader 把该股票池比例与总资产权重分开，显示行情日期范围和汇率日期；缺少净资产或目标仓位时仍为 REVIEW。
+- 测试：新增报价解析、Yahoo 故障转用其他双源、过期/未来报价、汇率差异与 Reader 分母文案回归。
+- 安全边界：不扩大研究令牌权限，不读取或改写 Ledger 生产服务；`current_weight` 仍只表示占总资产净值的比例。
+
+## v3.2 staged — 2026-10-22 权重缺失文案消歧
+
+- 原因：当报告已给出股票池比例、但总资产净值仍不可读时，旧句“当前权重无法核算”容易被理解为连股票仓位比例也没有。
+- 改动：改用“占全部资产的比例未核实”；Reader 对旧模板中的常见模糊表述作确定性替换，股票池比例和总资产比例仍各用各的分母。
+- 测试：Reader 回归覆盖股票池比例已知、总资产比例未知且输入旧模糊措辞的情况。
+- 验证：316/316 单测 PASS；py_compile、自检、fixtures、V2.1.2/V3.2 build+verify、腾讯报告 verify/lint、`git diff --check` PASS；安装版 316/316 单测与腾讯报告 verify/lint PASS。
+- 状态：只更新本地技能目录和报告文件，未提交、推送或修改 Ledger 生产接口。
 
 ## v3.2 follow-up fixes — 2026-10-06
 
@@ -1146,3 +1197,20 @@ Price Discipline v2 的计算契约已经更新，但 canonical template 仍把 
 - `python3 -m unittest discover -s tests`：29/29 PASS
 - Meta 与迪士尼当前报告 lint：PASS
 - `git diff --check`：PASS
+
+- 2026-10-07 Reader 收尾 staged：首页历史价只供参考，最新现金未核验不能据此建仓；Action Matrix 自动附最新现金验证条件。专项与全量回归待重跑。
+
+- 2026-10-07 回本 staged：三原则回本读取决定口径的所需增长；Base EPS 增长仅对照现金增长要求，未知现金不能标 PASS。
+
+- 2026-10-07 Reader 最终验收：现金回本决定口径与未知现金约束 55 项专项 PASS；最终 293/293 单测、语法、自检、fixtures、原 V2/V3 CI 端到端全部 PASS。实际日志与源码范围另存携程附件 source-adaptation-verification.md。
+
+- 2026-11-06 P0 补齐 staged：保留前序生产骨架、证据适配器和顺序队列；按用户补充增加 Terra/high 与 Luna/max 窄任务模型路由及实际启动器，Sol/medium 保留投资判断和最终裁决。同输入对照与完整 CI 待验收；低档输出只作候选。
+
+## 3.3.0 — 2026-11-06
+
+- Skill minor version covers the P0 workflow optimization and external run directory / Reader-only Vault delivery. Compiler/Verification remains 3.2.0; existing Spec schema and report bytes are unchanged.
+
+## 3.4.0 — 2026-11-21
+
+- 将报告交付切换到 Notion 投研报告库，正文回读后记录回执并清理本轮中间产物。
+- 队列完成本地检查后等待原生 Notion MCP 交付。研究方法、证据契约和编译器版本沿用原版本。

@@ -178,12 +178,45 @@ def _fx_rate(spec: dict[str, Any]) -> Decimal:
     return fx["rate"] if fx else D(1)
 
 
+def _annual_cash_basis(spec: dict[str, Any]) -> dict[str, Any] | None:
+    raw = spec.get("cash_flow_basis")
+    if raw is None:
+        return None
+    _require(isinstance(raw, dict) and raw.get("frequency") == "annual", "cash_flow_basis.frequency must be annual")
+    _require(spec.get("quarterly_series", {}).get("fcf") == [], "annual cash_flow_basis requires quarterly_series.fcf=[]; never fabricate quarters")
+    fact_id = str(raw.get("fact_id", ""))
+    fact = _fact(spec, fact_id)
+    metric = str(fact.get("metric", "")).lower()
+    _require("FCF" in fact_id.upper() or metric in {"fcf", "free_cash_flow", "free cash flow", "自由现金流"},
+             "annual cash-flow Fact must identify free cash flow (OCF minus CapEx), not revenue/profit")
+    period = str(fact.get("period", ""))
+    _require(re.fullmatch(r"FY\d{4}", period) is not None, "annual cash-flow Fact must have a FYyyyy period")
+    try:
+        end = date.fromisoformat(str(raw.get("period_end", "")))
+        cutoff = date.fromisoformat(str(spec["report"]["as_of"]))
+    except (ValueError, KeyError) as exc:
+        raise SpecError("annual cash-flow requires ISO period_end and report.as_of") from exc
+    _require(str(fact.get("period_end", "")) == end.isoformat(), "annual cash-flow Fact period_end must match cash_flow_basis")
+    _require(int(period[2:]) == end.year, "annual cash-flow FY year must equal period_end year")
+    _require(end <= cutoff, "annual cash-flow ends after report.as_of")
+    reason = str(raw.get("reason", "")).strip()
+    _require(len(reason) >= 12, "annual cash-flow requires a concrete disclosure reason")
+    escalation = spec.get("decision_support", {}).get("cash_flow_escalation", {})
+    _require(escalation.get("status") == "unknown", "annual historical cash-flow requires unknown latest cash-flow escalation")
+    return {"frequency": "annual", "fact_id": fact_id, "period_end": end.isoformat(), "period": period,
+            "label": f"{period} 历史年度自由现金流", "reason": reason, "value": fact["value"], "unit": fact["unit"]}
+
+
 def _compile_ttm(spec: dict[str, Any]) -> dict[str, Any]:
     series = spec.get("quarterly_series", {})
     required = {"eps", "revenue", "operating_income", "fcf"}
     _require(required <= set(series), "quarterly_series requires eps/revenue/operating_income/fcf")
+    annual = _annual_cash_basis(spec)
     units: dict[str, str] = {}
     for name in ("eps", "revenue", "operating_income", "fcf"):
+        if name == "fcf" and annual:
+            units[name] = annual["unit"]
+            continue
         ids = series[name]
         _require(isinstance(ids, list) and len(ids) == 4, f"{name} requires four fact IDs")
         observed = {str(_fact(spec, fact_id).get("unit", "")).strip() for fact_id in ids}
@@ -221,7 +254,7 @@ def _compile_ttm(spec: dict[str, Any]) -> dict[str, Any]:
     oi = components("operating_income")
     margin = ttm_derive({"id": "DERIVED-TTM-OP-MARGIN", "metric": "TTM operating margin", "mode": "ratio", "numerator": oi, "denominator": rev})
     margin["unit"] = "ratio"
-    fcf = ttm_derive({"id": "DERIVED-TTM-FCF", "metric": "TTM FCF", "mode": "sum", "components": components("fcf")})
+    fcf = dict(annual) if annual else ttm_derive({"id": "DERIVED-TTM-FCF", "metric": "TTM FCF", "mode": "sum", "components": components("fcf")})
     fcf["unit"] = units["fcf"]
     return {"eps": eps, "operating_margin": margin, "fcf": fcf}
 
@@ -329,13 +362,18 @@ def _compile_cash_valuation(spec: dict[str, Any], current_price: Decimal, target
                 "payback_required_growth": {r: _safe_payback(current_price, per_share_price, years, dec(r)) for r in rates},
             })
         fcf_ids = cfg.get("fcf_fact_ids", spec.get("quarterly_series", {}).get("fcf"))
-        fcf_total, fcf_unit = _ttm_sum(spec, fcf_ids, "cash_valuation.fcf")
+        annual = _annual_cash_basis(spec)
+        _require(not annual or "fcf_fact_ids" not in cfg, "annual cash-flow cannot override facts with a quarterly TTM")
+        fcf_total, fcf_unit = ((dec(annual["value"]), annual["unit"]) if annual else _ttm_sum(spec, fcf_ids, "cash_valuation.fcf"))
         _require(fcf_unit == f"{reporting} bn/10", f"cash_valuation FCF unit must be {reporting} bn/10")
         fcf_ps = fcf_total / shares
         fcf_ps_price = fcf_ps * rate
         fcf_row = {
-            "basis_id": "fcf", "label": str(cfg.get("fcf_label", "自由现金流")), "kind": "cash",
-            "ttm_total_reporting": q(fcf_total),
+            "basis_id": "fcf", "label": annual["label"] if annual else str(cfg.get("fcf_label", "自由现金流")), "kind": "cash",
+            "frequency": "annual" if annual else "ttm", "period_end": annual["period_end"] if annual else None,
+            "disclosure_reason": annual["reason"] if annual else None,
+            "ttm_total_reporting": q(fcf_total),  # compatibility pointer; frequency owns the actual period
+            "total_reporting": q(fcf_total),
             "per_share_reporting": q(fcf_ps), "per_share_price": q(fcf_ps_price),
             "multiple": q(current_price / fcf_ps_price) if fcf_ps_price > 0 else None,
             "yield": q(fcf_ps_price / current_price),
@@ -682,11 +720,18 @@ def _portfolio_gate(spec: dict[str, Any], candidate: str, reason: str) -> tuple[
 
     current_weight = dec(raw["current_weight"]) if raw.get("current_weight") is not None else None
     target_weight = dec(raw["target_weight"]) if raw.get("target_weight") is not None else None
-    for name, value in (("current_weight", current_weight), ("target_weight", target_weight)):
+    stock_pool_weight = dec(raw["stock_pool_weight"]) if raw.get("stock_pool_weight") is not None else None
+    for name, value in (
+        ("current_weight", current_weight),
+        ("target_weight", target_weight),
+        ("stock_pool_weight", stock_pool_weight),
+    ):
         if value is not None:
             _require(D(0) <= value <= D(1), f"portfolio_context.{name} must be between 0 and 1")
 
-    complete = status == "not_held" or (status == "held" and current_weight is not None)
+    complete = status == "not_held" or (
+        status == "held" and (current_weight is not None or candidate == "SELL")
+    )
     gate = "passed"
     action = candidate
     gated_reason = reason
@@ -699,11 +744,21 @@ def _portfolio_gate(spec: dict[str, Any], candidate: str, reason: str) -> tuple[
         gated_reason = f"portfolio context unknown; research candidate is {candidate}"
         gate = "blocked_missing_position_status"
         complete = False
+    elif status == "held" and current_weight is None and candidate != "SELL":
+        action = "REVIEW"
+        gated_reason = f"current portfolio weight is unknown; research candidate is {candidate}"
+        gate = "blocked_missing_current_weight"
+        complete = False
     elif candidate == "REDUCE" and (current_weight is None or target_weight is None or target_weight >= current_weight):
         action = "REVIEW"
         gated_reason = "portfolio weights do not support an executable reduce instruction"
         gate = "blocked_missing_reduce_target"
         complete = False
+
+    def optional_text(field: str) -> str | None:
+        value = raw.get(field)
+        text = str(value).strip() if value is not None else ""
+        return text or None
 
     context = {
         "required": required,
@@ -712,7 +767,15 @@ def _portfolio_gate(spec: dict[str, Any], candidate: str, reason: str) -> tuple[
         "source": str(raw["source"]),
         "confidence": str(raw["confidence"]).lower(),
         "current_weight": q(current_weight) if current_weight is not None else None,
+        "net_assets_as_of": optional_text("net_assets_as_of"),
+        "net_assets_freshness_status": optional_text("net_assets_freshness_status"),
         "target_weight": q(target_weight) if target_weight is not None else None,
+        "stock_pool_weight": q(stock_pool_weight) if stock_pool_weight is not None else None,
+        "stock_pool_weight_as_of": optional_text("stock_pool_weight_as_of"),
+        "stock_pool_weight_quote_range_start": optional_text("stock_pool_weight_quote_range_start"),
+        "stock_pool_weight_quote_range_end": optional_text("stock_pool_weight_quote_range_end"),
+        "stock_pool_weight_fx_as_of": optional_text("stock_pool_weight_fx_as_of"),
+        "stock_pool_weight_source": optional_text("stock_pool_weight_source"),
         "tax_friction": str(raw.get("tax_friction", "unknown")),
         "constraints": str(raw.get("constraints", "")),
         "complete": complete,
@@ -803,6 +866,12 @@ def _evaluate_policy(spec: dict[str, Any], bundle: dict[str, Any]) -> dict[str, 
         candidate = "REVIEW"
         candidate_reason = "decision changes under configured robustness shock"
 
+    cash_unknown = spec.get("decision_support", {}).get("cash_flow_escalation", {}).get("status") == "unknown"
+    if cash_unknown and not thesis_broken:
+        if new_money == "BUY":
+            new_money = "WATCH"
+        candidate = "REVIEW"
+        candidate_reason = "latest cash-flow evidence unknown; historical cash basis cannot authorize buying"
     existing, reason, portfolio = _portfolio_gate(spec, candidate, candidate_reason)
 
     return {
