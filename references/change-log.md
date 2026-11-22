@@ -1214,3 +1214,9 @@ Price Discipline v2 的计算契约已经更新，但 canonical template 仍把 
 
 - 将报告交付切换到 Notion 投研报告库，正文回读后记录回执并清理本轮中间产物。
 - 队列完成本地检查后等待原生 Notion MCP 交付。研究方法、证据契约和编译器版本沿用原版本。
+
+## Evidence checks before publishing
+
+- Resolve available evidence and calculation checks before reporting an action. Name any outstanding decision input.
+- Distinguish timed dividend IRR from a terminal payout approximation. Use bank-specific evidence for distribution capacity.
+- Use the authorized Notion asset register for current positions and document the weight basis. Keep the earlier Ledger workflow as historical context.

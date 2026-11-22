@@ -138,3 +138,18 @@ Requirements:
 - Bound quote-provider concurrency and retry transient Nasdaq network/server failures once so a rate-limited request does not invalidate every holding in the portfolio.
 
 Acceptance: parser regressions cover Sina pre-market and prior-close observations plus Nasdaq timestamps with and without a time; portfolio diagnostics name stale cash and liability dates; pair-selection test prefers the latest agreeing pair; transient Nasdaq failures retry once; full report-tool tests pass.
+
+## Evidence checks before publishing
+
+Resolve questions answerable from available disclosures, market data, portfolio records or
+calculations before publishing. Show the result and the action it supports. For unresolved
+questions, name the missing evidence and the decision it constrains. Preserve the compiler's
+decision gates and distinguish a focused check from a full rebuild.
+
+Acceptance: the skill distinguishes timed cash-flow IRR from an end-of-period annualized
+return, requires bank-specific evidence of distribution capacity, and keeps missing target
+weights from producing invented trade sizes. Published guidance contains no private sources
+or real account examples.
+
+Implementation: add a pre-publication check to the skill and document the portfolio source
+through a portable workflow. Verify both existing compiler paths and inspect the staged diff.
