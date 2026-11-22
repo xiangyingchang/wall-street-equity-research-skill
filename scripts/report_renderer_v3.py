@@ -243,8 +243,10 @@ def _price_distance(current: Any, target: Any) -> str:
     if current_value <= 0:
         return "无法计算"
     change = target_value / current_value - 1
-    if change >= 0:
-        return f"该线高于现价 {abs(change) * 100:.1f}%"
+    if change == 0:
+        return "与参考股价相同"
+    if change > 0:
+        return f"高于参考股价 {change * 100:.1f}%"
     return f"需再跌 {abs(change) * 100:.1f}%"
 
 
@@ -347,6 +349,9 @@ def _decision_page(bundle: dict[str, Any]) -> str:
     current_price = current_fact["value"]
     currency = _price_currency(report)
     return_years = report["return_years"]
+    prices = base["prices"]
+    target_return = _pct_decimal(decision["valuation"]["target_return"])
+    safety_margin = _pct_decimal(prices["safety_margin"])
     candidate = decision["existing_position_candidate_action"]
     executable = decision["existing_position_action"]
     portfolio_limit = _portfolio_limit(bundle)
@@ -359,8 +364,15 @@ def _decision_page(bundle: dict[str, Any]) -> str:
         "## 一页结论", "",
         "### 当前决策", "",
         "| 对象 | 研究候选 | 可执行动作 | 依据与限制 |", "|---|---|---|---|",
-        f"| 新资金 | {_action(decision['new_money_action'])} | **{_action(decision['new_money_action'])}** | 现价 {_money(current_price, currency)}；Base 目标回报价 {_money(base['prices']['target_return'], currency)}（{_price_distance(current_price, base['prices']['target_return'])}），安全边际价 {_money(base['prices']['buy'], currency)}（{_price_distance(current_price, base['prices']['buy'])}）。 |",
+        f"| 新资金 | {_action(decision['new_money_action'])} | **{_action(decision['new_money_action'])}** | 基础情景 {return_years} 年年化回报 {_pct_decimal(decision['valuation']['base_irr'])}，目标 {target_return}。 |",
         f"| 已有仓位 | {_action(candidate)} | **{_action(executable)}** | {_escape(portfolio_limit)} |", "",
+        "### 价格指导", "",
+        f"**参考股价** {_money(current_price, currency)}（{current_fact['as_of']}，{currency}）。", "",
+        "| 价格线 | 每股价格 | 距参考股价 | 计算依据 |",
+        "|---|---:|---|---|",
+        f"| 目标回报价 | **{_money(prices['target_return'], currency)}** | {_price_distance(current_price, prices['target_return'])} | 按基础情景持有 {return_years} 年，达到 {target_return} 的目标年化回报。 |",
+        f"| 安全边际价 | **{_money(prices['buy'], currency)}** | {_price_distance(current_price, prices['buy'])} | 比目标回报价低 {safety_margin}。 |", "",
+        "达到价格线后，仍按下方行动表的执行条件判断是否下单。", "",
         *( [f"> 计价口径：{_fx_note(bundle)}", ""] if _fx_note(bundle) else [] ),
         *_execution_summary(bundle),
         f"> **结论：** {_claim_text(thesis)} 研究层给出的存量候选动作是“{_action(candidate)}”，但组合闸门后的唯一可执行动作是“{_action(executable)}”。", "",

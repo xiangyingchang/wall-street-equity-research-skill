@@ -153,3 +153,20 @@ or real account examples.
 
 Implementation: add a pre-publication check to the skill and document the portfolio source
 through a portable workflow. Verify both existing compiler paths and inspect the staged diff.
+
+## Reader opening and editorial review (3.4.2)
+
+Readers should find the current action and both decision prices without reading the full
+valuation section. Place a price block immediately after the current-decision table. Show
+the dated reference quote, the Base target-return and safety-margin prices, their distance
+from that quote, and the assumptions that distinguish the two lines. Read both prices from
+the same compiled scenario. Identify other methods and earlier model results separately.
+
+For existing report edits, lead with the decision and prices, then explain the business and
+financial evidence, valuation reasoning, and what would change the action. Keep detailed
+support and historical comparisons accessible. Review the entire Reader for clear Chinese
+while preserving figures, evidence, uncertainty, and decision conditions.
+
+Acceptance: a built and verified report shows the block directly below the decision table
+and before the execution matrix. The fixture checks the date, quoted prices, hurdle, discount,
+and price distances. Both compiler workflows continue to pass.

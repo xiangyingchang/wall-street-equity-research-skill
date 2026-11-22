@@ -4,7 +4,7 @@ description: "Trigger: analyze a listed stock, 跑一下, 华尔街分析, 估�
 license: MIT
 metadata:
   author: xiangyingchang
-  version: "3.4.1"
+  version: "3.4.2"
 ---
 
 ## 变更目的约定
@@ -82,6 +82,12 @@ Run bounded calls with `scripts/run_model_task.py --profile terra|luna --task ex
 - For banks, assess distribution capacity using sustainable earnings, regulatory capital and buffers, credit quality, and approved distributions. Explain how deposits, lending and interbank flows affect reported operating cash flow. Industrial-company FCF and consecutive negative cash-flow tests do not establish a bank's distribution capacity. If a model requires such a gate, disclose the methodology limitation and leave unsupported inputs unknown.
 - For a focused check of an existing report, state which inputs and conclusions were verified and which artifacts were rebuilt. Date the supplement and identify any historical output it supersedes. Claim full verification only after a successful rebuild and verification.
 
+## Reader structure and language
+
+- Start with the current decision, then a visible price block. Show the dated reference quote in listing currency, the Base target-return price with its annualized hurdle and horizon, and the Base safety-margin price with its discount. Show the distance from the same quote to both lines. Keep independently checked prices and historical model prices explicitly labeled by method and date.
+- Build the main reading path around why the action follows from the business and financial evidence, how the valuation was derived, and what would change the action. Keep the single Action Matrix easy to find. When reorganizing an existing Notion report, group detailed tables and historical model results under descriptive collapsible headings where helpful. Preserve evidence, periods, and source links.
+- Read the entire report in plain Chinese. At first use, explain what a decision-critical metric measures and what change would mean for the investment. Identify thresholds as model, company, or regulatory thresholds as applicable. Remove repeated conclusions and replace vague tasks with the specific missing evidence and its timing. Use humanizer-zh for Chinese editing when available. Preserve figures, units, periods, cash-flow timing, assumptions, uncertainty, sources, and executable actions. For compiled reports, make prose changes in the Spec and rebuild and verify.
+
 ## Execution Steps
 
 1. First resume saved evidence/Spec in the same run directory. Check source hashes, expiry, latest reporting period, four-quarter window, and compiler fingerprint; fill only missing/stale evidence. Use the v3 adapter in `references/research-pack-v1.md`; saved, verified, and current are distinct. Collect the smallest sufficient data pack: prior report, current price, filings, four-quarter facts, company-specific operating metrics, peers, rates, and direct source metadata. For holdings, use the current records in the user's authorized Notion asset register. Match ticker and listing market, aggregate across accounts, and cite quantity, valuation dates and the weight denominator in the Spec's portfolio_context. A denominator must be complete and comparable to support an executable weight; label any mixed-date estimate separately. Keep missing or inaccessible data unknown and use a target weight only if explicitly confirmed. Treat legacy Ledger records as historical. Keep private portfolio links and identifiers out of public skill files.
@@ -89,7 +95,7 @@ Run bounded calls with `scripts/run_model_task.py --profile terra|luna --task ex
 3. Conduct independent business, financial, challenge, and risk passes; synthesize only material logic into Themes and a Bull/Bear adjudication.
 4. Apply the three principles, decision-critical sensitivity drivers, falsification conditions, and portfolio execution gate.
 5. Run `python3 scripts/spec_precheck.py --spec <spec.json>` to aggregate static gaps (no default facts), then build all artifacts, then read the Reader as the investor would and fix the Spec (not the output) until each check holds:
-   - The first screen answers: what to do now, at what price it changes, and how far the price is from that line.
+   - The opening shows the current action and the two clearly labeled Base prices immediately below it. Pricing and execution conditions agree with the compiled decision.
    - `什么会改变结论` break-even distances are plausible against the evidence; if a key assumption sits within one shock step of break-even, say the conclusion is fragile and lower confidence.
    - Every Theme states one company-specific mechanism with numbers; delete any sentence that would fit any company.
    - Falsification conditions are observable in the next one or two filings, with a metric and threshold.

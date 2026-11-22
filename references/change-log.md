@@ -1220,3 +1220,11 @@ Price Discipline v2 的计算契约已经更新，但 canonical template 仍把 
 - Resolve available evidence and calculation checks before reporting an action. Name any outstanding decision input.
 - Distinguish timed dividend IRR from a terminal payout approximation. Use bank-specific evidence for distribution capacity.
 - Use the authorized Notion asset register for current positions and document the weight basis. Keep the earlier Ledger workflow as historical context.
+
+## 3.4.2 — 2026-11-22
+
+- 问题：开头的两条价格线挤在决策表内，读者难以分辨各自含义，也要往下翻才能找到参考股价日期。
+- 改动：在当前决策后独立列出价格指导。目标回报价和安全边际价取自同一基础情景，同时显示参考股价日期、上市币种、距离、目标年化和折扣。估值公式和执行条件沿用原口径。
+- 写作：结论与价格在前，业务和财务证据、估值理由和改变动作的条件随后。保留可查的历史与明细。逐节润色中文，首次出现的关键指标交代定义及决策含义，并明确阈值来源。
+- 版本：已有报告是生成时的快照。若要采用新首屏，从保存的 Spec 重新构建并验证。
+- 验收：351 项单测通过，含首屏顺序、参考日期、价格、距离、目标回报和折扣断言。v2/v3 构建、校验和报告 lint 通过。
