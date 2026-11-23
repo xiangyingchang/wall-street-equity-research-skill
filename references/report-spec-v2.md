@@ -100,5 +100,15 @@ Each operating metric's declared unit must equal the unit on its referenced Fact
 `prior_report_context` is `available` or `not_available`. Available baselines record prior actions, reported Base IRR, rating/metric/thesis/method deltas, and calculation status. `recalculated` status requires the old price, starting EPS, EPS CAGR, exit PE, years, and dividend yield; the Compiler recomputes the old IRR and rejects a mismatching declared value. This preserves historical wording without preserving historical arithmetic errors.
 
 
+### v3 可读研报（Skill 3.4.3 起）
+
+`report_pipeline_v3.py build` 先生成并检查原编译内容，再从同一个 Bundle 输出一份报告。标题下写阅读顺序，正文依次为「现在怎么做」「经营证据」「估值」「什么会改变仓位判断」，第五节为「附录｜财务底稿、估值明细与执行规则」。
+
+- 首节体现新资金、已有仓位可执行动作及有差异的研究候选，并前置参考价与日期、目标回报价、安全边际价及对应距离。
+- 正文的事实、数值、单位、限定、回报口径和执行条件沿用编译内容，只压缩重复和改写表达。要调整公司专属措辞，修改 Spec 的相关文字，保留数值绑定和来源。
+- 附录保留完整编译底稿。Action Matrix、敏感性、财务表、经营闸门、比较和执行规则仍按原契约检查。Audit、Bundle、Verification 作为内部审计产物留存。
+- `verify` 重新生成整份可读报告并逐字比对。Verification 和语义审阅凭据绑定最终报告的哈希，独立 lint 核验正文结构及附录的原契约。旧报告独立 lint 仍受支持，采用新结构的报告须重新 build、语义审阅及 verify。
+
+
 ### 历史年度现金流例外（v3.2）
 只披露年度现金流的公司可设 `cash_flow_basis={frequency:"annual",fact_id,period_end,reason}`，`quarterly_series.fcf=[]`。年度 Fact 必须有 `period:"FYyyyy"` 和同一 `period_end`；禁止未来数据与季度覆盖。兼容 `/derived/ttm/fcf/value` 仅为历史数值位置，必须同时读取 frequency/label/period_end，不代表最新 TTM。年度基准强制 `decision_support.cash_flow_escalation={status:"unknown",pending:"具体待披露项目"}`；不得提供 counter_ref、把未知计数填零。编译器限制新资金上限零且已有仓位 REVIEW，独立 thesis-break SELL 不受影响。旧报告未给 Base IRR 时允许 null，但 calculation_status 必须 unverified。

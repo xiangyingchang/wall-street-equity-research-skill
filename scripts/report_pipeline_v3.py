@@ -15,6 +15,7 @@ if __package__ in {None, ""}:
 from scripts.report_compiler_v3 import COMPILER_VERSION, compile_report_v3
 from scripts.report_lint import lint_text
 from scripts.report_pipeline_v2 import artifact_paths, load_json, write_json
+from scripts.report_readable_v3 import render_readable_markdown, split_report
 from scripts.report_renderer_v3 import render_audit_markdown, render_reader_markdown
 from scripts.report_spec_v2 import SpecError, canonical_json, sha256
 
@@ -159,22 +160,39 @@ def _verification(bundle: dict[str, Any], spec_path: Path, output: Path, audit_p
     }
 
 
-def build(spec_path: Path, output: Path) -> dict[str, Any]:
-    spec = load_json(spec_path)
-    bundle = compile_report_v3(spec)
-    reader = render_reader_markdown(bundle)
+def _verified_presentation(
+    bundle: dict[str, Any], spec_path: Path, output: Path,
+) -> tuple[str, str, dict[str, Any]]:
+    compiler_reader = render_reader_markdown(bundle)
     audit = render_audit_markdown(bundle)
-    reader_errors = _reader_errors(reader, bundle)
-    audit_errors = _audit_errors(audit)
-    report_lint_errors = lint_text(reader)
-    if reader_errors or audit_errors or report_lint_errors:
-        raise SpecError("; ".join(reader_errors + audit_errors + [f"report lint: {error}" for error in report_lint_errors]))
+    bundle_path, _, audit_path = artifact_paths(output)
+    verification = _verification(bundle, spec_path, output, audit_path, bundle_path, compiler_reader, audit)
+    errors = (
+        verification["reader_errors"] + verification["audit_errors"]
+        + [f"report lint: {error}" for error in verification["report_lint_errors"]]
+    )
+    if errors:
+        raise SpecError("; ".join(errors))
+
+    reader = render_readable_markdown(bundle, compiler_reader)
+    if split_report(reader)[1] != compiler_reader:
+        raise SpecError("readable appendix differs from the verified compiler Reader")
+    errors = lint_text(reader)
+    if errors:
+        raise SpecError("; ".join(f"readable report lint: {error}" for error in errors))
+    verification["checks"]["readable_presentation"] = "PASS"
+    verification["reader_markdown_hash"] = sha256(reader)
+    return reader, audit, verification
+
+
+def build(spec_path: Path, output: Path) -> dict[str, Any]:
+    bundle = compile_report_v3(load_json(spec_path))
+    reader, audit, verification = _verified_presentation(bundle, spec_path, output)
     bundle_path, verification_path, audit_path = artifact_paths(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(reader, encoding="utf-8")
     audit_path.write_text(audit, encoding="utf-8")
     write_json(bundle_path, bundle)
-    verification = _verification(bundle, spec_path, output, audit_path, bundle_path, reader, audit)
     write_json(verification_path, verification)
     return verification
 
@@ -182,8 +200,7 @@ def build(spec_path: Path, output: Path) -> dict[str, Any]:
 def verify(spec_path: Path, output: Path) -> dict[str, Any]:
     spec = load_json(spec_path)
     expected_bundle = compile_report_v3(spec)
-    expected_reader = render_reader_markdown(expected_bundle)
-    expected_audit = render_audit_markdown(expected_bundle)
+    expected_reader, expected_audit, expected_verification = _verified_presentation(expected_bundle, spec_path, output)
     bundle_path, verification_path, audit_path = artifact_paths(output)
     if not all(path.exists() for path in (output, audit_path, bundle_path, verification_path)):
         raise SpecError("reader, audit, bundle, and verification files must all exist")
@@ -191,7 +208,6 @@ def verify(spec_path: Path, output: Path) -> dict[str, Any]:
     actual_audit = audit_path.read_text(encoding="utf-8")
     actual_bundle = load_json(bundle_path)
     actual_verification = load_json(verification_path)
-    expected_verification = _verification(expected_bundle, spec_path, output, audit_path, bundle_path, expected_reader, expected_audit)
     errors: list[str] = []
     if actual_reader != expected_reader:
         errors.append("Reader Markdown differs from compiler output")
@@ -201,7 +217,6 @@ def verify(spec_path: Path, output: Path) -> dict[str, Any]:
         errors.append("Bundle differs from compiler output")
     if canonical_json(actual_verification) != canonical_json(expected_verification):
         errors.append("Verification differs from compiler output")
-    errors.extend(_reader_errors(actual_reader, actual_bundle))
     errors.extend(_audit_errors(actual_audit))
     errors.extend(f"report lint: {error}" for error in lint_text(actual_reader))
     if errors:

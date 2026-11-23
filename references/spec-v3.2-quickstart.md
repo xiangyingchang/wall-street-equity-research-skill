@@ -13,11 +13,11 @@
 
 按 research-pack-v1.md 的 V3 adapter 创建证据包。每个 research 子任务只给任务、所需契约、相关 Fact/原文摘录和输出路径；不传旧会话或全 Spec/Audit。保留完整 business/financial/challenge/risk 视角与全文读者审阅。
 
-`run_reports.py --queue /run/queue.json --max-jobs 1` 是实际外层启动器；默认一次只开一份，队列从不并行。每个 job 字段：id、workdir、research_command（argv 数组，如 codex exec 的参数）、spec、output、evidence_pack、completion、semantic_review（全部绝对路径）。research_command 的提示词须明确：同目录断点恢复、写全五产物、完整读 Reader、保留研究视角、不得改旧报告；不能继承全上下文。研究负责人固定 Sol/medium；窄机械任务经同输入验收后按 SKILL 的模型路由表执行，使用 run_model_task.py 固定模型与 effort，候选输出不得自动合并。
+`run_reports.py --queue /run/queue.json --max-jobs 1` 是实际外层启动器；默认一次只开一份，队列从不并行。每个 job 字段：id、workdir、research_command（argv 数组，如 codex exec 的参数）、spec、output、evidence_pack、completion、semantic_review（全部绝对路径）。research_command 的提示词须明确：同目录断点恢复、写全五产物、完整读可读正文与附录、保留研究视角、不得改旧报告；不能继承全上下文。研究负责人固定 Sol/medium；窄机械任务经同输入验收后按 SKILL 的模型路由表执行，使用 run_model_task.py 固定模型与 effort，候选输出不得自动合并。
 
 semantic_review JSON：`status: PASS`、`reader_sha256`（全文审阅后实际 Reader SHA256）、`perspectives: [business, financial, challenge, risk]`，并写审阅发现及最强反方/反证阈值；缺失或 hash 改变阻断 done。completion 是队列研究阶段的本地完成信号，用户要求的最终完成信号须在交付后另写。它们是模型/人工签署的语义记录，不是机器证明事实正确。
 
-启动器在 research 成功后做静态预检→有需要才 build→检查语义记录→完整 verify→独立 lint，所有阶段状态原子写入 queue-state.json，日志追加不覆盖。断点恢复先校验 Spec、证据、编译器/模板指纹；仍执行完整 verify/lint。research 失败时同 argv 重启，提示词必须要求复用同目录中有效证据而不是重新开目录。已有输出的新 job 被拒绝；已完成 job 重跑只验证，不重新研究。
+启动器在 research 成功后做静态预检→有需要才 build→检查最终可读报告的语义记录→完整 verify→独立 lint，所有阶段状态原子写入 queue-state.json，日志追加不覆盖。断点恢复先校验 Spec、证据、编译器/模板指纹；仍执行完整 verify/lint。research 失败时同 argv 重启，提示词必须要求复用同目录中有效证据而不是重新开目录。已有输出的新 job 被拒绝；已完成 job 重跑只验证，不重新研究。
 
 `--stop-file /run/STOP` 在当前报告完成本地校验后阻止开下一份；额度接近上限时设置该文件。不能读取精确剩余额度，默认 max-jobs=1；调用方负责在研究中及时保存证据/Spec。运行耗时、退出码和日志位置追加到 run-metrics.jsonl；token 仍从 codex 日志尾数或唯一 usage 事件读取，不将缓存总量混用。
 

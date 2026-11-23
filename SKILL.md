@@ -4,7 +4,7 @@ description: "Trigger: analyze a listed stock, 跑一下, 华尔街分析, 估�
 license: MIT
 metadata:
   author: xiangyingchang
-  version: "3.4.2"
+  version: "3.4.3"
 ---
 
 ## 变更目的约定
@@ -29,7 +29,8 @@ python3 scripts/report_pipeline_v3.py verify --spec <spec.json> --output <report
 ```
 
 - Keep research artifacts in a dedicated `~/research-runs/<job-id>/` directory. After semantic review, verify and independent lint pass, use native Notion MCP to create one row in 投研报告 and write the full Reader into its body with status 初版未核验. Fetch the page to confirm its body and status, then record the URL, local Reader path and SHA-256 in `delivery.json` and retain a verified, privacy-checked compact audit archive before cleaning other intermediates. See [Notion delivery](references/notion-delivery.md).
-- The Bundle owns every calculation and action. Narrative may explain but never override it.
+- Deliver exactly one readable report. The pipeline checks the compiler output and then generates the readable body and full appendix in one Markdown file. Review and deliver that file. Keep Audit, Bundle, and Verification as audit artifacts.
+- The Bundle owns every calculation and action. Use the same values, precision, currencies, dates, and conditions in the readable body. Preserve all compiler details in the appendix. Edit source prose in the Spec, then rebuild and verify.
 - Never invent facts, prices, holdings, sources, assumptions, evidence, graph nodes, or arguments. Prefer Tier 1 evidence; Tier 2 market data must be labeled.
 - Every Source requires a real HTTPS URL, date, precise locator, scope, and publisher. Generic source placeholders fail build. TTM inputs must share currency, scale, and per-share units where applicable.
 - Companies without quarterly cash-flow disclosure may use explicit historical annual `cash_flow_basis` (see report-spec-v2.md), never invented quarters; unknown latest cash flow forces zero executable new money and REVIEW.
@@ -46,7 +47,7 @@ python3 scripts/report_pipeline_v3.py verify --spec <spec.json> --output <report
 - Require explicit `portfolio_context`. `current_weight` means the stock's CNY value divided by verified Notion portfolio net assets, including stocks, cash, options, crypto, liabilities, and FX. Separate the research candidate action from the executable action; missing position/current/target weights must block an executable REDUCE and resolve to REVIEW. A stock-pool ratio may be shown as supporting context, but it must never be labeled or used as the net-asset weight.
 - When a stock-pool ratio is available but net-asset weight is unknown, say “占全部资产净值的比例未核实”; do not use the ambiguous phrase “当前权重未知/缺失”.
 - Require explicit `prior_report_context`: compare the latest baseline when it exists, or state why none exists. Preserve the old reported IRR separately from a runtime recalculation; never inherit an old calculated value by copying prose.
-- Reader must show one current-decision table plus exactly one six-row Action Matrix (Buy/Add/Hold/Review/Reduce/Sell), the three principles (持有=买入、机会成本、10年回本), visible Base assumptions, natural Theme synthesis, and clickable sources.
+- The appendix must contain one current-decision table, the single six-row Action Matrix (Buy/Add/Hold/Review/Reduce/Sell), the three principles (持有=买入、机会成本、10年回本), Base assumptions, sensitivity tables, financial tables, operating gates, comparisons, execution rules, and clickable sources.
 - Reader must be natural Chinese and contain no internal IDs, Bundle paths, registry names, evidence roles, or hashes. Audit must preserve the complete graph, IDs, roles, assumptions, decisions, and dynamic verification.
 - Independent business, financial, challenge, and risk perspectives are required. Default to one sequential task via `scripts/run_reports.py`; no full-context child (`fork_turns=all`). If a requested independent challenge needs a child, use `fork_turns=none` and pass only the task, narrow contract, relevant Fact/source excerpts and output path. Preserve strongest counter-evidence and falsification thresholds. Route bounded mechanical tasks via the model policy below; never downgrade investment judgment on cost alone.
 
@@ -57,7 +58,7 @@ python3 scripts/report_pipeline_v3.py verify --spec <spec.json> --output <report
 | Fetch an already located source; extract fields, units, periods and source metadata | gpt-6.1-terra / high | Bounded input and typed output permit same-input comparison. Conflicting sources, missing quarters, ADR/FX or reported/adjusted ambiguity escalate to Sol. |
 | Draft a narrow factual section from accepted Facts | gpt-6.1-terra / high | No new assumptions, cash normalization, valuation or action. Sol checks source fidelity and meaning before merging. |
 | Map fields/paths or explain a narrow compiler error | gpt-6-luna / max | Output is a candidate patch/explanation; deterministic checks plus Sol acceptance required. Evidence gaps or changed actions escalate. |
-| Build, verify, independent lint, completion JSON | Python / shell | No model is needed; run full checks, including after resume. Luna/max only if a narrow explanation is useful. |
+| Build, readable presentation, verify, independent lint, completion JSON | Python / shell | No model is needed; run full checks, including after resume. Luna/max only if a narrow explanation is useful. |
 | Business mechanism, four research perspectives, strongest countercase, normalization, assumptions, synthesis, full Reader review and final adjudication | gpt-6.1-sol / medium | These require investment judgment. Retain Sol and increase effort only when unresolved complexity warrants it. |
 
 Run bounded calls with `scripts/run_model_task.py --profile terra|luna --task extract|section|format|error --input <minimal-prompt.txt> --out <new-directory>`; it pins the actual model/effort and starts a fresh session, without inherited history. Read `references/model-routing.md` when delegating. Low-tier output remains a candidate until same-input comparison against Sol and source/contract checks pass; unknown values must stay unknown. Evidence of one Micron case permits only the tested task shape, not blanket approval for every company or ADR/FX case. Untested or degraded task shapes stay with Sol. Record model/effort, input hash, usage, time and acceptance outside evidence packs. Token reduction is not guaranteed by lower pricing.
@@ -84,8 +85,8 @@ Run bounded calls with `scripts/run_model_task.py --profile terra|luna --task ex
 
 ## Reader structure and language
 
-- Start with the current decision, then a visible price block. Show the dated reference quote in listing currency, the Base target-return price with its annualized hurdle and horizon, and the Base safety-margin price with its discount. Show the distance from the same quote to both lines. Keep independently checked prices and historical model prices explicitly labeled by method and date.
-- Build the main reading path around why the action follows from the business and financial evidence, how the valuation was derived, and what would change the action. Keep the single Action Matrix easy to find. When reorganizing an existing Notion report, group detailed tables and historical model results under descriptive collapsible headings where helpful. Preserve evidence, periods, and source links.
+- In the opening section, give the current decision, then a visible price block. Show the dated reference quote in listing currency, the Base target-return price with its annualized hurdle and horizon, and the Base safety-margin price with its discount. Show the distance from the same quote to both lines. Keep independently checked prices and historical model prices explicitly labeled by method and date.
+- Start with a reading-order note and use these five sections in order: 现在怎么做、经营证据、估值、什么会改变仓位判断、附录. Explain the business and financial evidence, how the valuation works, and which observable developments would change the action. Put the complete compiler details and the single Action Matrix in the appendix.
 - Read the entire report in plain Chinese. At first use, explain what a decision-critical metric measures and what change would mean for the investment. Identify thresholds as model, company, or regulatory thresholds as applicable. Remove repeated conclusions and replace vague tasks with the specific missing evidence and its timing. Use humanizer-zh for Chinese editing when available. Preserve figures, units, periods, cash-flow timing, assumptions, uncertainty, sources, and executable actions. For compiled reports, make prose changes in the Spec and rebuild and verify.
 
 ## Execution Steps
@@ -94,7 +95,7 @@ Run bounded calls with `scripts/run_model_task.py --profile terra|luna --task ex
 2. Persist fetched originals/excerpts once; register native Sources/Facts through the immutable v3 evidence adapter, reused by draft, challenge, build and verify (`--evidence-pack`). Keep market quotes, historical snapshots and filings separate; use new pack filenames for revisions. Reconcile units and discrepancies; register Sources, Facts, derived calculations, assumptions, scenarios, operating metrics, and Decision Policy in a fresh Spec.
 3. Conduct independent business, financial, challenge, and risk passes; synthesize only material logic into Themes and a Bull/Bear adjudication.
 4. Apply the three principles, decision-critical sensitivity drivers, falsification conditions, and portfolio execution gate.
-5. Run `python3 scripts/spec_precheck.py --spec <spec.json>` to aggregate static gaps (no default facts), then build all artifacts, then read the Reader as the investor would and fix the Spec (not the output) until each check holds:
+5. Run `python3 scripts/spec_precheck.py --spec <spec.json>` to aggregate static gaps (no default facts), then build all artifacts. Review the readable body and full appendix, applying humanizer-zh to the evidence and explanations in the Spec until each check holds:
    - The opening shows the current action and the two clearly labeled Base prices immediately below it. Pricing and execution conditions agree with the compiled decision.
    - `什么会改变结论` break-even distances are plausible against the evidence; if a key assumption sits within one shock step of break-even, say the conclusion is fragile and lower confidence.
    - Every Theme states one company-specific mechanism with numbers; delete any sentence that would fit any company.

@@ -13,8 +13,8 @@
 - 周期/高 Capex 双估值：峰值利润、新周期中枢、旧周期平准、EV/FCF
 - 三条投资纪律：持有=买入、机会成本、10 年回本
 - 最终四档判决：Buy / Hold-Index / Watchlist / Avoid
-- 单一 Action Matrix：v3.1 Compiler Reader 放在第一页；旧手工报告契约放在第 8 模块；两条路径都禁止第二套交易规则
-- v3.1 Reader：来源直链、Base 假设前置、公司特有经营指标、研究候选与组合可执行动作分离
+- 单一 Action Matrix：可读研报放在附录，旧手工报告放在第 8 模块
+- 可读研报：动作与价格前置，经营证据、估值和复核条件随后，附录保留完整底稿
 
 > 免责声明：本仓库仅用于个人研究、学习和辅助信息整理，不构成投资建议。所有财务数据、估值和结论都必须回到监管原文、公司公告和可靠数据源复核。
 
@@ -39,7 +39,7 @@
 
 ## 快速使用
 
-v3.1 的标准交付由一个 JSON Spec 生成 Reader、Audit、Bundle 和 Verification：
+v3 流水线从一个 JSON Spec 生成一份带完整附录的研报，并保留 Audit、Bundle 和 Verification 用于审计。
 
 ```bash
 python3 scripts/report_pipeline_v3.py build --spec <report-spec-v3.1.json> --output <report.md>
@@ -60,14 +60,9 @@ Spec 必须提供真实 HTTPS 来源、同量纲 TTM 数据、公司特有 `oper
 现有仓位或计划投入资金：待定
 ```
 
-模型应先输出：
+默认交付 pipeline 生成的可读研报。交付前用上述 `verify` 命令及 `python3 scripts/report_lint.py <report.md>` 校验。
 
-1. First-Page Verdict
-2. Evidence Ledger
-3. 9 个固定分析模块
-4. 最终 Buy / Hold-Index / Watchlist / Avoid 判决
-
-完整报告交付前必须跑：
+旧手工 Markdown 流程使用下列检查。
 
 ```bash
 python3 scripts/valuation_consistency.py "/path/to/report.md"

@@ -341,17 +341,30 @@ def _execution_summary(bundle: dict[str, Any]) -> list[str]:
     return lines
 
 
-def _decision_page(bundle: dict[str, Any]) -> str:
+def _price_guidance(bundle: dict[str, Any]) -> list[str]:
     report = bundle["report"]
-    decision = bundle["decision"]
-    base = bundle["scenarios"]["base"]
     current_fact = bundle["facts"][report["current_price_fact_id"]]
     current_price = current_fact["value"]
     currency = _price_currency(report)
     return_years = report["return_years"]
-    prices = base["prices"]
-    target_return = _pct_decimal(decision["valuation"]["target_return"])
+    prices = bundle["scenarios"]["base"]["prices"]
+    target_return = _pct_decimal(bundle["decision"]["valuation"]["target_return"])
     safety_margin = _pct_decimal(prices["safety_margin"])
+    return [
+        "### 价格指导", "",
+        f"**参考股价** {_money(current_price, currency)}（{current_fact['as_of']}，{currency}）。", "",
+        "| 价格线 | 每股价格 | 距参考股价 | 计算依据 |",
+        "|---|---:|---|---|",
+        f"| 目标回报价 | **{_money(prices['target_return'], currency)}** | {_price_distance(current_price, prices['target_return'])} | 按基础情景持有 {return_years} 年，达到 {target_return} 的目标年化回报。 |",
+        f"| 安全边际价 | **{_money(prices['buy'], currency)}** | {_price_distance(current_price, prices['buy'])} | 比目标回报价低 {safety_margin}。 |", "",
+    ]
+
+
+def _decision_page(bundle: dict[str, Any]) -> str:
+    report = bundle["report"]
+    decision = bundle["decision"]
+    return_years = report["return_years"]
+    target_return = _pct_decimal(decision["valuation"]["target_return"])
     candidate = decision["existing_position_candidate_action"]
     executable = decision["existing_position_action"]
     portfolio_limit = _portfolio_limit(bundle)
@@ -366,12 +379,7 @@ def _decision_page(bundle: dict[str, Any]) -> str:
         "| 对象 | 研究候选 | 可执行动作 | 依据与限制 |", "|---|---|---|---|",
         f"| 新资金 | {_action(decision['new_money_action'])} | **{_action(decision['new_money_action'])}** | 基础情景 {return_years} 年年化回报 {_pct_decimal(decision['valuation']['base_irr'])}，目标 {target_return}。 |",
         f"| 已有仓位 | {_action(candidate)} | **{_action(executable)}** | {_escape(portfolio_limit)} |", "",
-        "### 价格指导", "",
-        f"**参考股价** {_money(current_price, currency)}（{current_fact['as_of']}，{currency}）。", "",
-        "| 价格线 | 每股价格 | 距参考股价 | 计算依据 |",
-        "|---|---:|---|---|",
-        f"| 目标回报价 | **{_money(prices['target_return'], currency)}** | {_price_distance(current_price, prices['target_return'])} | 按基础情景持有 {return_years} 年，达到 {target_return} 的目标年化回报。 |",
-        f"| 安全边际价 | **{_money(prices['buy'], currency)}** | {_price_distance(current_price, prices['buy'])} | 比目标回报价低 {safety_margin}。 |", "",
+        *_price_guidance(bundle),
         "达到价格线后，仍按下方行动表的执行条件判断是否下单。", "",
         *( [f"> 计价口径：{_fx_note(bundle)}", ""] if _fx_note(bundle) else [] ),
         *_execution_summary(bundle),
@@ -580,7 +588,7 @@ def _final_reader(bundle: dict[str, Any]) -> str:
     payback_years = bundle["report"]["payback_years"]
     return "\n".join([
         "## 9. 最终判决", "",
-        "最终动作已经在第一页的唯一 Action Matrix 中确定；这里不再建立第二套交易口径。", "",
+        "具体执行条件见 Action Matrix。", "",
         f"**持有等于买入：** {_paragraph(final['hold_equals_buy'])}", "",
         f"**机会成本：** {_paragraph(final['opportunity_cost'])}", "",
         f"**{payback_years}年回本：** {_paragraph(final['payback'])}", "",

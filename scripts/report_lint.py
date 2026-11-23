@@ -25,6 +25,12 @@ except ModuleNotFoundError:
     )
 
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from scripts.report_readable_v3 import READING_ORDER, SECTIONS, split_report
+
+
 REQUIRED_PATTERNS = [
     ("default input statement", re.compile(r"默认输入|input_", re.I)),
     ("First-Page Verdict", re.compile(r"First-Page Verdict|首页结论|一页结论", re.I)),
@@ -855,7 +861,35 @@ def price_discipline_label_errors(text: str) -> list[str]:
     return errors
 
 
+def lint_readable_report(text: str) -> list[str]:
+    body, compiler_reader = split_report(text)
+    errors = []
+    if [title for title, _ in top_sections(text)] != list(SECTIONS):
+        errors.append("readable report requires five sections in order, ending with the appendix")
+    if not re.match(r"\A# [^\n]+\n\n" + re.escape(READING_ORDER) + r"\n", body):
+        errors.append("readable report requires a title and a reading-order note")
+    opening = section_body(body, re.escape(SECTIONS[0]))
+    decision, price_heading, prices = opening.partition("\n### 价格指导\n")
+    if (
+        not re.match(r"\*\*新资金：[^\n]+已有仓位：[^\n]+", decision.strip())
+        or not price_heading
+        or not re.search(r"^\*\*参考股价\*\* [^\n]+\d{4}-\d{2}-\d{2}", prices, re.M)
+        or not re.search(r"^\| 目标回报价 \|[^\n]+\n\| 安全边际价 \|", prices, re.M)
+    ):
+        errors.append("readable report must open with current actions and dated price guidance")
+    for section in SECTIONS[1:4]:
+        if not section_body(body, re.escape(section)).strip():
+            errors.append(f"readable report section is empty: {section}")
+    if "Action Matrix（唯一执行口径）" in body or "触发类型 | 可执行条件" in body:
+        errors.append("the authoritative Action Matrix belongs in the appendix")
+    if not compiler_reader:
+        return errors + ["readable report is missing the full compiler appendix"]
+    return errors + lint_v31_reader(compiler_reader) + price_discipline_label_errors(compiler_reader)
+
+
 def lint_text(text: str) -> list[str]:
+    if READING_ORDER in text or f"## {SECTIONS[-1]}" in text:
+        return lint_readable_report(text)
     if V31_READER_MARKER.search(text):
         return lint_v31_reader(text) + price_discipline_label_errors(text)
     errors: list[str] = price_discipline_label_errors(text)

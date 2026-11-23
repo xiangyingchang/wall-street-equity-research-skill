@@ -8,6 +8,7 @@ import unittest
 
 from scripts.report_compiler_v3 import compile_report_v3
 from scripts.report_lint import lint_text
+from scripts.report_readable_v3 import split_report
 from scripts.report_pipeline_v3 import _calculation_check, build, verify
 from scripts.report_renderer_v3 import render_reader_markdown
 from scripts.report_spec_v2 import SpecError, _portfolio_gate
@@ -39,7 +40,7 @@ class ResearchGraphV3Tests(unittest.TestCase):
             build(spec_path, report_path)
             result = verify(spec_path, report_path)
             self.assertEqual(result["status"], "PASS")
-            reader = report_path.read_text(encoding="utf-8")
+            _, reader = split_report(report_path.read_text(encoding="utf-8"))
             audit = report_path.with_suffix(".audit.md").read_text(encoding="utf-8")
             self.assertIn("## 1. Overview：商业模式与本次财报", reader)
             self.assertIn("### Key Forces", reader)
